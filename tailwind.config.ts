@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: ["class"],
+  darkMode: "class",
   content: [
     "./src/app/**/*.{ts,tsx}",
     "./src/components/**/*.{ts,tsx}",
@@ -10,14 +10,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#ffffff",
-        foreground: "#0f172a",
+        background: "#191919",
+        foreground: "#f9fafb",
         primary: {
           DEFAULT: "#ff6b35", // warm Up-style orange
           foreground: "#ffffff"
         },
         secondary: {
-          DEFAULT: "#5b34ff", // purple accent
+          DEFAULT: "#8f499c", // FlexOne purple accent
           foreground: "#ffffff"
         },
         muted: {

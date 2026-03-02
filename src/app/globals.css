@@ -7,14 +7,18 @@ body,
 }
 
 body {
-  background-color: #ffffff;
-  color: #020617; /* slate-950-ish */
+  background-color: #191919;
+  color: #f9fafb;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
 .up-gradient {
-  background: radial-gradient(circle at top left, #5b34ff 0, transparent 55%),
+  background: radial-gradient(circle at top left, #8f499c 0, transparent 55%),
     radial-gradient(circle at top right, #ff6b35 0, transparent 55%);
 }
 

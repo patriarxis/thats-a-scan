@@ -1,15 +1,27 @@
-# Up Hellas Merchants Map
+## Up Hellas Store Locator
 
-Interactive map that visualises all partner merchants from the Up Hellas merchants API on top of a Mapbox-powered map, styled to match the look & feel of [uphellas.gr](https://uphellas.gr/).
+Dark, premium store locator experience for Up Hellas, showing partner merchants on a clustered Mapbox GL map with a searchable, localized list.
 
-## Tech stack
+### What this app does
 
-- Next.js (App Router, TypeScript)
-- Tailwind CSS
-- Simple shadcn-style UI primitives (`button`, `card`)
-- Mapbox GL via `react-map-gl`
+- **Viewport-based store loading**: Merchants are fetched through the existing `/api/merchants-geojson` proxy only for the current map bounding box (no backend changes).
+- **Modern map experience**: Dark Mapbox / CARTO basemap locked to Greece, with **purple pins and clusters**, smooth zoom, and drill‑in clustering.
+- **Search-first UX**: Centered autocomplete search bar that works with:
+  - **Merchant data** already loaded on the client, and
+  - **Mapbox geocoding** for free‑text places.
+- **Map + list layout**:
+  - Desktop: map on the left, virtualized store list and detail panel on the right.
+  - Mobile: fullscreen map with a Map/List toggle and bottom sheet details.
+- **Localization**: Full Greek/English UI via `LocaleProvider` plus locale‑aware merchant name/address helpers.
 
-## Getting started
+### Tech stack
+
+- **Next.js** (App Router, TypeScript)
+- **Tailwind CSS** with custom Up‑style dark theme (black/dark‑grey background, purple accents)
+- **Mapbox GL JS** directly (no `react-map-gl`)
+- **react-window** for list virtualization
+
+### Running locally
 
 1. Install dependencies:
 
@@ -17,35 +29,35 @@ Interactive map that visualises all partner merchants from the Up Hellas merchan
 npm install
 ```
 
-2. Create an `.env.local` file in the project root and add your Mapbox access token:
+2. Add your Mapbox token in `.env.local`:
 
 ```bash
 NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_public_token_here
 ```
 
-3. Run the dev server:
+3. Start the dev server:
 
 ```bash
 npm run dev
 ```
 
-Then open `http://localhost:3000` in your browser.
+Open `http://localhost:3000` in the browser.
 
-## Merchants API
+### Merchants API
 
-The app uses the public merchants GeoJSON endpoint documented at  
-`https://merchants-map.uphellas.gr/docs#/GeoJSON%20Merchants/search_geojson_geojson_search_post`
+The frontend talks only to a Next.js proxy:
 
-There is a Next.js API route at `/api/merchants-geojson` which proxies requests to:
+- **Route**: `/api/merchants-geojson`
+- **Upstream**:
 
 ```text
 POST https://merchants-map.uphellas.gr/geojson/search
 ```
 
-with a bounding box that roughly covers Greece. You can adjust this bounding box in `src/app/api/merchants-geojson/route.ts` if needed.
+The request body contains a bounding box (`north_west` / `south_east`), so the backend only returns stores inside the current viewport.
 
-## Notes
+### Customization
 
-- If you see a placeholder instead of the map, make sure `NEXT_PUBLIC_MAPBOX_TOKEN` is configured.
-- Styling and layout aim to be close to the branding on [uphellas.gr](https://uphellas.gr/), but you can freely tweak colours, spacing and typography in `tailwind.config.ts` and the layout components.
+- **Colours / theme**: Edit `tailwind.config.ts` (see `background`, `foreground`, `primary`, `secondary`) and high‑level layout styles in `LocatorExperience.tsx`.
+- **Map behaviour**: Edit `MapView.tsx` and the hooks in `src/components/map/hooks.ts` (zoom limits, clustering, viewport query rules).
 

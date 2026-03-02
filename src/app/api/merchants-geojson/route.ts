@@ -2,18 +2,46 @@ import { NextResponse } from "next/server";
 
 const API_URL = "https://merchants-map.uphellas.gr/geojson/search";
 
-export async function GET() {
-  // Broad bounding box over Greece; adjust as needed.
-  const body = {
-    north_west: {
-      latitude: 42.5,
-      longitude: 19.0
-    },
-    south_east: {
-      latitude: 34.0,
-      longitude: 29.5
-    }
+type BBoxPayload = {
+  north_west: {
+    latitude: number;
+    longitude: number;
   };
+  south_east: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
+const DEFAULT_ATHENS_BBOX: BBoxPayload = {
+  north_west: { latitude: 38.2, longitude: 23.45 },
+  south_east: { latitude: 37.85, longitude: 23.95 }
+};
+
+export async function POST(request: Request) {
+  let body: BBoxPayload = DEFAULT_ATHENS_BBOX;
+  try {
+    const json = (await request.json()) as Partial<BBoxPayload>;
+    if (
+      json?.north_west?.latitude !== undefined &&
+      json?.north_west?.longitude !== undefined &&
+      json?.south_east?.latitude !== undefined &&
+      json?.south_east?.longitude !== undefined
+    ) {
+      body = {
+        north_west: {
+          latitude: Number(json.north_west.latitude),
+          longitude: Number(json.north_west.longitude)
+        },
+        south_east: {
+          latitude: Number(json.south_east.latitude),
+          longitude: Number(json.south_east.longitude)
+        }
+      };
+    }
+  } catch {
+    body = DEFAULT_ATHENS_BBOX;
+  }
 
   try {
     const res = await fetch(API_URL, {
@@ -44,5 +72,12 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+export async function GET() {
+  return NextResponse.json(
+    { error: "Use POST with map bounds payload." },
+    { status: 405 }
+  );
 }
 

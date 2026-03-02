@@ -102,7 +102,7 @@ export function ResultsPanel({
         <List
           rowComponent={Row}
           rowCount={merchants.length}
-          rowHeight={98}
+          rowHeight={116}
           rowProps={itemData}
           style={{ height, width: "100%" }}
         />

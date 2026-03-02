@@ -74,12 +74,12 @@ export function ResultsPanel({
   );
 
   return (
-    <section className="rounded-3xl border border-white/55 bg-white/85 p-3 shadow-[0_20px_50px_rgba(15,23,42,0.16)] backdrop-blur-md dark:border-slate-700/70 dark:bg-slate-900/85">
+    <section className="rounded-3xl border border-[#2a2a2a] bg-[#141018]/95 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
       <div className="mb-3 flex items-center justify-between px-2">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+        <h3 className="text-sm font-semibold text-slate-100">
           {title}
         </h3>
-        <span className="text-xs text-slate-500 dark:text-slate-400">
+        <span className="text-xs text-slate-400">
           {merchants.length.toLocaleString(locale === "el" ? "el-GR" : "en-US")}{" "}
           {storesLabel}
         </span>
@@ -90,12 +90,12 @@ export function ResultsPanel({
           {Array.from({ length: 6 }).map((_, idx) => (
             <div
               key={idx}
-              className="h-20 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
+              className="h-20 animate-pulse rounded-2xl border border-slate-700 bg-slate-900/80"
             />
           ))}
         </div>
       ) : merchants.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-400">
+        <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/80 px-4 py-10 text-center text-sm text-slate-400">
           {noResultsLabel}
         </div>
       ) : (

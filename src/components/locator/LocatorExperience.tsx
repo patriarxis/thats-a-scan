@@ -10,8 +10,11 @@ import { MapView, type MapViewHandle } from "@/components/map/MapView";
 import { fetchMapboxSuggestions } from "@/lib/mapboxGeocoding";
 import { searchMerchantSuggestions } from "@/lib/merchantSearchIndex";
 import { getMerchantId, type MerchantFeature } from "@/types/merchant";
-
-const TOTAL_STORES = 8392;
+import {
+  MERCHANT_SUGGESTION_LIMIT,
+  SEARCH_DEBOUNCE_MS,
+  SEARCH_SUGGESTION_LIMIT
+} from "@/lib/config";
 
 function useMediaQuery(query: string) {
   const [isMobile, setIsMobile] = useState(false);
@@ -38,8 +41,7 @@ function LocatorExperienceContent() {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [mapLoading, setMapLoading] = useState(true);
-  const [mapUpdating, setMapUpdating] = useState(false);
-  const isDark = true;
+  const [mapError, setMapError] = useState<string | null>(null);
 
   const allKnownMerchants = useMemo(
     () => Object.values(allKnownById),
@@ -68,7 +70,7 @@ function LocatorExperienceContent() {
         query,
         allKnownMerchants,
         locale,
-        6
+        MERCHANT_SUGGESTION_LIMIT
       ).map(
         (result) =>
           ({
@@ -92,9 +94,9 @@ function LocatorExperienceContent() {
           }) satisfies SearchSuggestion
       );
 
-      setSuggestions([...merchantResults, ...placeResults].slice(0, 8));
+      setSuggestions([...merchantResults, ...placeResults].slice(0, SEARCH_SUGGESTION_LIMIT));
       setSearchLoading(false);
-    }, 250);
+    }, SEARCH_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
   }, [allKnownMerchants, locale, query, t, token]);
@@ -116,15 +118,16 @@ function LocatorExperienceContent() {
     ({
       merchants,
       loading,
-      updating
+      error
     }: {
       merchants: MerchantFeature[];
       loading: boolean;
       updating: boolean;
+      error: string | null;
     }) => {
       setVisibleMerchants(merchants);
       setMapLoading(loading);
-      setMapUpdating(updating);
+      setMapError(error);
       setAllKnownById((prev) => {
         const next = { ...prev };
         for (const merchant of merchants) {
@@ -238,6 +241,11 @@ function LocatorExperienceContent() {
                     </div>
                   </div>
                 )}
+                {mapError && (
+                  <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-xl border border-red-500/30 bg-red-950/90 px-4 py-2.5 text-sm font-medium text-red-200 shadow-lg backdrop-blur-sm">
+                    {mapError}
+                  </div>
+                )}
               </div>
 
               <ResultsPanel
@@ -291,6 +299,11 @@ function LocatorExperienceContent() {
                     <div className="rounded-xl bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow dark:bg-slate-900 dark:text-slate-200">
                       {t("loadingMap")}
                     </div>
+                  </div>
+                )}
+                {mapError && (
+                  <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-xl border border-red-500/30 bg-red-950/90 px-4 py-2.5 text-sm font-medium text-red-200 shadow-lg backdrop-blur-sm">
+                    {mapError}
                   </div>
                 )}
 
@@ -389,9 +402,7 @@ function LocatorExperienceContent() {
                     href="https://uphellas.gr/proionta/fitpass"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`transition-colors hover:text-orange-400 ${
-                      isDark ? "text-slate-300" : "text-slate-600"
-                    }`}
+                    className="text-slate-300 transition-colors hover:text-orange-400"
                   >
                     Fitpass
                   </a>

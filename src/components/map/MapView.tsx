@@ -47,6 +47,7 @@ type MapViewProps = {
     merchants: MerchantFeature[];
     loading: boolean;
     updating: boolean;
+    error: string | null;
   }) => void;
   onMerchantSelect: (merchant: MerchantFeature) => void;
 };
@@ -196,7 +197,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView(
   const onMerchantSelectRef = useRef(onMerchantSelect);
   const [mapReady, setMapReady] = useState(false);
   const userLocation = useUserLocation();
-  const { merchants, loading, updating, viewportTooWide } = useViewportStoreQuery(
+  const { merchants, loading, updating, viewportTooWide, error } = useViewportStoreQuery(
     mapRef,
     userLocation,
     mapReady
@@ -312,7 +313,8 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(function MapView(
     onVisibleMerchantsChangeRef.current({
       merchants: viewportTooWide ? [] : merchants,
       loading,
-      updating
+      updating,
+      error
     });
   }, [loading, merchants, updating, viewportTooWide]);
 

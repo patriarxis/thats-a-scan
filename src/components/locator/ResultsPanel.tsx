@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { List, type RowComponentProps } from "react-window";
 import { StoreCard } from "@/components/locator/StoreCard";
 import { getMerchantId, type Locale, type MerchantFeature } from "@/types/merchant";
+import { SKELETON_ITEM_COUNT, STORE_LIST_ROW_HEIGHT } from "@/lib/config";
 
 type ResultsPanelProps = {
   merchants: MerchantFeature[];
@@ -38,7 +39,7 @@ function Row({
   const merchant = merchants[index];
   const selected = selectedId === getMerchantId(merchant);
   return (
-    <div style={style} className="px-2 py-1.5">
+    <div role="listitem" style={style} className="px-2 py-1.5">
       <StoreCard
         merchant={merchant}
         selected={selected}
@@ -74,11 +75,12 @@ export function ResultsPanel({
   );
 
   return (
-    <section className="rounded-3xl border border-[#2a2a2a] bg-[#141018]/95 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.7)]">
+    <section
+      aria-label={title}
+      className="rounded-3xl border border-[#2a2a2a] bg-[#141018]/95 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.7)]"
+    >
       <div className="mb-3 flex items-center justify-between px-2">
-        <h3 className="text-sm font-semibold text-slate-100">
-          {title}
-        </h3>
+        <h3 className="text-sm font-semibold text-slate-100">{title}</h3>
         <span className="text-xs text-slate-400">
           {merchants.length.toLocaleString(locale === "el" ? "el-GR" : "en-US")}{" "}
           {storesLabel}
@@ -86,8 +88,8 @@ export function ResultsPanel({
       </div>
 
       {loading ? (
-        <div className="space-y-2 px-2 py-2">
-          {Array.from({ length: 6 }).map((_, idx) => (
+        <div role="status" aria-label="Loading stores" className="space-y-2 px-2 py-2">
+          {Array.from({ length: SKELETON_ITEM_COUNT }).map((_, idx) => (
             <div
               key={idx}
               className="h-20 animate-pulse rounded-2xl border border-slate-700 bg-slate-900/80"
@@ -99,13 +101,15 @@ export function ResultsPanel({
           {noResultsLabel}
         </div>
       ) : (
-        <List
-          rowComponent={Row}
-          rowCount={merchants.length}
-          rowHeight={116}
-          rowProps={itemData}
-          style={{ height, width: "100%" }}
-        />
+        <div role="list">
+          <List
+            rowComponent={Row}
+            rowCount={merchants.length}
+            rowHeight={STORE_LIST_ROW_HEIGHT}
+            rowProps={itemData}
+            style={{ height, width: "100%" }}
+          />
+        </div>
       )}
     </section>
   );

@@ -18,25 +18,33 @@ const DEFAULT_ATHENS_BBOX: BBoxPayload = {
   south_east: { latitude: 37.85, longitude: 23.95 }
 };
 
+function isValidLatitude(v: number): boolean {
+  return Number.isFinite(v) && v >= -90 && v <= 90;
+}
+
+function isValidLongitude(v: number): boolean {
+  return Number.isFinite(v) && v >= -180 && v <= 180;
+}
+
 export async function POST(request: Request) {
   let body: BBoxPayload = DEFAULT_ATHENS_BBOX;
   try {
     const json = (await request.json()) as Partial<BBoxPayload>;
+    const nwLat = Number(json?.north_west?.latitude);
+    const nwLng = Number(json?.north_west?.longitude);
+    const seLat = Number(json?.south_east?.latitude);
+    const seLng = Number(json?.south_east?.longitude);
+
     if (
-      json?.north_west?.latitude !== undefined &&
-      json?.north_west?.longitude !== undefined &&
-      json?.south_east?.latitude !== undefined &&
-      json?.south_east?.longitude !== undefined
+      isValidLatitude(nwLat) &&
+      isValidLongitude(nwLng) &&
+      isValidLatitude(seLat) &&
+      isValidLongitude(seLng) &&
+      nwLat > seLat
     ) {
       body = {
-        north_west: {
-          latitude: Number(json.north_west.latitude),
-          longitude: Number(json.north_west.longitude)
-        },
-        south_east: {
-          latitude: Number(json.south_east.latitude),
-          longitude: Number(json.south_east.longitude)
-        }
+        north_west: { latitude: nwLat, longitude: nwLng },
+        south_east: { latitude: seLat, longitude: seLng }
       };
     }
   } catch {
@@ -80,4 +88,3 @@ export async function GET() {
     { status: 405 }
   );
 }
-

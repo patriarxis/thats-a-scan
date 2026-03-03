@@ -14,7 +14,13 @@ export type MerchantSuggestion = {
   coordinates: [number, number];
 };
 
-export function buildSearchIndex(features: MerchantFeature[], locale: Locale) {
+type IndexEntry = {
+  merchantId: string;
+  feature: MerchantFeature;
+  haystack: string;
+};
+
+export function buildSearchIndex(features: MerchantFeature[], locale: Locale): IndexEntry[] {
   return features.map((feature) => {
     const merchantId = getMerchantId(feature);
     const name = getMerchantName(feature, locale);
@@ -27,6 +33,21 @@ export function buildSearchIndex(features: MerchantFeature[], locale: Locale) {
   });
 }
 
+// Module-level cache: reuse the index when features array reference and locale are unchanged.
+let cachedIndex: IndexEntry[] | null = null;
+let cachedFeatures: MerchantFeature[] | null = null;
+let cachedLocale: Locale | null = null;
+
+function getOrBuildIndex(features: MerchantFeature[], locale: Locale): IndexEntry[] {
+  if (features === cachedFeatures && locale === cachedLocale && cachedIndex !== null) {
+    return cachedIndex;
+  }
+  cachedIndex = buildSearchIndex(features, locale);
+  cachedFeatures = features;
+  cachedLocale = locale;
+  return cachedIndex;
+}
+
 export function searchMerchantSuggestions(
   query: string,
   features: MerchantFeature[],
@@ -36,7 +57,7 @@ export function searchMerchantSuggestions(
   const normalized = query.trim().toLowerCase();
   if (!normalized) return [];
 
-  return buildSearchIndex(features, locale)
+  return getOrBuildIndex(features, locale)
     .filter((entry) => entry.haystack.includes(normalized))
     .slice(0, limit)
     .map(({ feature, merchantId }) => ({

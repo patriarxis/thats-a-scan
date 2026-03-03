@@ -22,11 +22,15 @@ export function StoreCard({
   noAddressLabel,
   onSelect
 }: StoreCardProps) {
+  const name = getMerchantName(merchant, locale);
+  const address = getMerchantAddress(merchant, locale);
+
   return (
     <button
       type="button"
       onClick={() => onSelect(merchant)}
       aria-pressed={selected}
+      aria-label={`${name}${address ? `, ${address}` : ""}`}
       className={`w-full rounded-2xl border px-3 py-3 text-left transition ${
         selected
           ? "border-violet-300 bg-violet-50/90 shadow-sm dark:border-violet-500/60 dark:bg-violet-500/15"
@@ -39,10 +43,10 @@ export function StoreCard({
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-            {getMerchantName(merchant, locale)}
+            {name}
           </p>
           <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
-            {getMerchantAddress(merchant, locale) || noAddressLabel}
+            {address || noAddressLabel}
           </p>
           <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
             ID: {getMerchantId(merchant)}

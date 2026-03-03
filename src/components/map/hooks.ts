@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Map as MapboxMap } from "mapbox-gl";
 import type { MerchantFeature } from "@/types/merchant";
+import { MAP_MAX_LAT_SPAN, MAP_MAX_LNG_SPAN } from "@/lib/config";
 
 const STORES_API_URL = "/api/merchants-geojson";
-const MAX_LAT_SPAN = 0.35;
-const MAX_LNG_SPAN = 0.55;
+const MOVE_DEBOUNCE_MS = 300;
 
 export type UserLocation = {
   lat: number;
@@ -18,6 +18,7 @@ type ViewportQueryState = {
   loading: boolean;
   updating: boolean;
   viewportTooWide: boolean;
+  error: string | null;
 };
 
 function haversineDistanceKm(
@@ -71,7 +72,8 @@ export function useViewportStoreQuery(
     merchants: [],
     loading: true,
     updating: false,
-    viewportTooWide: false
+    viewportTooWide: false,
+    error: null
   });
   const hasLoadedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -89,7 +91,7 @@ export function useViewportStoreQuery(
 
       const latSpan = Math.abs(bounds.getNorth() - bounds.getSouth());
       const lngSpan = Math.abs(bounds.getEast() - bounds.getWest());
-      const tooWide = latSpan > MAX_LAT_SPAN || lngSpan > MAX_LNG_SPAN;
+      const tooWide = latSpan > MAP_MAX_LAT_SPAN || lngSpan > MAP_MAX_LNG_SPAN;
 
       if (tooWide) {
         abortRef.current?.abort();
@@ -98,7 +100,8 @@ export function useViewportStoreQuery(
           loading: false,
           updating: false,
           viewportTooWide: true,
-          merchants: []
+          merchants: [],
+          error: null
         }));
         return;
       }
@@ -107,7 +110,8 @@ export function useViewportStoreQuery(
         ...prev,
         loading: !hasLoadedRef.current,
         updating: hasLoadedRef.current || source === "move",
-        viewportTooWide: false
+        viewportTooWide: false,
+        error: null
       }));
 
       abortRef.current?.abort();
@@ -131,7 +135,13 @@ export function useViewportStoreQuery(
           signal: controller.signal
         });
         if (!res.ok) {
-          setState((prev) => ({ ...prev, loading: false, updating: false }));
+          console.error("Merchant API returned status:", res.status);
+          setState((prev) => ({
+            ...prev,
+            loading: false,
+            updating: false,
+            error: "Failed to load stores. Please try again."
+          }));
           return;
         }
         const json = (await res.json()) as { features?: MerchantFeature[] };
@@ -161,10 +171,18 @@ export function useViewportStoreQuery(
           merchants: sorted,
           loading: false,
           updating: false,
-          viewportTooWide: false
+          viewportTooWide: false,
+          error: null
         });
-      } catch {
-        setState((prev) => ({ ...prev, loading: false, updating: false }));
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("Failed to fetch merchants:", err);
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          updating: false,
+          error: "Failed to load stores. Please try again."
+        }));
       }
     };
 
@@ -172,7 +190,7 @@ export function useViewportStoreQuery(
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         fetchVisible("move");
-      }, 300);
+      }, MOVE_DEBOUNCE_MS);
     };
 
     const onMapReady = () => {

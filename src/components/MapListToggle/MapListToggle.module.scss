@@ -1,0 +1,30 @@
+@use "../../styles/abstracts" as *;
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  border-radius: $border-radius-md;
+  border: 1px solid rgba($neutral-3, 0.7);
+  background: rgba(#0f172a, 0.8);
+  padding: $spacing-xs;
+  box-shadow: $shadow-lg;
+  backdrop-filter: blur(12px);
+}
+
+.tab {
+  border-radius: $border-radius-sm;
+  padding: 0.375rem $spacing-lg;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  transition: all $transition-normal;
+  color: $neutral-8;
+
+  &:hover {
+    background: $neutral-3;
+  }
+}
+
+.tabActive {
+  background: rgba($white, 0.9);
+  color: #0f172a;
+}

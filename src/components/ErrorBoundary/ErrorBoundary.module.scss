@@ -1,0 +1,45 @@
+@use "../../styles/abstracts" as *;
+
+.errorPage {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background-color: $neutral-2;
+  color: rgba($white, 0.9);
+}
+
+.errorCard {
+  border-radius: $border-radius-lg;
+  border: 1px solid $neutral-3;
+  background: #0f172a;
+  padding: $spacing-xl;
+  text-align: center;
+  box-shadow: $shadow-lg;
+}
+
+.errorTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+}
+
+.errorMessage {
+  margin-top: $spacing-sm;
+  font-size: $font-size-sm;
+  color: $neutral-5;
+}
+
+.retryBtn {
+  margin-top: $spacing-md;
+  border-radius: $border-radius-md;
+  background: $flexone-primary-4;
+  padding: $spacing-sm $spacing-md;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $white;
+  transition: background $transition-normal;
+
+  &:hover {
+    background: $flexone-primary-3;
+  }
+}

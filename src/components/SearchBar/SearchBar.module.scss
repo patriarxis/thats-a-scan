@@ -1,0 +1,133 @@
+@use "../../styles/abstracts" as *;
+
+.wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 48rem;
+}
+
+.inputWrapper {
+  position: relative;
+}
+
+.searchIcon {
+  pointer-events: none;
+  position: absolute;
+  left: $spacing-md;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: $neutral-5;
+}
+
+.input {
+  height: 3.5rem;
+  width: 100%;
+  border-radius: $border-radius-lg;
+  border: 1px solid rgba($neutral-3, 0.7);
+  background: rgba(#0f172a, 0.85);
+  padding-left: 3rem;
+  padding-right: 6rem;
+  font-size: $font-size-base;
+  color: rgba($white, 0.9);
+  box-shadow: 0 18px 40px rgba(#0f172a, 0.16);
+  backdrop-filter: blur(12px);
+  outline: none;
+  transition: all $transition-normal;
+
+  &::placeholder {
+    color: $neutral-5;
+  }
+
+  &:focus {
+    border-color: $brand-primary-6;
+    box-shadow: 0 0 0 4px rgba($brand-primary-5, 0.35);
+  }
+}
+
+.controlsWrapper {
+  position: absolute;
+  right: $spacing-lg;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: $border-radius-full;
+  border: 2px solid $brand-primary-5;
+  border-top-color: transparent;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: $border-radius-full;
+  color: $neutral-8;
+  transition: all $transition-normal;
+
+  &:hover {
+    background: $neutral-3;
+    color: $white;
+  }
+}
+
+.clearIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+// Suggestions dropdown
+.dropdown {
+  position: absolute;
+  z-index: 80;
+  margin-top: $spacing-sm;
+  max-height: 20rem;
+  width: 100%;
+  overflow: auto;
+  border-radius: $border-radius-lg;
+  border: 1px solid $neutral-3;
+  background: rgba(#0f172a, 0.95);
+  padding: $spacing-sm;
+  box-shadow: 0 18px 50px rgba(#0f172a, 0.16);
+  backdrop-filter: blur(12px);
+}
+
+.option {
+  cursor: pointer;
+  border-radius: $border-radius-md;
+  padding: $spacing-sm $spacing-lg;
+  transition: background $transition-normal;
+
+  &:hover {
+    background: $neutral-3;
+  }
+}
+
+.optionActive {
+  background: rgba($brand-primary-5, 0.15);
+}
+
+.optionLabel {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: rgba($white, 0.9);
+}
+
+.optionSublabel {
+  font-size: $font-size-xs;
+  color: $neutral-5;
+}

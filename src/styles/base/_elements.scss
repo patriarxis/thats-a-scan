@@ -1,0 +1,28 @@
+@use "../abstracts" as *;
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+input, textarea, select {
+  font-family: $font-primary;
+  font-size: $font-size-base;
+  line-height: $line-height-normal;
+}
+
+a {
+  text-decoration: none;
+}

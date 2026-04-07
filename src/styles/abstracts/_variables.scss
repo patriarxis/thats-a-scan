@@ -1,0 +1,163 @@
+// Typography
+$font-primary: var(--font-linotte), system-ui, -apple-system, BlinkMacSystemFont,
+  sans-serif;
+
+// Brand Primary Colors (Orange)
+$brand-primary-1: #331b00;
+$brand-primary-2: #863500;
+$brand-primary-3: #995000;
+$brand-primary-4: #cc6a00;
+$brand-primary-5: #ff8500; // Main brand color
+$brand-primary-6: #ff9d33;
+$brand-primary-7: #ffb666;
+$brand-primary-8: #ffce99;
+$brand-primary-9: #ffe7cc;
+
+// Product Colors - FlexOne (Purple)
+$flexone-primary-1: #201023;
+$flexone-primary-2: #402145;
+$flexone-primary-3: #603168;
+$flexone-primary-4: #8f499c; // Main FlexOne color
+$flexone-primary-5: #9f51ae;
+$flexone-primary-6: #b274be;
+$flexone-primary-7: #c697ce;
+$flexone-primary-8: #d9bade;
+$flexone-primary-9: #ecdcef;
+
+// Product Colors - FlexOne Secondary (Blue)
+$flexone-secondary-1: #071e2c;
+$flexone-secondary-2: #0f3d57;
+$flexone-secondary-3: #165b83;
+$flexone-secondary-4: #1d79af;
+$flexone-secondary-5: #2598da;
+$flexone-secondary-6: #58b0e3;
+$flexone-secondary-7: #7cc1e9;
+$flexone-secondary-8: #a8d6f0;
+$flexone-secondary-9: #d3eaf8;
+
+// Product Colors - Fitpass (Red/Orange)
+$fitpass-primary-1: #2e0d05;
+$fitpass-primary-2: #5c190a;
+$fitpass-primary-3: #8a260f;
+$fitpass-primary-4: #b83314;
+$fitpass-primary-5: #e6441f;
+$fitpass-primary-6: #eb6647;
+$fitpass-primary-7: #f08c75;
+$fitpass-primary-8: #f5b2a3;
+$fitpass-primary-9: #fad9d1;
+
+// Product Colors - Gift (Green)
+$gift-primary-1: #171c1c;
+$gift-primary-2: #2e3837;
+$gift-primary-3: #485756;
+$gift-primary-4: #5c706e;
+$gift-primary-5: #738c8a;
+$gift-primary-6: #8fa3a1;
+$gift-primary-7: #abbab9;
+$gift-primary-8: #c7d1d0;
+$gift-primary-9: #e3e8e8;
+
+// Product Colors - Expense (Blue)
+$expense-primary-1: #011732;
+$expense-primary-2: #032e63;
+$expense-primary-3: #054da7;
+$expense-primary-4: #065bc6;
+$expense-primary-5: #0772f8;
+$expense-primary-6: #398ef9;
+$expense-primary-7: #6aaafb;
+$expense-primary-8: #9cc7fc;
+$expense-primary-9: #cde3fe;
+
+// Neutrals (Grayscale)
+$neutral-1: #000000;
+$neutral-2: #1a1a1a;
+$neutral-3: #333333;
+$neutral-4: #4d4d4d;
+$neutral-5: #666666;
+$neutral-6: #808080;
+$neutral-7: #999999;
+$neutral-8: #b2b2b2;
+$neutral-9: #cccccc;
+$neutral-10: #e5e5e5;
+$white: #ffffff;
+
+// Spacing Scale
+$spacing-xs: 0.25rem; // 4px
+$spacing-sm: 0.5rem; // 8px
+$spacing-md: 1rem; // 16px
+$spacing-lg: 1.5rem; // 24px
+$spacing-xl: 2rem; // 32px
+$spacing-2xl: 3rem; // 48px
+$spacing-3xl: 4rem; // 64px
+$spacing-4xl: 6rem; // 96px
+
+// Typography Scale
+$font-size-xs: 0.75rem; // 12px
+$font-size-sm: 0.875rem; // 14px
+$font-size-base: 1rem; // 16px
+$font-size-lg: 1.125rem; // 18px
+$font-size-xl: 1.25rem; // 20px
+$font-size-2xl: 1.5rem; // 24px
+$font-size-3xl: 1.875rem; // 30px
+$font-size-4xl: 2.25rem; // 36px
+$font-size-5xl: 3rem; // 48px
+
+// Font Weights
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$font-weight-extrabold: 800;
+
+// Line Heights
+$line-height-tight: 1.2;
+$line-height-normal: 1.4;
+$line-height-relaxed: 1.6;
+
+// Border Radius
+$border-radius-sm: 0.5rem;
+$border-radius-md: 1rem;
+$border-radius-lg: 1.5rem;
+$border-radius-xl: 2rem;
+$border-radius-2xl: 4rem;
+$border-radius-3xl: 8rem;
+$border-radius-full: 9999px;
+
+// Breakpoints
+$breakpoint-sm: 640px;
+$breakpoint-md: 900px;
+$breakpoint-lg: 1280px;
+$breakpoint-xl: 1440px;
+$breakpoint-2xl: 1920px;
+
+// Container Max Widths
+$container-sm: 640px;
+$container-md: 768px;
+$container-lg: 1024px;
+$container-xl: 1440px;
+
+// Z-Index Scale
+$z-dropdown: 1000;
+$z-sticky: 1020;
+$z-fixed: 1030;
+$z-modal-backdrop: 1040;
+$z-modal: 1050;
+$z-popover: 1060;
+$z-tooltip: 1070;
+
+// Shadows
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+  0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+  0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+  0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+
+// Transition Variables
+$transition-fast: 0.05s;
+$transition-normal: 0.2s ease-in-out;
+$transition-slow: 0.4s ease-in-out;
+

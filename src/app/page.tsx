@@ -1,5 +1,4 @@
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { LocatorExperience } from "@/components/locator/LocatorExperience";
+import { ErrorBoundary, LocatorExperience } from "@/components";
 
 export default function HomePage() {
   return (

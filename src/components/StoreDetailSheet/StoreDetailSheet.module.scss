@@ -1,0 +1,143 @@
+@use "../../styles/abstracts" as *;
+
+.sheet {
+  z-index: 20;
+  border-radius: $border-radius-lg;
+  border: 1px solid rgba($neutral-3, 0.7);
+  background: rgba(#0f172a, 0.9);
+  padding: $spacing-md;
+  box-shadow: 0 18px 45px rgba(#0f172a, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.sheetMobile {
+  width: 100%;
+  border-radius: $border-radius-lg $border-radius-lg 0 0;
+  border-bottom: 0;
+}
+
+.headerRow {
+  margin-bottom: $spacing-lg;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-lg;
+}
+
+.categoryLabel {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: $brand-primary-5;
+}
+
+.merchantName {
+  margin-top: $spacing-xs;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: rgba($white, 0.9);
+}
+
+.closeBtn {
+  border-radius: $border-radius-sm;
+  padding: $spacing-xs $spacing-sm;
+  font-size: $font-size-xs;
+  color: $neutral-8;
+  transition: all $transition-normal;
+
+  &:hover {
+    background: $neutral-3;
+    color: $white;
+  }
+}
+
+// Address block
+.addressBlock {
+  margin-bottom: $spacing-md;
+  border-radius: $border-radius-lg;
+  background: rgba($neutral-3, 0.7);
+  padding: $spacing-lg;
+}
+
+.addressLabel {
+  font-size: $font-size-xs;
+  color: $neutral-5;
+}
+
+.addressValue {
+  margin-top: $spacing-xs;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: rgba($white, 0.9);
+}
+
+// Actions grid
+.actionsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-sm;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  border-radius: $border-radius-md;
+  padding: $spacing-sm $spacing-lg;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  transition: all $transition-normal;
+}
+
+.actionIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.openMapsBtn {
+  @extend .actionBtn;
+  background: rgba($white, 0.9);
+  color: #0f172a;
+
+  &:hover {
+    background: $white;
+  }
+}
+
+.copyBtn {
+  @extend .actionBtn;
+  border: 1px solid $neutral-3;
+  background: #0f172a;
+  color: rgba($white, 0.85);
+
+  &:hover {
+    background: $neutral-3;
+  }
+}
+
+.favoriteBtn {
+  @extend .actionBtn;
+  border: 1px solid $neutral-3;
+  background: #0f172a;
+  color: rgba($white, 0.85);
+
+  &:hover {
+    background: $neutral-3;
+  }
+}
+
+.favoriteBtnActive {
+  border-color: rgba(#f43f5e, 0.3);
+  background: rgba(#f43f5e, 0.1);
+  color: #fb7185;
+}
+
+.coordsDisplay {
+  @extend .actionBtn;
+  border: 1px solid $neutral-3;
+  background: #0f172a;
+  color: $neutral-8;
+  cursor: default;
+}

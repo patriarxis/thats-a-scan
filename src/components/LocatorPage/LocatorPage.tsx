@@ -43,13 +43,38 @@ const useMediaQuery = (query: string) => {
   return matches;
 };
 
+type UrlSelectionState = {
+  storeId: string | null;
+  lat: number;
+  lng: number;
+};
+
+const parseSelectionFromLocation = (): UrlSelectionState => {
+  if (typeof window === "undefined") {
+    return { storeId: null, lat: Number.NaN, lng: Number.NaN };
+  }
+  const url = new URL(window.location.href);
+  const pathMatch = url.pathname.match(/^\/store\/([^/]+)$/);
+  const storeIdFromPath = pathMatch?.[1] ? decodeURIComponent(pathMatch[1]) : null;
+  const storeId = storeIdFromPath ?? url.searchParams.get("store");
+  const lat = Number(url.searchParams.get("lat"));
+  const lng = Number(url.searchParams.get("lng"));
+  return { storeId, lat, lng };
+};
+
 const LocatorPageContent = () => {
   const mapRef = useRef<MapViewHandle | null>(null);
   const searchRequestRef = useRef(0);
   const geocodeAbortRef = useRef<AbortController | null>(null);
+  const urlSelectionAppliedRef = useRef<string | null>(null);
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { locale, setLocale, t } = useLocale();
+  const [urlSelection, setUrlSelection] = useState<UrlSelectionState>({
+    storeId: null,
+    lat: Number.NaN,
+    lng: Number.NaN,
+  });
 
   const [visiblePartners, setVisiblePartners] = useState<PartnerFeature[]>(
     [],
@@ -87,6 +112,45 @@ const LocatorPageContent = () => {
   const sidebarOpen = !!selectedPartner;
   const desktopDrawerOffsetPx = 340;
   const mobileDrawerOffsetPx = 280;
+
+  useEffect(() => {
+    const syncFromBrowserLocation = () => {
+      setUrlSelection(parseSelectionFromLocation());
+    };
+    syncFromBrowserLocation();
+    window.addEventListener("popstate", syncFromBrowserLocation);
+    return () => window.removeEventListener("popstate", syncFromBrowserLocation);
+  }, []);
+
+  const syncSelectionInUrl = useCallback(
+    (partner: PartnerFeature | null, historyMode: "push" | "replace" = "replace") => {
+      const currentUrl = new URL(window.location.href);
+      const nextParams = new URLSearchParams(currentUrl.searchParams.toString());
+      let nextPathname = "/";
+      if (!partner) {
+        nextParams.delete("store");
+        nextParams.delete("lat");
+        nextParams.delete("lng");
+      } else {
+        const [lng, lat] = partner.geometry.coordinates;
+        const partnerId = getPartnerId(partner);
+        nextParams.set("lat", String(lat));
+        nextParams.set("lng", String(lng));
+        nextParams.delete("store");
+        nextPathname = `/store/${encodeURIComponent(partnerId)}`;
+      }
+
+      const nextQuery = nextParams.toString();
+      const nextUrl = nextQuery ? `${nextPathname}?${nextQuery}` : nextPathname;
+      if (historyMode === "push") {
+        window.history.pushState(null, "", nextUrl);
+      } else {
+        window.history.replaceState(null, "", nextUrl);
+      }
+      setUrlSelection(parseSelectionFromLocation());
+    },
+    [],
+  );
 
   const focusPadding = useMemo(() => {
     if (!sidebarOpen) {
@@ -181,7 +245,10 @@ const LocatorPageContent = () => {
   );
 
   const handleSelectPartner = useCallback(
-    (partner: PartnerFeature) => {
+    (
+      partner: PartnerFeature,
+      options?: { updateUrl?: boolean; historyMode?: "push" | "replace" },
+    ) => {
       setSelectedPartner(partner);
       mapRef.current?.flyTo(partner.geometry.coordinates, 15.5, {
         top: 72,
@@ -189,8 +256,19 @@ const LocatorPageContent = () => {
         bottom: isMobile ? mobileDrawerOffsetPx : desktopDrawerOffsetPx,
         left: 24,
       }, { preserveHigherZoom: true });
+      if (options?.updateUrl !== false) {
+        syncSelectionInUrl(partner, options?.historyMode ?? "push");
+      }
     },
-    [isMobile],
+    [isMobile, syncSelectionInUrl],
+  );
+
+  const clearSelectedPartner = useCallback(
+    (historyMode: "push" | "replace" = "replace") => {
+      setSelectedPartner(null);
+      syncSelectionInUrl(null, historyMode);
+    },
+    [syncSelectionInUrl],
   );
 
   const handleVisiblePartnersChange = useCallback(
@@ -209,6 +287,41 @@ const LocatorPageContent = () => {
     },
     [],
   );
+
+  useEffect(() => {
+    const { storeId, lat, lng } = urlSelection;
+    const hasValidCoordinates = Number.isFinite(lat) && Number.isFinite(lng);
+
+    if (!storeId) {
+      urlSelectionAppliedRef.current = null;
+      if (selectedPartner) {
+        setSelectedPartner(null);
+      }
+      return;
+    }
+
+    const partner = allKnownById[storeId];
+    if (partner) {
+      if (selectedId !== storeId) {
+        handleSelectPartner(partner, { updateUrl: false });
+      }
+      urlSelectionAppliedRef.current = storeId;
+      return;
+    }
+
+    // Deep-link fallback: center to provided coordinates first while waiting for data.
+    if (hasValidCoordinates && urlSelectionAppliedRef.current !== storeId) {
+      mapRef.current?.flyTo([lng, lat], 15, focusPadding, { preserveHigherZoom: true });
+      urlSelectionAppliedRef.current = storeId;
+    }
+  }, [
+    allKnownById,
+    focusPadding,
+    handleSelectPartner,
+    selectedId,
+    selectedPartner,
+    urlSelection,
+  ]);
 
   const partnerDetailLabels: PartnerDetailSheetLabels = {
     merchantDetail: t("merchantDetail"),
@@ -282,7 +395,7 @@ const LocatorPageContent = () => {
             }}
             onSelect={(item) => {
               if (item.type === "place") {
-                setSelectedPartner(null);
+                clearSelectedPartner();
                 mapRef.current?.flyTo(item.center, 13.5, {
                   top: 72,
                   right: 24,
@@ -358,7 +471,7 @@ const LocatorPageContent = () => {
             isMobile
             locale={locale}
             labels={partnerDetailLabels}
-            onClose={() => setSelectedPartner(null)}
+            onClose={() => clearSelectedPartner()}
           />
         )}
       </div>

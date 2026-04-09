@@ -45,6 +45,9 @@ const linotte = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: process.env.NEXT_PUBLIC_SITE_URL
+    ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
+    : undefined,
   title: "Up Hellas | Map",
   description: "Interactive map of all partner merchants by Up Hellas.",
   icons: {

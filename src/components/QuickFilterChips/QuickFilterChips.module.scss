@@ -1,0 +1,61 @@
+@use "../../styles/abstracts" as *;
+
+.container {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  overflow-x: auto;
+  padding: $spacing-xs 0;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-lg;
+  border-radius: $border-radius-full;
+  border: 1px solid $white-10;
+  background: rgba($neutral-2, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: $white-80;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+  transition: all $transition-normal;
+  box-shadow: 0 4px 12px $black-20;
+
+  &:hover {
+    background: rgba($neutral-2, 0.92);
+    border-color: $white-20;
+    color: $white;
+  }
+}
+
+.chipActive {
+  background: rgba($brand-primary-5, 0.14);
+  border-color: $brand-primary-5;
+  color: $brand-primary-5;
+  box-shadow: 0 4px 14px rgba($brand-primary-4, 0.25);
+
+  &:hover {
+    background: rgba($brand-primary-5, 0.2);
+    border-color: $brand-primary-5;
+    color: $brand-primary-5;
+  }
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  line-height: 1;
+}

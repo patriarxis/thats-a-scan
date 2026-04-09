@@ -1,4 +1,4 @@
-@use "../abstracts" as *;
+@use "../abstracts/index" as *;
 
 img {
   max-width: 100%;
@@ -13,16 +13,30 @@ button {
   font-family: inherit;
 }
 
-ul, ol {
+ul,
+ol {
   list-style: none;
 }
 
-input, textarea, select {
-  font-family: $font-primary;
-  font-size: $font-size-base;
-  line-height: $line-height-normal;
+input,
+textarea,
+select {
+  @include p-base;
+  border: none;
+  background: none;
+  outline: none;
+  
+  &:focus-visible {
+    outline: none;
+  }
 }
 
 a {
   text-decoration: none;
+}
+
+hr {
+  border: none;
+  height: 0;
+  background-color: transparent;
 }

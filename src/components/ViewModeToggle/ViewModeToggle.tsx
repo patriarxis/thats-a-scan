@@ -1,20 +1,20 @@
-import styles from "./MapListToggle.module.scss";
+import styles from "./ViewModeToggle.module.scss";
 
-type ViewMode = "map" | "list";
+export type ViewMode = "map" | "list";
 
-type MapListToggleProps = {
+type ViewModeToggleProps = {
   value: ViewMode;
   onChange: (value: ViewMode) => void;
   mapLabel: string;
   listLabel: string;
 };
 
-export function MapListToggle({
+export const ViewModeToggle = ({
   value,
   onChange,
   mapLabel,
   listLabel
-}: MapListToggleProps) {
+}: ViewModeToggleProps) => {
   return (
     <div
       className={styles.toggle}
@@ -41,4 +41,6 @@ export function MapListToggle({
       </button>
     </div>
   );
-}
+};
+
+export const MapListToggle = ViewModeToggle;

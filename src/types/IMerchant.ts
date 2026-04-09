@@ -1,7 +1,7 @@
 import { LOCALE } from "../enums";
 import { ILocale } from "./ILocale";
 
-export type MerchantProperties = {
+export type PartnerProperties = {
   ID?: string | number;
   MerchantId?: string | number;
   BrandNameGR?: string;
@@ -22,18 +22,18 @@ export type MerchantProperties = {
   [key: string]: unknown;
 };
 
-export type MerchantFeature = {
+export type PartnerFeature = {
   type: "Feature";
   geometry: {
     type: "Point";
     coordinates: [number, number];
   };
-  properties: MerchantProperties;
+  properties: PartnerProperties;
 };
 
-export type MerchantFeatureCollection = {
+export type PartnerFeatureCollection = {
   type: "FeatureCollection";
-  features: MerchantFeature[];
+  features: PartnerFeature[];
 };
 
 export type MapBoundsPayload = {
@@ -41,7 +41,7 @@ export type MapBoundsPayload = {
   south_east: { latitude: number; longitude: number };
 };
 
-export const getMerchantId = (feature: MerchantFeature): string =>
+export const getPartnerId = (feature: PartnerFeature): string =>
   String(
     feature.properties.ID ??
       feature.properties.MerchantId ??
@@ -50,7 +50,7 @@ export const getMerchantId = (feature: MerchantFeature): string =>
   );
 
 export function getLocalizedField(
-  props: MerchantProperties,
+  props: PartnerProperties,
   baseKey:
     | "BrandName"
     | "VATName"
@@ -73,7 +73,7 @@ export function getLocalizedField(
   ] as const;
 
   for (const key of candidates) {
-    const value = props?.[key as keyof MerchantProperties];
+    const value = props?.[key as keyof PartnerProperties];
     if (value !== null && value !== undefined && String(value).trim() !== "") {
       return String(value);
     }
@@ -81,14 +81,14 @@ export function getLocalizedField(
   return "";
 }
 
-export const getMerchantName = (feature: MerchantFeature, locale: ILocale): string =>
+export const getPartnerName = (feature: PartnerFeature, locale: ILocale): string =>
   String(
     getLocalizedField(feature.properties, "BrandName", locale) ||
       getLocalizedField(feature.properties, "VATName", locale) ||
       (locale === LOCALE.EL ? "Κατάστημα" : "Store")
   );
 
-export const getMerchantAddress = (feature: MerchantFeature, locale: ILocale): string => {
+export const getPartnerAddress = (feature: PartnerFeature, locale: ILocale): string => {
   const address = getLocalizedField(feature.properties, "Address", locale);
   const town = getLocalizedField(feature.properties, "Town", locale);
   const district = getLocalizedField(feature.properties, "District", locale);
@@ -96,3 +96,11 @@ export const getMerchantAddress = (feature: MerchantFeature, locale: ILocale): s
   const zip = feature.properties.ZIPCode;
   return [address, town, district, region, zip].filter(Boolean).join(", ");
 };
+
+// Backward-compatible aliases during migration.
+export type MerchantProperties = PartnerProperties;
+export type MerchantFeature = PartnerFeature;
+export type MerchantFeatureCollection = PartnerFeatureCollection;
+export const getMerchantId = getPartnerId;
+export const getMerchantName = getPartnerName;
+export const getMerchantAddress = getPartnerAddress;

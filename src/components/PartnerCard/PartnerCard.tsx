@@ -1,35 +1,35 @@
 import { MapPin } from "lucide-react";
 import {
-  getMerchantAddress,
-  getMerchantId,
-  getMerchantName,
+  getPartnerAddress,
+  getPartnerId,
+  getPartnerName,
   type ILocale,
-  type MerchantFeature
+  type PartnerFeature
 } from "@/types";
-import styles from "./StoreCard.module.scss";
+import styles from "./PartnerCard.module.scss";
 
-type StoreCardProps = {
-  merchant: MerchantFeature;
+type PartnerCardProps = {
+  partner: PartnerFeature;
   selected: boolean;
   locale: ILocale;
   noAddressLabel: string;
-  onSelect: (merchant: MerchantFeature) => void;
+  onSelect: (partner: PartnerFeature) => void;
 };
 
-export function StoreCard({
-  merchant,
+export const PartnerCard = ({
+  partner,
   selected,
   locale,
   noAddressLabel,
   onSelect
-}: StoreCardProps) {
-  const name = getMerchantName(merchant, locale);
-  const address = getMerchantAddress(merchant, locale);
+}: PartnerCardProps) => {
+  const name = getPartnerName(partner, locale);
+  const address = getPartnerAddress(partner, locale);
 
   return (
     <button
       type="button"
-      onClick={() => onSelect(merchant)}
+      onClick={() => onSelect(partner)}
       aria-pressed={selected}
       aria-label={`${name}${address ? `, ${address}` : ""}`}
       className={`${styles.card} ${selected ? styles.cardSelected : ""}`}
@@ -45,11 +45,14 @@ export function StoreCard({
           <p className={styles.address}>
             {address || noAddressLabel}
           </p>
-          <p className={styles.merchantId}>
-            ID: {getMerchantId(merchant)}
+          <p className={styles.partnerId}>
+            ID: {getPartnerId(partner)}
           </p>
         </div>
       </div>
     </button>
   );
-}
+};
+
+export const MerchantCard = PartnerCard;
+export const StoreCard = PartnerCard;

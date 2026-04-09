@@ -37,6 +37,25 @@
   }
 }
 
+@mixin mobile {
+  @include mobile-only {
+    @content;
+  }
+}
+
+@mixin glass($opacity: 0.2) {
+  background: rgba(255, 255, 255, $opacity);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 // Button Base
 @mixin button-base {
   display: inline-flex;
@@ -53,8 +72,8 @@
   user-select: none;
 
   &:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--focus-offset);
+    outline: 2px solid $brand-primary-3;
+    outline-offset: 2px;
   }
 
   &:disabled {
@@ -84,6 +103,75 @@
   gap: $spacing-md;
   font-size: $font-size-base;
   min-height: 48px;
+}
+
+// Button Variants
+@mixin button-primary {
+  @include button-base;
+  background-color: $brand-primary-1;
+  color: $white;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: $shadow-sm;
+  }
+}
+
+@mixin button-secondary {
+  @include button-base;
+  background-color: $brand-primary-2;
+  color: $white;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: $shadow-sm;
+  }
+}
+
+@mixin button-danger {
+  @include button-base;
+  background-color: $danger-1;
+  color: $white;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: $shadow-sm;
+  }
+}
+
+@mixin button-inverse {
+  @include button-base;
+  background-color: $white;
+  color: $brand-primary-1;
+
+  &:hover:not(:disabled) {
+    background-color: $brand-primary-5;
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: $shadow-sm;
+  }
 }
 
 // Typography Mixins

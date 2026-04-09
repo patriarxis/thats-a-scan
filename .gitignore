@@ -9,6 +9,7 @@
 # Next.js
 /.next/
 /out/
+/.vercel/
 
 # Production
 /build
@@ -16,6 +17,8 @@
 # Misc
 .DS_Store
 *.pem
+*.tsbuildinfo
+.eslintcache
 .env
 .env.local
 .env.development.local

@@ -1,0 +1,131 @@
+@use "../../styles/abstracts" as *;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba($neutral-1, 0.58);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: $spacing-md;
+}
+
+.modal {
+  width: min(46rem, 100%);
+  max-height: min(78vh, 42rem);
+  overflow: auto;
+  border: 1px solid rgba($white, 0.08);
+  border-radius: $border-radius-lg;
+  background: rgba($neutral-2, 0.96);
+  box-shadow:
+    0 20px 60px rgba($neutral-1, 0.6),
+    inset 0 1px 0 rgba($white, 0.05);
+  padding: $spacing-lg;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-lg;
+
+  h3 {
+    margin: 0;
+    color: $white-90;
+    @include h4;
+  }
+}
+
+.closeButton {
+  color: $white-60;
+  transition: color $transition-normal;
+
+  &:hover {
+    color: $white;
+  }
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: $white-80;
+  @include p-sm;
+}
+
+.optionGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.option {
+  border-radius: $border-radius-full;
+  border: 1px solid $white-10;
+  background: rgba($white, 0.03);
+  color: $white-80;
+  padding: $spacing-xs $spacing-md;
+  transition: all $transition-normal;
+
+  &:hover {
+    border-color: $white-20;
+    color: $white;
+  }
+}
+
+.optionActive {
+  background: rgba($brand-primary-5, 0.16);
+  border-color: $brand-primary-5;
+  color: $brand-primary-5;
+}
+
+.empty {
+  margin: 0;
+  color: $white-40;
+  @include p-sm;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  padding-top: $spacing-sm;
+}
+
+.clearButton,
+.applyButton {
+  border-radius: $border-radius-full;
+  padding: $spacing-sm $spacing-lg;
+  transition: all $transition-normal;
+}
+
+.clearButton {
+  border: 1px solid $white-10;
+  color: $white-80;
+
+  &:hover {
+    border-color: $white-20;
+    color: $white;
+  }
+}
+
+.applyButton {
+  background: linear-gradient(
+    135deg,
+    $brand-primary-5 0%,
+    $flexone-primary-4 100%
+  );
+  color: $white;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+}

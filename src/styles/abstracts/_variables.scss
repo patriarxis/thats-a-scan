@@ -1,30 +1,33 @@
-// Typography
-$font-primary: var(--font-linotte), system-ui, -apple-system, BlinkMacSystemFont,
+$font-primary:
+  var(--font-linotte),
+  system-ui,
+  -apple-system,
+  BlinkMacSystemFont,
   sans-serif;
 
-// Brand Primary Colors (Orange)
+// Brand Colors
 $brand-primary-1: #331b00;
 $brand-primary-2: #863500;
 $brand-primary-3: #995000;
 $brand-primary-4: #cc6a00;
-$brand-primary-5: #ff8500; // Main brand color
+$brand-primary-5: #ff8500;
 $brand-primary-6: #ff9d33;
 $brand-primary-7: #ffb666;
 $brand-primary-8: #ffce99;
 $brand-primary-9: #ffe7cc;
 
-// Product Colors - FlexOne (Purple)
+// FlexOne Colors
 $flexone-primary-1: #201023;
 $flexone-primary-2: #402145;
 $flexone-primary-3: #603168;
-$flexone-primary-4: #8f499c; // Main FlexOne color
+$flexone-primary-4: #8f499c;
 $flexone-primary-5: #9f51ae;
 $flexone-primary-6: #b274be;
 $flexone-primary-7: #c697ce;
 $flexone-primary-8: #d9bade;
 $flexone-primary-9: #ecdcef;
 
-// Product Colors - FlexOne Secondary (Blue)
+// FlexOne Secondary
 $flexone-secondary-1: #071e2c;
 $flexone-secondary-2: #0f3d57;
 $flexone-secondary-3: #165b83;
@@ -35,7 +38,7 @@ $flexone-secondary-7: #7cc1e9;
 $flexone-secondary-8: #a8d6f0;
 $flexone-secondary-9: #d3eaf8;
 
-// Product Colors - Fitpass (Red/Orange)
+// Fitpass
 $fitpass-primary-1: #2e0d05;
 $fitpass-primary-2: #5c190a;
 $fitpass-primary-3: #8a260f;
@@ -46,7 +49,7 @@ $fitpass-primary-7: #f08c75;
 $fitpass-primary-8: #f5b2a3;
 $fitpass-primary-9: #fad9d1;
 
-// Product Colors - Gift (Green)
+// Gift
 $gift-primary-1: #171c1c;
 $gift-primary-2: #2e3837;
 $gift-primary-3: #485756;
@@ -57,7 +60,7 @@ $gift-primary-7: #abbab9;
 $gift-primary-8: #c7d1d0;
 $gift-primary-9: #e3e8e8;
 
-// Product Colors - Expense (Blue)
+// Expense
 $expense-primary-1: #011732;
 $expense-primary-2: #032e63;
 $expense-primary-3: #054da7;
@@ -68,7 +71,7 @@ $expense-primary-7: #6aaafb;
 $expense-primary-8: #9cc7fc;
 $expense-primary-9: #cde3fe;
 
-// Neutrals (Grayscale)
+// Neutrals
 $neutral-1: #000000;
 $neutral-2: #1a1a1a;
 $neutral-3: #333333;
@@ -81,26 +84,104 @@ $neutral-9: #cccccc;
 $neutral-10: #e5e5e5;
 $white: #ffffff;
 
+// White Opacity Variants
+$white-90: rgba(255, 255, 255, 0.9);
+$white-80: rgba(255, 255, 255, 0.8);
+$white-60: rgba(255, 255, 255, 0.6);
+$white-40: rgba(255, 255, 255, 0.4);
+$white-20: rgba(255, 255, 255, 0.2);
+$white-10: rgba(255, 255, 255, 0.1);
+$white-05: rgba(255, 255, 255, 0.05);
+$white-03: rgba(255, 255, 255, 0.03);
+
+// Black Opacity Variants
+$black-95: rgba(0, 0, 0, 0.95);
+$black-90: rgba(0, 0, 0, 0.9);
+$black-85: rgba(0, 0, 0, 0.85);
+$black-80: rgba(0, 0, 0, 0.8);
+$black-60: rgba(0, 0, 0, 0.6);
+$black-40: rgba(0, 0, 0, 0.4);
+$black-30: rgba(0, 0, 0, 0.3);
+$black-20: rgba(0, 0, 0, 0.2);
+$black-10: rgba(0, 0, 0, 0.1);
+$black-05: rgba(0, 0, 0, 0.05);
+$black-03: rgba(0, 0, 0, 0.03);
+
+// Semantic Colors
+$danger: #dc2626;
+$danger-hover: #b91c1c;
+$danger-bg: rgba(220, 38, 38, 0.1);
+$danger-1: #7f1d1d;
+$success: #10b981;
+$success-bg: rgba(16, 185, 129, 0.1);
+
+// Up Coop - Product Families
+$up-coop-eat: #f59100;
+$up-coop-gift: #c50e1f;
+$up-coop-employees: #009ee3;
+$up-coop-cheque-lire: #0070b8;
+$up-coop-culture: #c5007b;
+
+// Up Coop - Content Pillars
+$content-economic: #51487e;
+$content-environmental: #01b19e;
+$content-social: #79bae3;
+$content-passpartout-1: #f2c023;
+$content-passpartout-2: #ea5e54;
+
+// Product Gradients
+$gradient-brand-all: linear-gradient(
+  to right,
+  $brand-primary-5,
+  $brand-primary-3
+);
+$gradient-flexone: linear-gradient(
+  to right,
+  $flexone-primary-4,
+  $flexone-primary-6
+);
+$gradient-fitpass: linear-gradient(
+  to right,
+  $fitpass-primary-5,
+  $fitpass-primary-3
+);
+$gradient-gift: linear-gradient(135deg, $gift-primary-3, $gift-primary-5);
+$gradient-expense: linear-gradient(
+  to right,
+  $expense-primary-3,
+  $expense-primary-5
+);
+
 // Spacing Scale
-$spacing-xs: 0.25rem; // 4px
-$spacing-sm: 0.5rem; // 8px
-$spacing-md: 1rem; // 16px
-$spacing-lg: 1.5rem; // 24px
-$spacing-xl: 2rem; // 32px
-$spacing-2xl: 3rem; // 48px
-$spacing-3xl: 4rem; // 64px
-$spacing-4xl: 6rem; // 96px
+$spacing-xs: 0.25rem;
+$spacing-sm: 0.5rem;
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
+$spacing-2xl: 3rem;
+$spacing-3xl: 4rem;
+$spacing-4xl: 6rem;
+$spacing-5xl: 8rem;
+$spacing-6xl: 10rem;
+
+// Max Width Scale
+$max-width-xs: 20rem;
+$max-width-sm: 30rem;
+$max-width-md: 40rem;
+$max-width-lg: 50rem;
+$max-width-xl: 60rem;
+$max-width-2xl: 72rem;
 
 // Typography Scale
-$font-size-xs: 0.75rem; // 12px
-$font-size-sm: 0.875rem; // 14px
-$font-size-base: 1rem; // 16px
-$font-size-lg: 1.125rem; // 18px
-$font-size-xl: 1.25rem; // 20px
-$font-size-2xl: 1.5rem; // 24px
-$font-size-3xl: 1.875rem; // 30px
-$font-size-4xl: 2.25rem; // 36px
-$font-size-5xl: 3rem; // 48px
+$font-size-xs: 0.75rem;
+$font-size-sm: 0.875rem;
+$font-size-base: 1rem;
+$font-size-lg: 1.125rem;
+$font-size-xl: 1.25rem;
+$font-size-2xl: 1.5rem;
+$font-size-3xl: 1.875rem;
+$font-size-4xl: 2.25rem;
+$font-size-5xl: 3rem;
 
 // Font Weights
 $font-weight-light: 300;
@@ -145,19 +226,21 @@ $z-modal-backdrop: 1040;
 $z-modal: 1050;
 $z-popover: 1060;
 $z-tooltip: 1070;
+$z-floating-action-bar: 100;
 
 // Shadows
 $shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+$shadow-md:
+  0 4px 6px -1px rgba(0, 0, 0, 0.1),
   0 2px 4px -1px rgba(0, 0, 0, 0.06);
-$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+$shadow-lg:
+  0 10px 15px -3px rgba(0, 0, 0, 0.1),
   0 4px 6px -2px rgba(0, 0, 0, 0.05);
-$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+$shadow-xl:
+  0 20px 25px -5px rgba(0, 0, 0, 0.1),
   0 10px 10px -5px rgba(0, 0, 0, 0.04);
-
 
 // Transition Variables
 $transition-fast: 0.05s;
 $transition-normal: 0.2s ease-in-out;
 $transition-slow: 0.4s ease-in-out;
-

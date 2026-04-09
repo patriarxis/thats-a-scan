@@ -18,14 +18,17 @@ type MapboxResponse = {
 
 export async function fetchMapboxSuggestions(
   query: string,
-  token?: string
+  token?: string,
+  signal?: AbortSignal
 ): Promise<GeocodeSuggestion[]> {
   if (!token || query.trim().length < GEOCODING_MIN_QUERY_LENGTH) return [];
   const encoded = encodeURIComponent(query.trim());
   const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encoded}.json?autocomplete=true&limit=${GEOCODING_RESULT_LIMIT}&country=gr&language=el,en&access_token=${token}`;
 
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(GEOCODING_FETCH_TIMEOUT_MS) });
+    const timeoutSignal = AbortSignal.timeout(GEOCODING_FETCH_TIMEOUT_MS);
+    const requestSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+    const res = await fetch(url, { signal: requestSignal });
     if (!res.ok) return [];
     const data = (await res.json()) as MapboxResponse;
     return (data.features ?? []).map((feature) => ({

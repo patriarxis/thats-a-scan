@@ -2,18 +2,18 @@
 
 import { useMemo } from "react";
 import { List, type RowComponentProps } from "react-window";
-import { StoreCard } from "@/components/StoreCard";
-import { getMerchantId, type ILocale, type MerchantFeature } from "@/types";
+import { PartnerCard } from "@/components";
+import { getPartnerId, type ILocale, type PartnerFeature } from "@/types";
 import { LOCALE } from "@/lib";
 import { SKELETON_ITEM_COUNT, STORE_LIST_ROW_HEIGHT } from "@/lib/config";
-import styles from "./ResultsPanel.module.scss";
+import styles from "./PartnerResultsPanel.module.scss";
 
-type ResultsPanelProps = {
-  merchants: MerchantFeature[];
+type PartnerResultsPanelProps = {
+  partners: PartnerFeature[];
   selectedId: string | null;
   loading: boolean;
   height?: number;
-  onSelect: (merchant: MerchantFeature) => void;
+  onSelect: (partner: PartnerFeature) => void;
   title: string;
   storesLabel: string;
   noResultsLabel: string;
@@ -22,28 +22,28 @@ type ResultsPanelProps = {
 };
 
 type RowData = {
-  merchants: MerchantFeature[];
+  partners: PartnerFeature[];
   selectedId: string | null;
-  onSelect: (merchant: MerchantFeature) => void;
+  onSelect: (partner: PartnerFeature) => void;
   locale: ILocale;
   noAddressLabel: string;
 };
 
-function Row({
+const Row = ({
   index,
   style,
-  merchants,
+  partners,
   selectedId,
   onSelect,
   locale,
   noAddressLabel
-}: RowComponentProps<RowData>) {
-  const merchant = merchants[index];
-  const selected = selectedId === getMerchantId(merchant);
+}: RowComponentProps<RowData>) => {
+  const partner = partners[index];
+  const selected = selectedId === getPartnerId(partner);
   return (
     <div role="listitem" style={style} className={styles.rowItem}>
-      <StoreCard
-        merchant={merchant}
+      <PartnerCard
+        partner={partner}
         selected={selected}
         locale={locale}
         noAddressLabel={noAddressLabel}
@@ -51,10 +51,10 @@ function Row({
       />
     </div>
   );
-}
+};
 
-export function ResultsPanel({
-  merchants,
+export const PartnerResultsPanel = ({
+  partners,
   selectedId,
   loading,
   onSelect,
@@ -64,16 +64,16 @@ export function ResultsPanel({
   noResultsLabel,
   noAddressLabel,
   locale
-}: ResultsPanelProps) {
+}: PartnerResultsPanelProps) => {
   const itemData = useMemo<RowData>(
     () => ({
-      merchants,
+      partners,
       selectedId,
       onSelect,
       locale,
       noAddressLabel
     }),
-    [locale, merchants, noAddressLabel, onSelect, selectedId]
+    [locale, noAddressLabel, onSelect, partners, selectedId]
   );
 
   return (
@@ -84,7 +84,7 @@ export function ResultsPanel({
       <div className={styles.header}>
         <h3 className={styles.title}>{title}</h3>
         <span className={styles.count}>
-          {merchants.length.toLocaleString(locale === LOCALE.EL ? "el-GR" : "en-US")}{" "}
+          {partners.length.toLocaleString(locale === LOCALE.EL ? "el-GR" : "en-US")}{" "}
           {storesLabel}
         </span>
       </div>
@@ -98,7 +98,7 @@ export function ResultsPanel({
             />
           ))}
         </div>
-      ) : merchants.length === 0 ? (
+      ) : partners.length === 0 ? (
         <div className={styles.emptyState}>
           {noResultsLabel}
         </div>
@@ -106,7 +106,7 @@ export function ResultsPanel({
         <div role="list">
           <List
             rowComponent={Row}
-            rowCount={merchants.length}
+            rowCount={partners.length}
             rowHeight={STORE_LIST_ROW_HEIGHT}
             rowProps={itemData}
             style={{ height, width: "100%" }}
@@ -115,4 +115,7 @@ export function ResultsPanel({
       )}
     </section>
   );
-}
+};
+
+export const MerchantResultsPanel = PartnerResultsPanel;
+export const ResultsPanel = PartnerResultsPanel;

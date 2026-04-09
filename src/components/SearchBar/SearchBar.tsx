@@ -1,7 +1,7 @@
 "use client";
 
-import { Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowRight, Search, X } from "lucide-react";
+import { useEffect, useId, useMemo, useState } from "react";
 import styles from "./SearchBar.module.scss";
 
 export type SearchSuggestion =
@@ -34,7 +34,7 @@ type SearchBarProps = {
   onClear: () => void;
 };
 
-export function SearchBar({
+export const SearchBar = ({
   value,
   suggestions,
   loading,
@@ -45,20 +45,34 @@ export function SearchBar({
   onChange,
   onSelect,
   onClear
-}: SearchBarProps) {
+}: SearchBarProps) => {
   const [activeIndex, setActiveIndex] = useState(-1);
-  const listboxId = "locator-search-suggestions";
-  const isOpen = suggestions.length > 0;
+  const [isFocused, setIsFocused] = useState(false);
+  const listboxId = useId();
+  const isOpen = isFocused && suggestions.length > 0;
   const activeId = useMemo(
     () => (activeIndex >= 0 ? `search-opt-${activeIndex}` : undefined),
-    [activeIndex]
+    [activeIndex],
   );
+  const selectedSuggestion =
+    activeIndex >= 0 ? suggestions[activeIndex] : suggestions[0];
+
+  useEffect(() => {
+    if (!isOpen) setActiveIndex(-1);
+  }, [isOpen]);
 
   return (
-    <div className={styles.wrapper}>
-      <label htmlFor="locator-search" className="sr-only">
-        {searchAriaLabel}
-      </label>
+    <form
+      className={styles.wrapper}
+      role="search"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!selectedSuggestion) return;
+        onSelect(selectedSuggestion);
+        setActiveIndex(-1);
+        setIsFocused(false);
+      }}
+    >
       <div className={styles.inputWrapper}>
         <Search
           className={styles.searchIcon}
@@ -67,14 +81,24 @@ export function SearchBar({
         <input
           id="locator-search"
           role="combobox"
+          aria-label={searchAriaLabel}
           aria-expanded={isOpen}
-          aria-controls={listboxId}
+          aria-controls={isOpen ? listboxId : undefined}
           aria-activedescendant={activeId}
           aria-autocomplete="list"
+          aria-haspopup="listbox"
+          autoComplete="off"
           value={value}
           onChange={(e) => {
             onChange(e.target.value);
             setActiveIndex(-1);
+          }}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => {
+            window.setTimeout(() => {
+              setIsFocused(false);
+              setActiveIndex(-1);
+            }, 120);
           }}
           onKeyDown={(e) => {
             if (!isOpen) return;
@@ -86,13 +110,15 @@ export function SearchBar({
               e.preventDefault();
               setActiveIndex((prev) => Math.max(prev - 1, 0));
             }
-            if (e.key === "Enter" && activeIndex >= 0) {
+            if (e.key === "Enter" && selectedSuggestion) {
               e.preventDefault();
-              onSelect(suggestions[activeIndex]);
+              onSelect(selectedSuggestion);
               setActiveIndex(-1);
+              setIsFocused(false);
             }
             if (e.key === "Escape") {
               setActiveIndex(-1);
+              setIsFocused(false);
             }
           }}
           placeholder={placeholder}
@@ -115,6 +141,13 @@ export function SearchBar({
               <X className={styles.clearIcon} />
             </button>
           )}
+          <button
+            type="submit"
+            className={styles.submitBtn}
+            aria-label={searchAriaLabel}
+          >
+            <ArrowRight className={styles.submitIcon} />
+          </button>
         </div>
       </div>
 
@@ -137,6 +170,7 @@ export function SearchBar({
                   e.preventDefault();
                   onSelect(item);
                   setActiveIndex(-1);
+                  setIsFocused(false);
                 }}
                 className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
               >
@@ -151,6 +185,6 @@ export function SearchBar({
           })}
         </ul>
       )}
-    </div>
+    </form>
   );
-}
+};

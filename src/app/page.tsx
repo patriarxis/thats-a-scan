@@ -1,9 +1,9 @@
-import { ErrorBoundary, LocatorExperience } from "@/components";
+import { ErrorBoundary, LocatorPage } from "@/components";
 
 export default function HomePage() {
   return (
     <ErrorBoundary>
-      <LocatorExperience />
+      <LocatorPage />
     </ErrorBoundary>
   );
 }

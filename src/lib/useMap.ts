@@ -7,6 +7,9 @@ import { MAP_MAX_LAT_SPAN, MAP_MAX_LNG_SPAN } from "@/lib/config";
 
 const STORES_API_URL = "/api/merchants-geojson";
 const MOVE_DEBOUNCE_MS = 300;
+const VIEWPORT_CACHE_TTL_MS = 60_000;
+const VIEWPORT_CACHE_DECIMALS = 3;
+const VIEWPORT_CACHE_MAX_ENTRIES = 40;
 
 export type UserLocation = {
   lat: number;
@@ -19,6 +22,11 @@ type ViewportQueryState = {
   updating: boolean;
   viewportTooWide: boolean;
   error: string | null;
+};
+
+type ViewportCacheEntry = {
+  createdAt: number;
+  features: MerchantFeature[];
 };
 
 function haversineDistanceKm(
@@ -79,6 +87,42 @@ export function useViewportStoreQuery(
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const hasAppliedLocationFlyRef = useRef(false);
+  const viewportCacheRef = useRef<Map<string, ViewportCacheEntry>>(new Map());
+
+  const sortFeatures = (features: MerchantFeature[]) =>
+    userLocation
+      ? [...features].sort((a, b) => {
+          const dA = haversineDistanceKm(a.geometry.coordinates, [userLocation.lng, userLocation.lat]);
+          const dB = haversineDistanceKm(b.geometry.coordinates, [userLocation.lng, userLocation.lat]);
+          return dA - dB;
+        })
+      : features;
+
+  const buildBoundsCacheKey = (map: MapboxMap) => {
+    const bounds = map.getBounds();
+    if (!bounds) return null;
+    const toFixed = (value: number) => value.toFixed(VIEWPORT_CACHE_DECIMALS);
+    return [
+      toFixed(bounds.getNorth()),
+      toFixed(bounds.getWest()),
+      toFixed(bounds.getSouth()),
+      toFixed(bounds.getEast())
+    ].join("|");
+  };
+
+  const writeViewportCache = (key: string, features: MerchantFeature[]) => {
+    viewportCacheRef.current.set(key, { createdAt: Date.now(), features });
+    if (viewportCacheRef.current.size <= VIEWPORT_CACHE_MAX_ENTRIES) return;
+    let oldestKey: string | null = null;
+    let oldestTimestamp = Number.POSITIVE_INFINITY;
+    for (const [entryKey, entry] of viewportCacheRef.current.entries()) {
+      if (entry.createdAt < oldestTimestamp) {
+        oldestTimestamp = entry.createdAt;
+        oldestKey = entryKey;
+      }
+    }
+    if (oldestKey) viewportCacheRef.current.delete(oldestKey);
+  };
 
   useEffect(() => {
     if (!mapReady) return;
@@ -95,6 +139,7 @@ export function useViewportStoreQuery(
 
       if (tooWide) {
         abortRef.current?.abort();
+        abortRef.current = null;
         setState((prev) => ({
           ...prev,
           loading: false,
@@ -104,6 +149,22 @@ export function useViewportStoreQuery(
           error: null
         }));
         return;
+      }
+
+      const cacheKey = buildBoundsCacheKey(map);
+      if (cacheKey) {
+        const cached = viewportCacheRef.current.get(cacheKey);
+        if (cached && Date.now() - cached.createdAt <= VIEWPORT_CACHE_TTL_MS) {
+          hasLoadedRef.current = true;
+          setState({
+            merchants: sortFeatures(cached.features),
+            loading: false,
+            // Show cached points immediately, then revalidate in background.
+            updating: true,
+            viewportTooWide: false,
+            error: null
+          });
+        }
       }
 
       setState((prev) => ({
@@ -152,19 +213,8 @@ export function useViewportStoreQuery(
           return Number.isFinite(lng) && Number.isFinite(lat);
         });
 
-        const sorted = userLocation
-          ? [...validFeatures].sort((a, b) => {
-              const dA = haversineDistanceKm(a.geometry.coordinates, [
-                userLocation.lng,
-                userLocation.lat
-              ]);
-              const dB = haversineDistanceKm(b.geometry.coordinates, [
-                userLocation.lng,
-                userLocation.lat
-              ]);
-              return dA - dB;
-            })
-          : validFeatures;
+        if (cacheKey) writeViewportCache(cacheKey, validFeatures);
+        const sorted = sortFeatures(validFeatures);
 
         hasLoadedRef.current = true;
         setState({

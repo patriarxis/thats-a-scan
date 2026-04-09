@@ -1,0 +1,168 @@
+@use "../../styles/abstracts" as *;
+
+.root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background-color: $neutral-2;
+}
+
+.mapWrapper {
+  position: absolute;
+  inset: 0;
+  padding: $spacing-xs;
+
+  :global(.mapboxgl-map),
+  :global(.maplibregl-map) {
+    border-radius: $border-radius-md;
+  }
+
+  :global(.mapboxgl-ctrl-bottom-right),
+  :global(.maplibregl-ctrl-bottom-right) {
+    right: 0;
+    bottom: 0;
+  }
+}
+
+.mapLoadingOverlay {
+  position: absolute;
+  inset: $spacing-xs;
+  border-radius: $border-radius-md;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba($neutral-1, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.mapLoadingLabel {
+  border-radius: $border-radius-md;
+  padding: $spacing-lg $spacing-xl;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: rgba($white, 0.85);
+}
+
+.mapErrorOverlay {
+  pointer-events: none;
+  position: absolute;
+  bottom: calc($spacing-xs + $spacing-md);
+  left: 50%;
+  z-index: 20;
+  transform: translateX(-50%);
+  border-radius: $border-radius-md;
+  border: 1px solid rgba(#ef4444, 0.3);
+  background: rgba(#450a0a, 0.9);
+  padding: 0.625rem $spacing-md;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: #fecaca;
+  box-shadow: $shadow-lg;
+  backdrop-filter: blur(4px);
+}
+
+.mapUpdatingChip {
+  @include p-xs;
+  pointer-events: none;
+  position: absolute;
+  bottom: $spacing-3xl;
+  left: 50%;
+  z-index: 20;
+  transform: translateX(-50%);
+  border-radius: $border-radius-full;
+  background: $neutral-2;
+  padding: $spacing-sm $spacing-md;
+  color: $white-60;
+  box-shadow: $shadow-lg;
+}
+
+.searchOverlay {
+  position: absolute;
+  top: $spacing-lg;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35;
+  width: calc(100vw - 2 * $spacing-md);
+  max-width: $max-width-2xl;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: $spacing-md;
+
+  @media (max-width: 768px) {
+    top: calc($spacing-xs + 4.5rem);
+    width: calc(100vw - 2 * $spacing-xs - 2 * $spacing-sm);
+    left: calc($spacing-xs + $spacing-sm);
+    transform: none;
+    gap: $spacing-sm;
+  }
+}
+
+.searchContainer {
+  width: 100%;
+  max-width: $max-width-sm;
+  align-self: center;
+}
+
+.filtersContainer {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  justify-content: center;
+
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+  }
+}
+
+.filtersButton {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  border-radius: $border-radius-full;
+  border: 1px solid $white-10;
+  background: rgba($neutral-2, 0.78);
+  color: $white-90;
+  padding: $spacing-sm $spacing-md;
+  white-space: nowrap;
+  transition: all $transition-normal;
+
+  &:hover {
+    background: rgba($neutral-2, 0.92);
+    border-color: $white-20;
+  }
+}
+
+.filtersBadge {
+  min-width: 1.2rem;
+  height: 1.2rem;
+  border-radius: $border-radius-full;
+  background: $brand-primary-5;
+  color: $white;
+  font-size: 0.7rem;
+  font-weight: $font-weight-semibold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 $spacing-xs;
+}
+
+.bottomDrawer {
+  position: fixed;
+  bottom: $spacing-sm;
+  left: 50%;
+  width: calc(100vw - (2 * $spacing-sm));
+  max-width: $max-width-md;
+  z-index: 50;
+  overflow: hidden;
+  background: transparent;
+
+  transform: translate(-50%, 100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+  .root[data-sidebar-open="true"] & {
+    transform: translate(-50%, 0);
+  }
+}

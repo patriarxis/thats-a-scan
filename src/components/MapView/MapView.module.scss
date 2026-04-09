@@ -17,7 +17,7 @@
   left: 50%;
   top: $spacing-md;
   z-index: 20;
-  transform: translateX(-50%);
+  transform: translateX(calc(-50% - var(--overlay-center-shift-x, 0px)));
   border-radius: $border-radius-full;
   background: rgba(#0f172a, 0.85);
   padding: $spacing-sm $spacing-md;

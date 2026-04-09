@@ -27,7 +27,6 @@
   color: $neutral-5;
 }
 
-// Skeleton loading
 .skeletonContainer {
   display: flex;
   flex-direction: column;
@@ -48,7 +47,6 @@
   50% { opacity: 0.5; }
 }
 
-// Empty state
 .emptyState {
   border-radius: $border-radius-lg;
   border: 1px dashed $neutral-3;
@@ -59,7 +57,6 @@
   color: $neutral-5;
 }
 
-// Row item
 .rowItem {
   padding: $spacing-sm $spacing-sm;
 }

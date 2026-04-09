@@ -1,0 +1,221 @@
+@use "../abstracts/variables" as *;
+
+:root {
+  // Typography
+  --font-primary: #{$font-primary};
+
+  // Brand Primary
+  --brand-primary-1: #{$brand-primary-1};
+  --brand-primary-2: #{$brand-primary-2};
+  --brand-primary-3: #{$brand-primary-3};
+  --brand-primary-4: #{$brand-primary-4};
+  --brand-primary-5: #{$brand-primary-5};
+  --brand-primary-6: #{$brand-primary-6};
+  --brand-primary-7: #{$brand-primary-7};
+  --brand-primary-8: #{$brand-primary-8};
+  --brand-primary-9: #{$brand-primary-9};
+
+  // FlexOne Primary (Purple)
+  --flexone-primary-1: #{$flexone-primary-1};
+  --flexone-primary-2: #{$flexone-primary-2};
+  --flexone-primary-3: #{$flexone-primary-3};
+  --flexone-primary-4: #{$flexone-primary-4};
+  --flexone-primary-5: #{$flexone-primary-5};
+  --flexone-primary-6: #{$flexone-primary-6};
+  --flexone-primary-7: #{$flexone-primary-7};
+  --flexone-primary-8: #{$flexone-primary-8};
+  --flexone-primary-9: #{$flexone-primary-9};
+
+  // FlexOne Secondary (Blue)
+  --flexone-secondary-1: #{$flexone-secondary-1};
+  --flexone-secondary-2: #{$flexone-secondary-2};
+  --flexone-secondary-3: #{$flexone-secondary-3};
+  --flexone-secondary-4: #{$flexone-secondary-4};
+  --flexone-secondary-5: #{$flexone-secondary-5};
+  --flexone-secondary-6: #{$flexone-secondary-6};
+  --flexone-secondary-7: #{$flexone-secondary-7};
+  --flexone-secondary-8: #{$flexone-secondary-8};
+  --flexone-secondary-9: #{$flexone-secondary-9};
+
+  // Fitpass
+  --fitpass-primary-1: #{$fitpass-primary-1};
+  --fitpass-primary-2: #{$fitpass-primary-2};
+  --fitpass-primary-3: #{$fitpass-primary-3};
+  --fitpass-primary-4: #{$fitpass-primary-4};
+  --fitpass-primary-5: #{$fitpass-primary-5};
+  --fitpass-primary-6: #{$fitpass-primary-6};
+  --fitpass-primary-7: #{$fitpass-primary-7};
+  --fitpass-primary-8: #{$fitpass-primary-8};
+  --fitpass-primary-9: #{$fitpass-primary-9};
+
+  // Gift
+  --gift-primary-1: #{$gift-primary-1};
+  --gift-primary-2: #{$gift-primary-2};
+  --gift-primary-3: #{$gift-primary-3};
+  --gift-primary-4: #{$gift-primary-4};
+  --gift-primary-5: #{$gift-primary-5};
+  --gift-primary-6: #{$gift-primary-6};
+  --gift-primary-7: #{$gift-primary-7};
+  --gift-primary-8: #{$gift-primary-8};
+  --gift-primary-9: #{$gift-primary-9};
+
+  // Expense
+  --expense-primary-1: #{$expense-primary-1};
+  --expense-primary-2: #{$expense-primary-2};
+  --expense-primary-3: #{$expense-primary-3};
+  --expense-primary-4: #{$expense-primary-4};
+  --expense-primary-5: #{$expense-primary-5};
+  --expense-primary-6: #{$expense-primary-6};
+  --expense-primary-7: #{$expense-primary-7};
+  --expense-primary-8: #{$expense-primary-8};
+  --expense-primary-9: #{$expense-primary-9};
+
+  // Neutrals
+  --neutral-1: #{$neutral-1};
+  --neutral-2: #{$neutral-2};
+  --neutral-3: #{$neutral-3};
+  --neutral-4: #{$neutral-4};
+  --neutral-5: #{$neutral-5};
+  --neutral-6: #{$neutral-6};
+  --neutral-7: #{$neutral-7};
+  --neutral-8: #{$neutral-8};
+  --neutral-9: #{$neutral-9};
+  --neutral-10: #{$neutral-10};
+  --white: #{$white};
+
+  // Opacity Variants (White)
+  --white-90: #{$white-90};
+  --white-80: #{$white-80};
+  --white-60: #{$white-60};
+  --white-40: #{$white-40};
+  --white-20: #{$white-20};
+  --white-10: #{$white-10};
+  --white-05: #{$white-05};
+  --white-03: #{$white-03};
+
+  // Opacity Variants (Black)
+  --black-95: #{$black-95};
+  --black-90: #{$black-90};
+  --black-85: #{$black-85};
+  --black-80: #{$black-80};
+  --black-60: #{$black-60};
+  --black-40: #{$black-40};
+  --black-30: #{$black-30};
+  --black-20: #{$black-20};
+  --black-10: #{$black-10};
+  --black-05: #{$black-05};
+  --black-03: #{$black-03};
+
+  // Up Coop Product Families
+  --up-coop-eat: #{$up-coop-eat};
+  --up-coop-gift: #{$up-coop-gift};
+  --up-coop-employees: #{$up-coop-employees};
+  --up-coop-cheque-lire: #{$up-coop-cheque-lire};
+  --up-coop-culture: #{$up-coop-culture};
+
+  // Content Pillars
+  --content-economic: #{$content-economic};
+  --content-environmental: #{$content-environmental};
+  --content-social: #{$content-social};
+  --content-passpartout-1: #{$content-passpartout-1};
+  --content-passpartout-2: #{$content-passpartout-2};
+
+  // Product Gradients
+  --gradient-brand-all: linear-gradient(
+    to right,
+    #{$brand-primary-5},
+    #{$brand-primary-3}
+  );
+  --gradient-flexone: linear-gradient(
+    to right,
+    #{$brand-primary-5},
+    #{$flexone-primary-4}
+  );
+  --gradient-fitpass: linear-gradient(
+    to right,
+    #{$brand-primary-5},
+    #{$fitpass-primary-5}
+  );
+  --gradient-gift: linear-gradient(
+    to right,
+    #{$brand-primary-5},
+    #{$gift-primary-3}
+  );
+  --gradient-expense: linear-gradient(
+    to right,
+    #{$brand-primary-5},
+    #{$expense-primary-3}
+  );
+
+  // Spacing Scale
+  --spacing-xs: #{$spacing-xs};
+  --spacing-sm: #{$spacing-sm};
+  --spacing-md: #{$spacing-md};
+  --spacing-lg: #{$spacing-lg};
+  --spacing-xl: #{$spacing-xl};
+  --spacing-2xl: #{$spacing-2xl};
+  --spacing-3xl: #{$spacing-3xl};
+  --spacing-4xl: #{$spacing-4xl};
+
+  // Typography Scale
+  --font-size-xs: #{$font-size-xs};
+  --font-size-sm: #{$font-size-sm};
+  --font-size-base: #{$font-size-base};
+  --font-size-lg: #{$font-size-lg};
+  --font-size-xl: #{$font-size-xl};
+  --font-size-2xl: #{$font-size-2xl};
+  --font-size-3xl: #{$font-size-3xl};
+  --font-size-4xl: #{$font-size-4xl};
+  --font-size-5xl: #{$font-size-5xl};
+
+  // Font Weights
+  --font-weight-light: #{$font-weight-light};
+  --font-weight-normal: #{$font-weight-normal};
+  --font-weight-medium: #{$font-weight-medium};
+  --font-weight-semibold: #{$font-weight-semibold};
+  --font-weight-bold: #{$font-weight-bold};
+  --font-weight-extrabold: #{$font-weight-extrabold};
+
+  // Line Heights
+  --line-height-tight: #{$line-height-tight};
+  --line-height-normal: #{$line-height-normal};
+  --line-height-relaxed: #{$line-height-relaxed};
+
+  // Border Radius
+  --border-radius-sm: #{$border-radius-sm};
+  --border-radius-md: #{$border-radius-md};
+  --border-radius-lg: #{$border-radius-lg};
+  --border-radius-xl: #{$border-radius-xl};
+  --border-radius-2xl: #{$border-radius-2xl};
+  --border-radius-3xl: #{$border-radius-3xl};
+  --border-radius-full: #{$border-radius-full};
+
+  // Container Max Widths
+  --container-sm: #{$container-sm};
+  --container-md: #{$container-md};
+  --container-lg: #{$container-lg};
+  --container-xl: #{$container-xl};
+
+  // Shadows
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+  --shadow-xl: #{$shadow-xl};
+
+  // Transitions
+  --transition-fast: #{$transition-fast};
+  --transition-normal: #{$transition-normal};
+  --transition-slow: #{$transition-slow};
+
+  // Focus styles
+  --focus-outline: 2px solid var(--flexone-primary-4);
+  --focus-offset: 2px;
+
+  // Semantic Aliases (for easier usage)
+  --color-primary: #{$flexone-primary-4};
+  --color-secondary: #{$flexone-secondary-6};
+  --color-accent: #{$brand-primary-5};
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+}

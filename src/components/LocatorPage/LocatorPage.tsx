@@ -1,19 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { SlidersHorizontal } from "lucide-react";
 import { useMemo, useRef, useState, useCallback, useEffect } from "react";
-import { LocaleProvider, useLocale } from "@/lib";
+import { LocaleProvider } from "@/lib/LocaleContext";
+import { useLocale } from "@/lib";
 import {
-  SearchBar,
-  type SearchSuggestion,
-  QuickFilterChips,
-  FiltersModal,
-  PartnerDetailSheet,
-  MapView,
-  type MapViewHandle,
-  LocatorHeader,
-  LocatorFooter,
-} from "@/components";
+  type SearchSuggestion
+} from "@/components/SearchBar/SearchBar";
+import { SearchBar } from "@/components/SearchBar/SearchBar";
+import { QuickFilterChips } from "@/components/QuickFilterChips/QuickFilterChips";
+import type { MapViewHandle } from "@/components/MapView/MapView";
+import { LocatorHeader } from "@/components/LocatorHeader/LocatorHeader";
+import { LocatorFooter } from "@/components/LocatorFooter/LocatorFooter";
 import { fetchMapboxSuggestions } from "@/lib/mapboxGeocoding";
 import { searchMerchantSuggestions } from "@/lib/merchantSearchIndex";
 import { useMerchantFilters } from "@/lib/useMerchantFilters";
@@ -30,6 +29,25 @@ import {
   SEARCH_SUGGESTION_LIMIT,
 } from "@/lib/config";
 import styles from "./LocatorPage.module.scss";
+
+const MapView = dynamic(
+  () => import("@/components/MapView/MapView").then((module) => module.MapView),
+  { ssr: false },
+);
+const FiltersModal = dynamic(
+  () =>
+    import("@/components/FiltersModal/FiltersModal").then(
+      (module) => module.FiltersModal,
+    ),
+  { ssr: false },
+);
+const PartnerDetailSheet = dynamic(
+  () =>
+    import("@/components/PartnerDetailSheet/PartnerDetailSheet").then(
+      (module) => module.PartnerDetailSheet,
+    ),
+  { ssr: false },
+);
 
 const useMediaQuery = (query: string) => {
   const [matches, setMatches] = useState(false);

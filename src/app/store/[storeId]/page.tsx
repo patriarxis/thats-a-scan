@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { ErrorBoundary, LocatorPage } from "@/components";
+import { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";
+import { LocatorPage } from "@/components/LocatorPage/LocatorPage";
 import {
   buildStoreOgImageUrl,
   buildStoreUrl,

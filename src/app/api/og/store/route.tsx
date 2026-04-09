@@ -5,7 +5,6 @@ import {
   parseCoordinate,
 } from "@/lib/storeShare";
 
-export const runtime = "edge";
 const imageSize = {
   width: 1200,
   height: 630,

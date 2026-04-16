@@ -1,0 +1,21 @@
+@use "../../../styles/abstracts" as *;
+
+.option {
+  border-radius: $border-radius-full;
+  border: 1px solid $white-10;
+  background: rgba($white, 0.03);
+  color: $white-80;
+  padding: $spacing-xs $spacing-md;
+  transition: all $transition-normal;
+
+  &:hover {
+    border-color: $white-20;
+    color: $white;
+  }
+}
+
+.optionActive {
+  background: rgba($brand-primary-5, 0.16);
+  border-color: $brand-primary-5;
+  color: $brand-primary-5;
+}

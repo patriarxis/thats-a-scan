@@ -11,12 +11,20 @@
   align-items: center;
 }
 
-.searchIcon {
+.searchIconWrapper {
   pointer-events: none;
   position: absolute;
   left: $spacing-lg;
   top: 50%;
   transform: translateY(-50%);
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.searchIcon {
   width: 1.5rem;
   height: 1.5rem;
   color: $white-40;
@@ -53,18 +61,18 @@
 
 .controlsWrapper {
   position: absolute;
-  right: $spacing-xs;
+  right: $spacing-md;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
-  gap: $spacing-xs;
+  gap: $spacing-sm;
 }
 
 .spinner {
   display: block;
-  width: 1rem;
-  height: 1rem;
+  width: 1.125rem;
+  height: 1.125rem;
   border-radius: $border-radius-full;
   border: 2px solid rgba($brand-primary-5, 0.3);
   border-top-color: $brand-primary-5;
@@ -90,7 +98,7 @@
   flex-shrink: 0;
 
   &:hover {
-    background: rgba($white, 0.1);
+    background: $white-10;
     color: $white;
   }
 }
@@ -100,7 +108,6 @@
   height: 0.875rem;
 }
 
-// Gradient pill-shaped submit button.
 .submitBtn {
   display: inline-flex;
   align-items: center;
@@ -109,22 +116,22 @@
   height: 2.25rem;
   border-radius: $border-radius-full;
   background: linear-gradient(
-    135deg,
+    to right,
     $brand-primary-5 0%,
-    $flexone-primary-4 100%
+    $fitpass-primary-5 33%,
+    $flexone-primary-5 66%,
+    $expense-primary-3 100%
   );
   color: $white;
-  box-shadow: 0 2px 8px rgba($brand-primary-4, 0.45);
   transition: all $transition-normal;
   flex-shrink: 0;
 
   &:hover {
-    transform: scale(1.08);
-    box-shadow: 0 4px 14px rgba($brand-primary-4, 0.6);
+    filter: brightness(1.2);
   }
 
   &:active {
-    transform: scale(0.96);
+    filter: brightness(0.9);
   }
 }
 
@@ -133,56 +140,3 @@
   height: 1.125rem;
 }
 
-.dropdown {
-  position: absolute;
-  z-index: 80;
-  top: calc(100% + $spacing-xs);
-  left: 0;
-  right: 0;
-  max-height: 22rem;
-  overflow: auto;
-  overscroll-behavior: contain;
-  border-radius: $border-radius-lg;
-  border: 1px solid rgba($white, 0.08);
-  background: rgba($neutral-2, 0.96);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: $spacing-xs;
-  box-shadow:
-    0 20px 60px rgba($neutral-1, 0.6),
-    inset 0 1px 0 rgba($white, 0.05);
-}
-
-.option {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: $spacing-xs;
-  border-radius: $border-radius-md;
-  padding: $spacing-sm $spacing-md;
-  transition: background $transition-normal;
-
-  &:hover {
-    background: rgba($white, 0.06);
-  }
-}
-
-.optionActive {
-  background: rgba($brand-primary-5, 0.1);
-}
-
-.optionLabel {
-  font-size: $font-size-sm;
-  font-weight: $font-weight-semibold;
-  color: $white-90;
-  line-height: $line-height-tight;
-  margin: 0;
-}
-
-.optionSublabel {
-  font-size: $font-size-xs;
-  color: $neutral-5;
-  line-height: $line-height-tight;
-  margin: 0;
-}

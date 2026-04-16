@@ -5,6 +5,7 @@ import {
   type ILocale,
   type MerchantFeature
 } from "@/types";
+import { normalizeStr } from "./stringUtils";
 
 export type MerchantSuggestion = {
   id: string;
@@ -12,12 +13,14 @@ export type MerchantSuggestion = {
   label: string;
   sublabel: string;
   coordinates: [number, number];
+  score?: number;
 };
 
 type IndexEntry = {
   merchantId: string;
   feature: MerchantFeature;
-  haystack: string;
+  normalizedLabel: string;
+  normalizedSublabel: string;
 };
 
 export function buildSearchIndex(features: MerchantFeature[], locale: ILocale): IndexEntry[] {
@@ -28,7 +31,8 @@ export function buildSearchIndex(features: MerchantFeature[], locale: ILocale): 
     return {
       merchantId,
       feature,
-      haystack: `${name} ${address}`.toLowerCase()
+      normalizedLabel: normalizeStr(name),
+      normalizedSublabel: normalizeStr(address)
     };
   });
 }
@@ -54,17 +58,39 @@ export function searchMerchantSuggestions(
   locale: ILocale,
   limit = 8
 ): MerchantSuggestion[] {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return [];
+  const normalizedQuery = normalizeStr(query.trim());
+  if (!normalizedQuery) return [];
 
-  return getOrBuildIndex(features, locale)
-    .filter((entry) => entry.haystack.includes(normalized))
-    .slice(0, limit)
-    .map(({ feature, merchantId }) => ({
-      id: `merchant:${merchantId}`,
-      merchantId,
-      label: getMerchantName(feature, locale),
-      sublabel: getMerchantAddress(feature, locale),
-      coordinates: feature.geometry.coordinates
-    }));
+  const index = getOrBuildIndex(features, locale);
+  const matches: MerchantSuggestion[] = [];
+
+  for (const entry of index) {
+    let score = 0;
+
+    if (entry.normalizedLabel.startsWith(normalizedQuery)) {
+      score = 100;
+    } else if (entry.normalizedLabel.includes(normalizedQuery)) {
+      score = 75;
+    } else if (entry.normalizedSublabel.startsWith(normalizedQuery)) {
+      score = 50;
+    } else if (entry.normalizedSublabel.includes(normalizedQuery)) {
+      score = 25;
+    }
+
+    if (score > 0) {
+      matches.push({
+        id: `merchant:${entry.merchantId}`,
+        merchantId: entry.merchantId,
+        label: getMerchantName(entry.feature, locale),
+        sublabel: getMerchantAddress(entry.feature, locale),
+        coordinates: entry.feature.geometry.coordinates,
+        score
+      });
+    }
+  }
+
+  // Sort by score descending
+  return matches
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .slice(0, limit);
 }

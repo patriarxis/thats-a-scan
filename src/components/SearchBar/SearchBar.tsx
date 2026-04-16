@@ -2,24 +2,19 @@
 
 import { ArrowRight, Search, X } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
+import { normalizeStr } from "@/lib/stringUtils";
 import styles from "./SearchBar.module.scss";
 
-export type SearchSuggestion =
-  | {
-      type: "merchant";
-      id: string;
-      label: string;
-      sublabel: string;
-      merchantId: string;
-      coordinates: [number, number];
-    }
-  | {
-      type: "place";
-      id: string;
-      label: string;
-      sublabel: string;
-      center: [number, number];
-    };
+import { SearchDropdown } from "./SearchDropdown/SearchDropdown";
+
+export type SearchSuggestion = {
+  type: "merchant";
+  id: string;
+  label: string;
+  sublabel: string;
+  merchantId: string;
+  coordinates: [number, number];
+};
 
 type SearchBarProps = {
   value: string;
@@ -44,7 +39,7 @@ export const SearchBar = ({
   loadingAriaLabel,
   onChange,
   onSelect,
-  onClear
+  onClear,
 }: SearchBarProps) => {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
@@ -61,6 +56,12 @@ export const SearchBar = ({
     if (!isOpen) setActiveIndex(-1);
   }, [isOpen]);
 
+  const handleSelect = (item: SearchSuggestion) => {
+    onSelect(item);
+    setActiveIndex(-1);
+    setIsFocused(false);
+  };
+
   return (
     <form
       className={styles.wrapper}
@@ -68,16 +69,17 @@ export const SearchBar = ({
       onSubmit={(e) => {
         e.preventDefault();
         if (!selectedSuggestion) return;
-        onSelect(selectedSuggestion);
-        setActiveIndex(-1);
-        setIsFocused(false);
+        handleSelect(selectedSuggestion);
       }}
     >
       <div className={styles.inputWrapper}>
-        <Search
-          className={styles.searchIcon}
-          aria-hidden
-        />
+        <div className={styles.searchIconWrapper}>
+          {loading ? (
+            <span className={styles.spinner} aria-label={loadingAriaLabel} />
+          ) : (
+            <Search className={styles.searchIcon} aria-hidden />
+          )}
+        </div>
         <input
           id="locator-search"
           role="combobox"
@@ -104,7 +106,9 @@ export const SearchBar = ({
             if (!isOpen) return;
             if (e.key === "ArrowDown") {
               e.preventDefault();
-              setActiveIndex((prev) => Math.min(prev + 1, suggestions.length - 1));
+              setActiveIndex((prev) =>
+                Math.min(prev + 1, suggestions.length - 1),
+              );
             }
             if (e.key === "ArrowUp") {
               e.preventDefault();
@@ -112,9 +116,7 @@ export const SearchBar = ({
             }
             if (e.key === "Enter" && selectedSuggestion) {
               e.preventDefault();
-              onSelect(selectedSuggestion);
-              setActiveIndex(-1);
-              setIsFocused(false);
+              handleSelect(selectedSuggestion);
             }
             if (e.key === "Escape") {
               setActiveIndex(-1);
@@ -125,12 +127,6 @@ export const SearchBar = ({
           className={styles.input}
         />
         <div className={styles.controlsWrapper}>
-          {loading && (
-            <span
-              className={styles.spinner}
-              aria-label={loadingAriaLabel}
-            />
-          )}
           {value && (
             <button
               type="button"
@@ -152,38 +148,14 @@ export const SearchBar = ({
       </div>
 
       {isOpen && (
-        <ul
+        <SearchDropdown
           id={listboxId}
-          role="listbox"
-          className={styles.dropdown}
-        >
-          {suggestions.map((item, index) => {
-            const isActive = index === activeIndex;
-            return (
-              <li
-                id={`search-opt-${index}`}
-                key={item.id}
-                role="option"
-                aria-selected={isActive}
-                onMouseEnter={() => setActiveIndex(index)}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  onSelect(item);
-                  setActiveIndex(-1);
-                  setIsFocused(false);
-                }}
-                className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
-              >
-                <p className={styles.optionLabel}>
-                  {item.label}
-                </p>
-                <p className={styles.optionSublabel}>
-                  {item.sublabel}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
+          suggestions={suggestions}
+          activeIndex={activeIndex}
+          query={value}
+          onSelect={handleSelect}
+          onHover={setActiveIndex}
+        />
       )}
     </form>
   );

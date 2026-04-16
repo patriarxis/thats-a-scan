@@ -48,45 +48,6 @@
   }
 }
 
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-lg;
-}
-
-.sectionTitle {
-  margin: 0;
-  color: $white-80;
-  @include p-sm;
-}
-
-.optionGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-sm;
-}
-
-.option {
-  border-radius: $border-radius-full;
-  border: 1px solid $white-10;
-  background: rgba($white, 0.03);
-  color: $white-80;
-  padding: $spacing-xs $spacing-md;
-  transition: all $transition-normal;
-
-  &:hover {
-    border-color: $white-20;
-    color: $white;
-  }
-}
-
-.optionActive {
-  background: rgba($brand-primary-5, 0.16);
-  border-color: $brand-primary-5;
-  color: $brand-primary-5;
-}
-
 .empty {
   margin: 0;
   color: $white-40;
@@ -119,13 +80,21 @@
 
 .applyButton {
   background: linear-gradient(
-    135deg,
+    to right,
     $brand-primary-5 0%,
-    $flexone-primary-4 100%
+    $fitpass-primary-5 33%,
+    $flexone-primary-5 66%,
+    $expense-primary-3 100%
   );
   color: $white;
+  font-weight: $font-weight-bold;
 
   &:hover {
+    filter: brightness(1.1);
     transform: translateY(-1px);
+  }
+
+  &:active {
+    filter: brightness(0.9);
   }
 }

@@ -13,7 +13,6 @@ import { QuickFilterChips } from "@/components/QuickFilterChips/QuickFilterChips
 import type { MapViewHandle } from "@/components/MapView/MapView";
 import { LocatorHeader } from "@/components/LocatorHeader/LocatorHeader";
 import { LocatorFooter } from "@/components/LocatorFooter/LocatorFooter";
-import { fetchMapboxSuggestions } from "@/lib/mapboxGeocoding";
 import { searchMerchantSuggestions } from "@/lib/merchantSearchIndex";
 import { useMerchantFilters } from "@/lib/useMerchantFilters";
 import {
@@ -193,8 +192,6 @@ const LocatorPageContent = () => {
     const timer = setTimeout(async () => {
       const requestId = ++searchRequestRef.current;
       geocodeAbortRef.current?.abort();
-      const geocodeController = new AbortController();
-      geocodeAbortRef.current = geocodeController;
       setSearchLoading(true);
 
       const localMerchantResults = searchMerchantSuggestions(
@@ -229,21 +226,8 @@ const LocatorPageContent = () => {
           }) satisfies SearchSuggestion,
       );
 
-      const placeResults = (await fetchMapboxSuggestions(query, token, geocodeController.signal)).map(
-        (result) =>
-          ({
-            type: "place",
-            id: `place:${result.id}`,
-            label: result.label,
-            sublabel: result.sublabel,
-            center: result.center,
-          }) satisfies SearchSuggestion,
-      );
-
       if (requestId === searchRequestRef.current) {
-        setSuggestions(
-          [...merchantResults, ...placeResults].slice(0, SEARCH_SUGGESTION_LIMIT),
-        );
+        setSuggestions(merchantResults);
         setSearchLoading(false);
       }
     }, SEARCH_DEBOUNCE_MS);
@@ -252,7 +236,7 @@ const LocatorPageContent = () => {
       clearTimeout(timer);
       geocodeAbortRef.current?.abort();
     };
-  }, [allKnownMerchants, locale, query, t, token, visiblePartners]);
+  }, [allKnownMerchants, locale, query, t, visiblePartners]);
 
   const highlightedPartnerIds = useMemo(
     () =>
@@ -410,26 +394,13 @@ const LocatorPageContent = () => {
               setSuggestions([]);
             }}
             onSelect={(item) => {
-              if (item.type === "place") {
-                clearSelectedPartner();
-                mapRef.current?.flyTo(item.center, 13.5, {
-                  top: 64,
-                  right: 16,
-                  bottom: 16,
-                  left: 16,
-                });
+              const partner = allKnownById[item.merchantId];
+              if (partner) {
+                handleSelectPartner(partner);
               } else {
-                const partner = allKnownById[item.merchantId];
-                if (partner) {
-                  handleSelectPartner(partner);
-                } else {
-                  mapRef.current?.flyTo(
-                    item.coordinates,
-                    15,
-                    focusPadding,
-                    { preserveHigherZoom: true },
-                  );
-                }
+                mapRef.current?.flyTo(item.coordinates, 15, focusPadding, {
+                  preserveHigherZoom: true,
+                });
               }
               setQuery(item.label);
               setSuggestions([]);

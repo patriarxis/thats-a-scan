@@ -3,6 +3,8 @@
 import type { CategoryId } from "@/types";
 import type { ProductFilterOption } from "@/lib/merchantFilters";
 import styles from "./FiltersModal.module.scss";
+import { FilterSection } from "./FilterSection/FilterSection";
+import { FilterOption } from "./FilterOption/FilterOption";
 
 type FiltersModalProps = {
   isOpen: boolean;
@@ -61,58 +63,39 @@ export const FiltersModal = ({
           </button>
         </div>
 
-        <div className={styles.section}>
-          <p className={styles.sectionTitle}>{networkCategoryLabel}</p>
-          <div className={styles.optionGrid}>
-            {(Object.entries(networkLabels) as Array<[CategoryId, string]>).map(([id, label]) => {
-              const isSelected = selectedNetworkIds.includes(id);
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={`${styles.option} ${isSelected ? styles.optionActive : ""}`}
-                  onClick={() => onToggleNetwork(id)}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <FilterSection title={networkCategoryLabel}>
+          {(Object.entries(networkLabels) as Array<[CategoryId, string]>).map(([id, label]) => (
+            <FilterOption
+              key={id}
+              label={label}
+              isSelected={selectedNetworkIds.includes(id)}
+              onClick={() => onToggleNetwork(id)}
+            />
+          ))}
+        </FilterSection>
 
-        <div className={styles.section}>
-          <p className={styles.sectionTitle}>{productLabel}</p>
-          <div className={styles.optionGrid}>
-            {productOptions.length > 0 ? (
-              productOptions.map((product) => {
-                const isSelected = selectedProductIds.includes(product.id);
-                return (
-                  <button
-                    key={product.id}
-                    type="button"
-                    className={`${styles.option} ${isSelected ? styles.optionActive : ""}`}
-                    onClick={() => onToggleProduct(product.id)}
-                  >
-                    {product.label}
-                  </button>
-                );
-              })
-            ) : (
-              <p className={styles.empty}>{noAvailableProductsLabel}</p>
-            )}
-          </div>
-        </div>
+        <FilterSection title={productLabel}>
+          {productOptions.length > 0 ? (
+            productOptions.map((product) => (
+              <FilterOption
+                key={product.id}
+                label={product.label}
+                isSelected={selectedProductIds.includes(product.id)}
+                onClick={() => onToggleProduct(product.id)}
+              />
+            ))
+          ) : (
+            <p className={styles.empty}>{noAvailableProductsLabel}</p>
+          )}
+        </FilterSection>
 
-        <div className={styles.section}>
-          <p className={styles.sectionTitle}>{cashbackLabel}</p>
-          <button
-            type="button"
-            className={`${styles.option} ${cashbackOnly ? styles.optionActive : ""}`}
+        <FilterSection title={cashbackLabel}>
+          <FilterOption
+            label={cashbackOnlyLabel}
+            isSelected={cashbackOnly}
             onClick={onToggleCashback}
-          >
-            {cashbackOnlyLabel}
-          </button>
-        </div>
+          />
+        </FilterSection>
 
         <div className={styles.footer}>
           <button type="button" className={styles.clearButton} onClick={onClearAll}>

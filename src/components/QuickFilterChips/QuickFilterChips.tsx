@@ -21,12 +21,32 @@ interface QuickFilterChipsProps {
   };
 }
 
-export const QuickFilterChips = ({ selectedIds, onToggle, labels }: QuickFilterChipsProps) => {
+export const QuickFilterChips = ({
+  selectedIds,
+  onToggle,
+  labels,
+}: QuickFilterChipsProps) => {
   const categories: Category[] = [
-    { id: "meal", label: labels.meal, icon: <Utensils size={14} /> },
-    { id: "rewards", label: labels.rewards, icon: <Gift size={14} /> },
-    { id: "expenses", label: labels.expenses, icon: <Wallet size={14} /> },
-    { id: "gyms", label: labels.gyms, icon: <Dumbbell size={14} /> },
+    {
+      id: "meal",
+      label: labels.meal,
+      icon: <Utensils size={14} />,
+    },
+    {
+      id: "rewards",
+      label: labels.rewards,
+      icon: <Gift size={14} />,
+    },
+    {
+      id: "expenses",
+      label: labels.expenses,
+      icon: <Wallet size={14} />,
+    },
+    {
+      id: "gyms",
+      label: labels.gyms,
+      icon: <Dumbbell size={14} />,
+    },
   ];
 
   return (

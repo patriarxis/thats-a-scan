@@ -1,10 +1,42 @@
-"use client";
-
+import { 
+  Utensils, 
+  Gift, 
+  Car, 
+  Bus, 
+  Dumbbell, 
+  BookOpen, 
+  Palmtree, 
+  Baby, 
+  Shirt, 
+  Sparkles, 
+  Monitor, 
+  Library, 
+  HeartPulse, 
+  ShieldCheck,
+  Check
+} from "lucide-react";
 import type { CategoryId } from "@/types";
-import type { ProductFilterOption } from "@/lib/merchantFilters";
+import type { ProductFilterOption, WalletFilterOption } from "@/lib/merchantFilters";
 import styles from "./FiltersModal.module.scss";
 import { FilterSection } from "./FilterSection/FilterSection";
 import { FilterOption } from "./FilterOption/FilterOption";
+
+const WALLET_ICONS: Record<string, React.ReactNode> = {
+  meal: <Utensils size={20} />,
+  rewards: <Gift size={20} />,
+  mobility: <Car size={20} />,
+  public_transport: <Bus size={20} />,
+  wellness: <Dumbbell size={20} />,
+  learning: <BookOpen size={20} />,
+  vacations: <Palmtree size={20} />,
+  childcare: <Baby size={20} />,
+  clothing: <Shirt size={20} />,
+  beauty: <Sparkles size={20} />,
+  wfh: <Monitor size={20} />,
+  culture: <Library size={20} />,
+  health: <HeartPulse size={20} />,
+  safety: <ShieldCheck size={20} />,
+};
 
 type FiltersModalProps = {
   isOpen: boolean;
@@ -12,19 +44,27 @@ type FiltersModalProps = {
   closeLabel: string;
   networkCategoryLabel: string;
   productLabel: string;
+  walletLabel: string;
+  walletFlexOneLabel: string;
   cashbackLabel: string;
   cashbackOnlyLabel: string;
   clearAllFiltersLabel: string;
   applyFiltersLabel: string;
   noAvailableProductsLabel: string;
   networkLabels: Record<CategoryId, string>;
+  walletLabels: Record<string, string>;
   selectedNetworkIds: CategoryId[];
   selectedProductIds: string[];
+  selectedWalletIds: string[];
+  isFlexOneWalletActive: boolean;
   productOptions: ProductFilterOption[];
+  walletOptions: WalletFilterOption[];
   cashbackOnly: boolean;
   onClose: () => void;
   onToggleNetwork: (id: CategoryId) => void;
   onToggleProduct: (id: string) => void;
+  onToggleWallet: (id: string) => void;
+  onToggleAllWallets: (active: boolean) => void;
   onToggleCashback: () => void;
   onClearAll: () => void;
 };
@@ -35,19 +75,27 @@ export const FiltersModal = ({
   closeLabel,
   networkCategoryLabel,
   productLabel,
+  walletLabel,
+  walletFlexOneLabel,
   cashbackLabel,
   cashbackOnlyLabel,
   clearAllFiltersLabel,
   applyFiltersLabel,
   noAvailableProductsLabel,
   networkLabels,
+  walletLabels,
   selectedNetworkIds,
   selectedProductIds,
+  selectedWalletIds,
+  isFlexOneWalletActive,
   productOptions,
+  walletOptions,
   cashbackOnly,
   onClose,
   onToggleNetwork,
   onToggleProduct,
+  onToggleWallet,
+  onToggleAllWallets,
   onToggleCashback,
   onClearAll,
 }: FiltersModalProps) => {
@@ -87,6 +135,38 @@ export const FiltersModal = ({
           ) : (
             <p className={styles.empty}>{noAvailableProductsLabel}</p>
           )}
+        </FilterSection>
+
+        <FilterSection title={walletLabel}>
+          <div className={styles.walletHeader}>
+            <button 
+              type="button" 
+              className={`${styles.parentToggle} ${isFlexOneWalletActive ? styles.parentToggleActive : ""}`}
+              onClick={() => onToggleAllWallets(!isFlexOneWalletActive)}
+            >
+              <div className={styles.checkBox}>
+                {isFlexOneWalletActive && <Check size={14} />}
+              </div>
+              <span>{walletFlexOneLabel}</span>
+            </button>
+          </div>
+          <div className={styles.walletGrid}>
+            {walletOptions.map((wallet) => (
+              <button
+                key={wallet.id}
+                type="button"
+                className={`${styles.walletTile} ${selectedWalletIds.includes(wallet.id) ? styles.walletTileActive : ""}`}
+                onClick={() => onToggleWallet(wallet.id)}
+              >
+                <div className={styles.iconCircle}>
+                  {WALLET_ICONS[wallet.id] || <Gift size={20} />}
+                </div>
+                <span className={styles.walletName}>
+                  {walletLabels[wallet.id] || wallet.label}
+                </span>
+              </button>
+            ))}
+          </div>
         </FilterSection>
 
         <FilterSection title={cashbackLabel}>

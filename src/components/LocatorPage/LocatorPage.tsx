@@ -113,15 +113,20 @@ const LocatorPageContent = () => {
   const {
     selectedNetworkIds,
     selectedProductIds,
+    selectedWalletIds,
+    isFlexOneWalletActive,
     cashbackOnly,
     isFiltersOpen,
     setIsFiltersOpen,
     setCashbackOnly,
     productFilterOptions,
+    walletFilterOptions,
     merchantMatchesFilters,
     activeFilterCount,
     toggleNetwork,
     toggleProduct,
+    toggleWallet,
+    toggleAllWallets,
     clearAllFilters,
   } = useMerchantFilters(allKnownMerchants);
 
@@ -350,6 +355,23 @@ const LocatorPageContent = () => {
     gyms: t("categoryGyms"),
   };
 
+  const walletLabels: Record<string, string> = {
+    meal: t("walletMeal"),
+    rewards: t("walletRewards"),
+    mobility: t("walletMobility"),
+    public_transport: t("walletPublicTransport"),
+    wellness: t("walletWellness"),
+    learning: t("walletLearning"),
+    vacations: t("walletVacations"),
+    childcare: t("walletChildcare"),
+    clothing: t("walletClothing"),
+    beauty: t("walletBeauty"),
+    wfh: t("walletWfh"),
+    culture: t("walletCulture"),
+    health: t("walletHealth"),
+    safety: t("walletSafety"),
+  };
+
   return (
     <div
       className={styles.root}
@@ -434,19 +456,27 @@ const LocatorPageContent = () => {
         closeLabel={t("close")}
         networkCategoryLabel={t("networkCategory")}
         productLabel={t("product")}
+        walletLabel={t("wallets")}
+        walletFlexOneLabel={t("walletFlexOne")}
         cashbackLabel={t("cashback")}
         cashbackOnlyLabel={t("cashbackOnly")}
         clearAllFiltersLabel={t("clearAllFilters")}
         applyFiltersLabel={t("applyFilters")}
         noAvailableProductsLabel={t("noAvailableProducts")}
         networkLabels={filterLabels}
+        walletLabels={walletLabels}
         selectedNetworkIds={selectedNetworkIds}
         selectedProductIds={selectedProductIds}
+        selectedWalletIds={selectedWalletIds}
+        isFlexOneWalletActive={isFlexOneWalletActive}
         productOptions={productFilterOptions}
+        walletOptions={walletFilterOptions}
         cashbackOnly={cashbackOnly}
         onClose={() => setIsFiltersOpen(false)}
         onToggleNetwork={toggleNetwork}
         onToggleProduct={toggleProduct}
+        onToggleWallet={toggleWallet}
+        onToggleAllWallets={toggleAllWallets}
         onToggleCashback={() => setCashbackOnly((prev) => !prev)}
         onClearAll={clearAllFilters}
       />

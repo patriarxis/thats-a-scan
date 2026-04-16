@@ -98,3 +98,119 @@
     filter: brightness(0.9);
   }
 }
+
+.walletGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: $spacing-md $spacing-xs;
+  width: 100%;
+  padding-top: $spacing-sm;
+}
+
+.walletHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: $spacing-sm;
+}
+
+.parentToggle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-lg;
+  background: rgba($white, 0.05);
+  border: 1px solid $white-10;
+  color: $white-90;
+  transition: all $transition-normal;
+  @include p-sm;
+  font-weight: $font-weight-medium;
+
+  &:hover {
+    background: rgba($white, 0.08);
+    border-color: $white-20;
+  }
+}
+
+.parentToggleActive {
+  background: rgba($flexone-primary-5, 0.15);
+  border-color: rgba($flexone-primary-5, 0.4);
+  color: $white;
+
+  .checkBox {
+    border-color: $flexone-primary-5;
+    background: $flexone-primary-5;
+    color: $white;
+  }
+}
+
+.checkBox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2px solid $white-20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-normal;
+  color: transparent;
+}
+
+.walletTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xs;
+  background: transparent;
+  padding: $spacing-xs;
+  transition: all $transition-normal;
+  opacity: 0.6;
+  filter: grayscale(0.4);
+
+  &:hover {
+    opacity: 1;
+    filter: none;
+    .iconCircle {
+      transform: scale(1.05);
+      border-color: $white-20;
+    }
+  }
+}
+
+.walletTileActive {
+  opacity: 1;
+  filter: none;
+
+  .iconCircle {
+    background: rgba($flexone-primary-5, 0.2);
+    border-color: $flexone-primary-5;
+    color: $flexone-primary-5;
+    box-shadow: 0 0 16px rgba($flexone-primary-5, 0.2);
+  }
+
+  .walletName {
+    color: $white;
+    font-weight: $font-weight-bold;
+  }
+}
+
+.iconCircle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid $white-10;
+  background: rgba($white, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $white-60;
+  transition: all $transition-normal;
+}
+
+.walletName {
+  @include p-xs;
+  color: $white-80;
+  text-align: center;
+  line-height: 1.2;
+  font-weight: $font-weight-medium;
+}

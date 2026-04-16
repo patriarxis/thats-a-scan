@@ -1,6 +1,25 @@
 import type { CategoryId, MerchantFeature } from "@/types";
 
 export type ProductFilterOption = { id: string; label: string };
+export type WalletFilterOption = { id: string; label: string };
+
+// Mapping of wallet IDs to keywords/MCC categories
+export const WALLET_MAPPING: Record<string, string[]> = {
+  "meal": ["φαγητό", "εστιατόριο", "super market", "bakery", "ψιλικά", "κρεοπωλείο", "ιχθυοπωλείο", "μανάβικο", "cafe", "restaurant", "food", "γεύμα"],
+  "rewards": ["επιβράβευση", "bonus", "reward", "store", "εμπόριο"],
+  "mobility": ["βενζίνη", "fuel", "gas", "parking", "διόδια", "μετακίνηση", "αυτοκίνητο"],
+  "public_transport": ["λεωφορείο", "μετρό", "transit", "train", "μμμ", "μέσα μαζικής μεταφοράς"],
+  "wellness": ["gym", "wellness", "spa", "fitness", "yoga", "pilates", "ευεξία"],
+  "learning": ["σχολείο", "φροντιστήριο", "εκπαίδευση", "books", "bookshelf", "career", "μάθηση"],
+  "vacations": ["hotel", "travel", "διακοπές", "vacation", "ξενοδοχείο"],
+  "childcare": ["kindergarten", "παιδικός σταθμός"],
+  "clothing": ["fashion", "ρούχα", "ένδυση", "clothing", "shoes"],
+  "beauty": ["beauty", "κομμωτήριο", "nails", "cosmetics", "ομορφιά"],
+  "wfh": ["office", "wfh", "furniture", "electronics"],
+  "culture": ["cinema", "theater", "culture", "museum", "concert", "πολιτισμός"],
+  "health": ["pharmacy", "doctor", "health", "hospital", "υγεία"],
+  "safety": ["insurance", "ασφάλεια"],
+};
 
 function normalizeText(value: unknown): string {
   if (typeof value === "string") return value.toLowerCase();
@@ -34,6 +53,7 @@ export function resolveMerchantCategoryFromProperties(
       "workout",
       "dumbbell",
       "athletic",
+      "fitpass",
     ])
   ) {
     return "gyms";
@@ -76,27 +96,78 @@ export function resolveMerchantCategory(merchant: MerchantFeature): CategoryId {
 }
 
 export function parseAcceptedProducts(value: unknown): string[] {
+  let raw: string[] = [];
   if (Array.isArray(value)) {
-    return value
-      .map((item) => String(item).trim())
-      .filter(Boolean);
+    raw = value.map((item) => String(item).trim()).filter(Boolean);
+  } else if (typeof value === "string") {
+    raw = value.split(/[;,|/]/g).map((item) => item.trim()).filter(Boolean);
   }
-  if (typeof value !== "string") return [];
-  return value
-    .split(/[;,|/]/g)
-    .map((item) => item.trim())
-    .filter(Boolean);
+
+  // Normalize product names to match user expectations
+  return raw.map(product => {
+    const p = product.toLowerCase();
+    if (p.includes("flexone")) return "FlexOne";
+    if (p.includes("fitpass")) return "Fitpass";
+    if (p.includes("expense")) return "Up Expense";
+    if (p.includes("eat")) return "Up Meal";
+    if (p.includes("gift")) return "Up Gift";
+    return product;
+  });
+}
+
+export function resolveMerchantWallets(merchant: MerchantFeature): string[] {
+  const mccLabel = normalizeText(
+    merchant.properties.MCCCategory_EN ?? merchant.properties.MCCCategoryGR,
+  );
+  const brandName = normalizeText(
+    merchant.properties.BrandName_EN ?? merchant.properties.BrandName_GR,
+  );
+  const searchText = `${mccLabel} ${brandName}`;
+
+  const matchedWallets: string[] = [];
+  for (const [walletId, keywords] of Object.entries(WALLET_MAPPING)) {
+    if (hasAnyNeedle(searchText, keywords)) {
+      matchedWallets.push(walletId);
+    }
+  }
+
+  // If it's a "meal" merchant (by category), it should definitely be in "meal" wallet if not already
+  const category = resolveMerchantCategory(merchant);
+  if (category === "meal" && !matchedWallets.includes("meal")) {
+    matchedWallets.push("meal");
+  }
+  if (category === "gyms" && !matchedWallets.includes("wellness")) {
+    matchedWallets.push("wellness");
+  }
+
+  return matchedWallets;
 }
 
 export function buildProductFilterOptions(merchants: MerchantFeature[]): ProductFilterOption[] {
   const byId = new Map<string, ProductFilterOption>();
+
+  // Ensure important products are always included if they are relevant to the app
+  const importantProducts = ["FlexOne", "Fitpass", "Up Expense", "Up Meal", "Up Gift"];
+  
   for (const merchant of merchants) {
-    for (const rawProduct of parseAcceptedProducts(merchant.properties.AcceptedProducts)) {
-      const id = rawProduct.toLowerCase();
-      if (!byId.has(id)) byId.set(id, { id, label: rawProduct });
+    for (const normalizedProduct of parseAcceptedProducts(merchant.properties.AcceptedProducts)) {
+      const id = normalizedProduct.toLowerCase();
+      if (!byId.has(id)) byId.set(id, { id, label: normalizedProduct });
     }
   }
+
+  // If a product is mentioned by the user but wasn't found in current viewport, 
+  // we could staticlly add them, but it might be confusing if no pins show up.
+  // Instead, we just ensure the normalization is applied above.
+
   return [...byId.values()].sort((a, b) => a.label.localeCompare(b.label));
+}
+
+export function buildWalletFilterOptions(): WalletFilterOption[] {
+  return Object.keys(WALLET_MAPPING).map(id => ({
+    id,
+    label: id // Labels will be translated in UI
+  }));
 }
 
 export function merchantHasCashback(merchant: MerchantFeature): boolean {
@@ -116,6 +187,7 @@ export function merchantMatchesFilters(
   merchant: MerchantFeature,
   selectedNetworkIds: CategoryId[],
   selectedProductIds: string[],
+  selectedWalletIds: string[],
   cashbackOnly: boolean,
 ): boolean {
   if (selectedNetworkIds.length > 0) {
@@ -123,11 +195,22 @@ export function merchantMatchesFilters(
     if (!selectedNetworkIds.includes(merchantCategory)) return false;
   }
 
+  const merchantProducts = parseAcceptedProducts(merchant.properties.AcceptedProducts).map(
+    (product) => product.toLowerCase(),
+  );
+
   if (selectedProductIds.length > 0) {
-    const merchantProducts = parseAcceptedProducts(merchant.properties.AcceptedProducts).map(
-      (product) => product.toLowerCase(),
-    );
     if (!selectedProductIds.some((selectedProduct) => merchantProducts.includes(selectedProduct))) {
+      return false;
+    }
+  }
+
+  if (selectedWalletIds.length > 0) {
+    // Wallet filter only applies if FlexOne is selected OR if it's a general wallet filter
+    // User said: "for the flexone we actually have many wallets inside the product... give the ability to filter the stores based on the wallet"
+    // This implies that if FlexOne is active, we might want to narrow it down by wallets.
+    const merchantWallets = resolveMerchantWallets(merchant);
+    if (!selectedWalletIds.some((walletId) => merchantWallets.includes(walletId))) {
       return false;
     }
   }
@@ -136,3 +219,4 @@ export function merchantMatchesFilters(
 
   return true;
 }
+

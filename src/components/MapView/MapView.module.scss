@@ -15,14 +15,15 @@
   pointer-events: none;
   position: absolute;
   left: 50%;
-  top: $spacing-md;
+  bottom: $spacing-3xl;
   z-index: 20;
-  transform: translateX(calc(-50% - var(--overlay-center-shift-x, 0px)));
+  transform: translateX(-50%);
   border-radius: $border-radius-full;
-  background: rgba(#0f172a, 0.85);
+  background: $neutral-2;
   padding: $spacing-sm $spacing-md;
-  font-size: $font-size-xs;
+  font-size: $font-size-sm;
   font-weight: $font-weight-medium;
-  color: $white;
+  color: $white-60;
   box-shadow: $shadow-lg;
+  backdrop-filter: blur(4px);
 }

@@ -5,16 +5,10 @@
   inset: 0;
   overflow: hidden;
   background-color: $neutral-2;
-}
-
-.mapWrapper {
-  position: absolute;
-  inset: 0;
-  padding: $spacing-xs;
 
   :global(.mapboxgl-map),
   :global(.maplibregl-map) {
-    border-radius: $border-radius-md;
+    border-radius: 0;
   }
 
   :global(.mapboxgl-ctrl-bottom-right),
@@ -26,8 +20,7 @@
 
 .mapLoadingOverlay {
   position: absolute;
-  inset: $spacing-xs;
-  border-radius: $border-radius-md;
+  inset: 0;
   z-index: 10;
   display: flex;
   align-items: center;
@@ -47,7 +40,7 @@
 .mapErrorOverlay {
   pointer-events: none;
   position: absolute;
-  bottom: calc($spacing-xs + $spacing-md);
+  bottom: $spacing-md;
   left: 50%;
   z-index: 20;
   transform: translateX(-50%);
@@ -166,4 +159,3 @@
     transform: translate(-50%, 0);
   }
 }
-

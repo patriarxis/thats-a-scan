@@ -172,13 +172,13 @@ const LocatorPageContent = () => {
 
   const focusPadding = useMemo(() => {
     if (!sidebarOpen) {
-      return { top: 72, right: 24, bottom: 24, left: 24 };
+      return { top: 64, right: 16, bottom: 16, left: 16 };
     }
     return {
-      top: 72,
-      right: 24,
+      top: 64,
+      right: 16,
       bottom: isMobile ? mobileDrawerOffsetPx : desktopDrawerOffsetPx,
-      left: 24,
+      left: 16,
     };
   }, [isMobile, sidebarOpen]);
 
@@ -269,10 +269,10 @@ const LocatorPageContent = () => {
     ) => {
       setSelectedPartner(partner);
       mapRef.current?.flyTo(partner.geometry.coordinates, 15.5, {
-        top: 72,
-        right: 24,
+        top: 64,
+        right: 16,
         bottom: isMobile ? mobileDrawerOffsetPx : desktopDrawerOffsetPx,
-        left: 24,
+        left: 16,
       }, { preserveHigherZoom: true });
       if (options?.updateUrl !== false) {
         syncSelectionInUrl(partner, options?.historyMode ?? "push");
@@ -371,28 +371,26 @@ const LocatorPageContent = () => {
       className={styles.root}
       data-sidebar-open={sidebarOpen ? "true" : "false"}
     >
-      <div className={styles.mapWrapper}>
-        <MapView
-          ref={mapRef}
-          selectedPartnerId={selectedId}
-          highlightedPartnerIds={highlightedPartnerIds}
-          zoomInMessage={t("zoomInToSeeStores")}
-          partnerFilter={merchantMatchesFilters}
-          onPartnerSelect={handleSelectPartner}
-          onVisiblePartnersChange={handleVisiblePartnersChange}
-        />
+      <MapView
+        ref={mapRef}
+        selectedPartnerId={selectedId}
+        highlightedPartnerIds={highlightedPartnerIds}
+        zoomInMessage={t("zoomInToSeeStores")}
+        partnerFilter={merchantMatchesFilters}
+        onPartnerSelect={handleSelectPartner}
+        onVisiblePartnersChange={handleVisiblePartnersChange}
+      />
 
-        {mapLoading && (
-          <div className={styles.mapLoadingOverlay}>
-            <div className={styles.mapLoadingLabel}>{t("loadingMap")}</div>
-          </div>
-        )}
+      {mapLoading && (
+        <div className={styles.mapLoadingOverlay}>
+          <div className={styles.mapLoadingLabel}>{t("loadingMap")}</div>
+        </div>
+      )}
 
-        {mapError && <div className={styles.mapErrorOverlay}>{mapError}</div>}
-        {!mapLoading && mapUpdating && !mapError && (
-          <div className={styles.mapUpdatingChip}>{t("updatingArea")}</div>
-        )}
-      </div>
+      {mapError && <div className={styles.mapErrorOverlay}>{mapError}</div>}
+      {!mapLoading && mapUpdating && !mapError && (
+        <div className={styles.mapUpdatingChip}>{t("updatingArea")}</div>
+      )}
 
       <LocatorHeader locale={locale} onChangeLocale={setLocale} />
 
@@ -415,10 +413,10 @@ const LocatorPageContent = () => {
               if (item.type === "place") {
                 clearSelectedPartner();
                 mapRef.current?.flyTo(item.center, 13.5, {
-                  top: 72,
-                  right: 24,
-                  bottom: 24,
-                  left: 24,
+                  top: 64,
+                  right: 16,
+                  bottom: 16,
+                  left: 16,
                 });
               } else {
                 const partner = allKnownById[item.merchantId];
@@ -494,7 +492,20 @@ const LocatorPageContent = () => {
         )}
       </div>
 
-      <LocatorFooter termsLabel="Όροι Χρήσης" privacyLabel="Πολιτική Απορρήτου" />
+      <LocatorFooter
+        termsLabel={t("termsOfUse")}
+        privacyLabel={t("privacyPolicy")}
+        termsUrl={
+          locale === "en"
+            ? "https://uphellas.gr/en/terms-of-use"
+            : "https://uphellas.gr/oroi-xrisis"
+        }
+        privacyUrl={
+          locale === "en"
+            ? "https://uphellas.gr/en/cookie-policy"
+            : "https://uphellas.gr/politiki-aporritou"
+        }
+      />
     </div>
   );
 };

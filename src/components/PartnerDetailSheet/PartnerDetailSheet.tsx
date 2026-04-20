@@ -9,7 +9,8 @@ import {
   Facebook,
   Linkedin,
   Instagram,
-  X
+  X,
+  Star
 } from "lucide-react";
 import { useMemo } from "react";
 import {
@@ -69,6 +70,9 @@ export const PartnerDetailSheet = ({
   const linkedin = props.LinkedinUrl as string;
   const instagram = props.InstagramUrl as string;
   const description = (props.DescriptionGR || props.DescriptionEN || props.Description) as string;
+  const rating = props.rating as string;
+  const featuredPhoto = props.featured_photo as string;
+
 
   const networks = [
     { id: "meal", label: labels.categoryMeal, icon: UtensilsCrossed, color: "orange" },
@@ -83,6 +87,17 @@ export const PartnerDetailSheet = ({
       aria-label="Partner details panel"
       className={`${styles.sheet} ${isMobile ? styles.sheetMobile : ""}`}
     >
+      {featuredPhoto && (
+        <div className={styles.imageHeader}>
+          <img src={featuredPhoto} alt={getPartnerName(partner, locale)} className={styles.featuredImage} />
+          {rating && rating !== "0.00" && (
+            <div className={styles.ratingBadge}>
+              <Star size={14} fill="currentColor" />
+              <span>{rating}</span>
+            </div>
+          )}
+        </div>
+      )}
       <div className={styles.header}>
         <div className={styles.headerTitleArea}>
           <h4 className={styles.partnerName}>
@@ -151,10 +166,28 @@ export const PartnerDetailSheet = ({
           {instagram && (
             <a href={instagram} target="_blank" rel="noreferrer" className={styles.actionPill}>
               <Instagram size={16} />
-              <span>{labels.instagram}</span>
+              <span>{instagram.split("/").pop() || labels.instagram}</span>
             </a>
           )}
         </div>
+
+        {Array.isArray(props.extra_photos) && props.extra_photos.length > 0 && (
+          <div className={styles.photosSection}>
+            <h5 className={styles.sectionTitle}>
+              {labels.photos || (locale === "el" ? "Φωτογραφίες" : "Photos")}
+            </h5>
+            <div className={styles.photoGallery}>
+              {(props.extra_photos as string[]).map((photo, idx) => (
+                <img 
+                  key={idx} 
+                  src={photo} 
+                  alt={`${getPartnerName(partner, locale)} ${idx + 1}`} 
+                  className={styles.galleryImage} 
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

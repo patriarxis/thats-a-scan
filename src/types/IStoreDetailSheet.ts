@@ -17,6 +17,7 @@ export type PartnerDetailSheetLabels = {
   cashback: string;
   flexone: string;
   categoryMeal: string;
+  photos?: string;
 };
 
 export type PartnerDetailSheetProps = {

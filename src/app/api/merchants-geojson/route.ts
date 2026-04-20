@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { fetchAllVenues } from "@/lib/nyamie";
 
-const API_URL = "https://merchants-map.uphellas.gr/geojson/search";
+const UP_HELLAS_API_URL = "https://merchants-map.uphellas.gr/geojson/search";
 
 type BBoxPayload = {
   north_west: {
@@ -27,7 +28,7 @@ function isValidLongitude(v: number): boolean {
 }
 
 export async function POST(request: Request) {
-  let body: BBoxPayload = DEFAULT_ATHENS_BBOX;
+  let bounds: BBoxPayload = DEFAULT_ATHENS_BBOX;
   try {
     const json = (await request.json()) as Partial<BBoxPayload>;
     const nwLat = Number(json?.north_west?.latitude);
@@ -42,41 +43,60 @@ export async function POST(request: Request) {
       isValidLongitude(seLng) &&
       nwLat > seLat
     ) {
-      body = {
+      bounds = {
         north_west: { latitude: nwLat, longitude: nwLng },
         south_east: { latitude: seLat, longitude: seLng }
       };
     }
   } catch {
-    body = DEFAULT_ATHENS_BBOX;
+    bounds = DEFAULT_ATHENS_BBOX;
   }
 
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(body),
-      // Revalidate periodically to keep data fresh but cache-friendly
-      next: { revalidate: 60 }
-    });
+    // Fetch from both sources in parallel
+    const [upHellasRes, nyamieAllFeatures] = await Promise.all([
+      fetch(UP_HELLAS_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bounds),
+        next: { revalidate: 60 }
+      }).catch((err) => {
+        console.error("Failed to fetch from Up Hellas:", err);
+        return null;
+      }),
+      fetchAllVenues().catch((err) => {
+        console.error("Failed to fetch from Nyamie:", err);
+        return [];
+      })
+    ]);
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Up Hellas merchants API error:", text);
-      return NextResponse.json(
-        { error: "Failed to fetch merchants" },
-        { status: 502 }
-      );
+    let upHellasFeatures = [];
+    if (upHellasRes?.ok) {
+      const data = await upHellasRes.json();
+      upHellasFeatures = Array.isArray(data.features) ? data.features : [];
     }
 
-    const data = await res.json();
-    return NextResponse.json(data);
+    // Filter Nyamie venues locally by the requested bounding box
+    const filteredNyamie = nyamieAllFeatures.filter((feature) => {
+      const [lng, lat] = feature.geometry.coordinates;
+      const { north_west, south_east } = bounds;
+      
+      return (
+        lat <= north_west.latitude &&
+        lat >= south_east.latitude &&
+        lng >= north_west.longitude &&
+        lng <= south_east.longitude
+      );
+    });
+
+    return NextResponse.json({
+      type: "FeatureCollection",
+      features: [...upHellasFeatures, ...filteredNyamie]
+    });
   } catch (error) {
-    console.error("Error calling Up Hellas merchants API:", error);
+    console.error("Error merging merchant data sources:", error);
     return NextResponse.json(
-      { error: "Unexpected error fetching merchants" },
+      { error: "Unexpected error fetching venues" },
       { status: 500 }
     );
   }
@@ -88,3 +108,5 @@ export async function GET() {
     { status: 405 }
   );
 }
+
+

@@ -345,7 +345,8 @@ const LocatorPageContent = () => {
     description: t("description"),
     cashback: t("cashback"),
     flexone: t("flexone"),
-    categoryMeal: t("categoryMeal")
+    categoryMeal: t("categoryMeal"),
+    photos: t("photos")
   };
 
   const filterLabels: Record<CategoryId, string> = {

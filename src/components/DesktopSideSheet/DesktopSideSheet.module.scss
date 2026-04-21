@@ -1,0 +1,66 @@
+@use "../../styles/abstracts" as *;
+
+.desktopSheet {
+  width: 100vw;
+  max-width: $max-width-md;
+  height: 40dvh;
+  max-height: 30rem;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  margin: 0 auto;
+  padding: $spacing-sm;
+  position: relative;
+  z-index: 100;
+  overflow: hidden;
+  animation: desktopSlideIn 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+
+  &.closing {
+    animation: desktopSlideOut 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+}
+
+.desktopContent {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  background: $neutral-2;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: $white-10;
+    border-radius: $border-radius-full;
+  }
+}
+
+@keyframes desktopSlideIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0.92;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes desktopSlideOut {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0.92;
+  }
+}

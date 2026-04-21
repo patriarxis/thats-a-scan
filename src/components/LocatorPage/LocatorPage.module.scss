@@ -143,19 +143,13 @@
 }
 
 .bottomDrawer {
+  display: flex;
+  justify-content: center;
   position: fixed;
-  bottom: $spacing-sm;
-  left: 50%;
-  width: calc(100vw - (2 * $spacing-sm));
-  max-width: $max-width-md;
+  bottom: 0;
   z-index: 50;
+  width: 100vw;
   overflow: hidden;
   background: transparent;
-
-  transform: translate(-50%, 100%);
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-
-  .root[data-sidebar-open="true"] & {
-    transform: translate(-50%, 0);
-  }
+  pointer-events: none;
 }

@@ -17,6 +17,13 @@ export type PartnerDetailSheetLabels = {
   cashback: string;
   flexone: string;
   categoryMeal: string;
+  categoryRewards: string;
+  categoryExpenses: string;
+  categoryGyms: string;
+  fitpass: string;
+  upExpense: string;
+  upMeal: string;
+  upGift: string;
   photos?: string;
 };
 
@@ -26,6 +33,7 @@ export type PartnerDetailSheetProps = {
   locale: ILocale;
   labels: PartnerDetailSheetLabels;
   onClose: () => void;
+  closeSignal?: number;
 };
 
 export type VisiblePartnersChangePayload = {

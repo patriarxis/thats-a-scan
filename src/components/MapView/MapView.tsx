@@ -56,6 +56,7 @@ type MapViewProps = {
   partnerFilter?: (partner: PartnerFeature) => boolean;
   onVisiblePartnersChange: (payload: VisiblePartnersChangePayload) => void;
   onPartnerSelect: (partner: PartnerFeature) => void;
+  onMapClick?: () => void;
   // Backward-compatible props during migration.
   selectedMerchantId?: string | null;
   highlightedMerchantIds?: string[];
@@ -258,7 +259,8 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     highlightedMerchantIds,
     merchantFilter,
     onVisibleMerchantsChange,
-    onMerchantSelect
+    onMerchantSelect,
+    onMapClick
   },
   ref
 ) => {
@@ -269,6 +271,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   const partnersRef = useRef<PartnerFeature[]>([]);
   const onVisiblePartnersChangeRef = useRef(onVisiblePartnersChange);
   const onPartnerSelectRef = useRef(onPartnerSelect);
+  const onMapClickRef = useRef(onMapClick);
   const latestViewportStateRef = useRef({
     partners: [] as PartnerFeature[],
     loading: true,
@@ -291,6 +294,10 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   useEffect(() => {
     onPartnerSelectRef.current = onPartnerSelect;
   }, [onPartnerSelect]);
+  
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   useEffect(() => {
     partnersRef.current = partners;
@@ -410,6 +417,17 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       if (partner) {
         onPartnerSelectRef.current?.(partner);
         onMerchantSelect?.(partner);
+      }
+    });
+
+    map.on("click", (e) => {
+      // If the click hit a merchant marker or cluster, we let those specific handlers work.
+      // queryRenderedFeatures is the most reliable way to check for generic map click vs feature click.
+      const features = map.queryRenderedFeatures(e.point, {
+        layers: [LAYER_ID, CLUSTER_LAYER_ID]
+      });
+      if (!features.length) {
+        onMapClickRef.current?.();
       }
     });
 

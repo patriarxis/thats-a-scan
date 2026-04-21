@@ -5,6 +5,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { LocaleProvider } from "@/lib/LocaleContext";
 import { useLocale } from "@/lib";
+import { useIsMobileUx } from "@/lib/useIsMobileUx";
 import {
   type SearchSuggestion
 } from "@/components/SearchBar/SearchBar";
@@ -48,18 +49,6 @@ const PartnerDetailSheet = dynamic(
   { ssr: false },
 );
 
-const useMediaQuery = (query: string) => {
-  const [matches, setMatches] = useState(false);
-  useEffect(() => {
-    const media = window.matchMedia(query);
-    const onChange = () => setMatches(media.matches);
-    onChange();
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, [query]);
-  return matches;
-};
-
 type UrlSelectionState = {
   storeId: string | null;
   lat: number;
@@ -85,7 +74,7 @@ const LocatorPageContent = () => {
   const geocodeAbortRef = useRef<AbortController | null>(null);
   const urlSelectionAppliedRef = useRef<string | null>(null);
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isMobile = useIsMobileUx();
   const { locale, setLocale, t } = useLocale();
   const [urlSelection, setUrlSelection] = useState<UrlSelectionState>({
     storeId: null,
@@ -99,6 +88,7 @@ const LocatorPageContent = () => {
   const [allKnownById, setAllKnownById] = useState<Record<string, PartnerFeature>
   >({});
   const [selectedPartner, setSelectedPartner] = useState<PartnerFeature | null>(null);
+  const [sheetCloseSignal, setSheetCloseSignal] = useState(0);
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -278,6 +268,11 @@ const LocatorPageContent = () => {
     [syncSelectionInUrl],
   );
 
+  const requestCloseSelectedPartner = useCallback(() => {
+    if (!selectedPartner) return;
+    setSheetCloseSignal((value) => value + 1);
+  }, [selectedPartner]);
+
   const handleVisiblePartnersChange = useCallback(
     ({ partners, loading, updating, error }: VisiblePartnersChangePayload) => {
       setVisiblePartners(partners);
@@ -346,6 +341,13 @@ const LocatorPageContent = () => {
     cashback: t("cashback"),
     flexone: t("flexone"),
     categoryMeal: t("categoryMeal"),
+    categoryRewards: t("categoryRewards"),
+    categoryExpenses: t("categoryExpenses"),
+    categoryGyms: t("categoryGyms"),
+    fitpass: t("fitpass"),
+    upExpense: t("upExpense"),
+    upMeal: t("upMeal"),
+    upGift: t("upGift"),
     photos: t("photos")
   };
 
@@ -386,6 +388,7 @@ const LocatorPageContent = () => {
         partnerFilter={merchantMatchesFilters}
         onPartnerSelect={handleSelectPartner}
         onVisiblePartnersChange={handleVisiblePartnersChange}
+        onMapClick={requestCloseSelectedPartner}
       />
 
       {mapLoading && (
@@ -482,14 +485,19 @@ const LocatorPageContent = () => {
         onClearAll={clearAllFilters}
       />
 
-      <div className={styles.bottomDrawer} aria-hidden={!sidebarOpen}>
+      <div
+        className={styles.bottomDrawer}
+        data-sheet-layout={isMobile ? "mobile" : "desktop"}
+        aria-hidden={!sidebarOpen}
+      >
         {selectedPartner && (
           <PartnerDetailSheet
             partner={selectedPartner}
-            isMobile
+            isMobile={isMobile}
             locale={locale}
             labels={partnerDetailLabels}
             onClose={() => clearSelectedPartner()}
+            closeSignal={sheetCloseSignal}
           />
         )}
       </div>

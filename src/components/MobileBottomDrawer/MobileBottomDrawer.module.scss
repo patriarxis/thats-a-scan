@@ -1,0 +1,93 @@
+@use "../../styles/abstracts" as *;
+
+.sheet {
+  width: calc(100% - (2 * $spacing-sm));
+  max-width: $max-width-md;
+  transition:
+    transform $transition-slow,
+    height $transition-slow,
+    border-radius $transition-slow,
+    margin $transition-slow;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  position: relative;
+  margin: $spacing-sm;
+  box-sizing: border-box;
+
+  &.fullHeight {
+    border-radius: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+
+  &.isDragging {
+    transition: none !important;
+  }
+}
+
+.handleBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding-top: $spacing-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.handle {
+  width: 2rem;
+  height: 0.125rem;
+  background-color: $white-20;
+  border-radius: $border-radius-full;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  background: $neutral-2;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition:
+    padding $transition-slow,
+    border-radius $transition-slow;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+
+  &.contentLocked {
+    overflow-y: hidden;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: auto;
+    touch-action: none;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $white-10;
+    border-radius: $border-radius-full;
+  }
+}
+
+.fullHeight .content {
+  border-radius: 0;
+  padding-top: 0;
+}

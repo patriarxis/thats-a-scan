@@ -85,7 +85,18 @@ export function mapVenueToMerchantFeature(venue: NyamieVenue): MerchantFeature {
   };
 }
 
+let cachedVenues: MerchantFeature[] | null = null;
+let lastFetchTime: number = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const BATCH_SIZE = 10;
+const MAX_PAGES = 50;
+
 export async function fetchAllVenues(): Promise<MerchantFeature[]> {
+  const now = Date.now();
+  if (cachedVenues && now - lastFetchTime < CACHE_TTL) {
+    return cachedVenues;
+  }
+
   const apiKey = process.env.NYAMIE_API_KEY;
   const apiUrl =
     process.env.NYAMIE_API_URL || "https://nyamie.com/api/v1/venues";
@@ -95,49 +106,57 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
     return [];
   }
 
-  let allFeatures: MerchantFeature[] = [];
-  let page = 1;
-  let hasMore = true;
+  const allFeatures: MerchantFeature[] = [];
+  let currentStartPage = 1;
+  let exhausted = false;
 
-  while (hasMore) {
+  // Fetch in parallel batches to speed up the process while respecting potential rate limits
+  while (currentStartPage <= MAX_PAGES && !exhausted) {
+    const batchPages = Array.from({ length: BATCH_SIZE }, (_, i) => currentStartPage + i)
+      .filter(p => p <= MAX_PAGES);
+
     try {
-      const response = await fetch(`${apiUrl}?page=${page}`, {
-        headers: {
-          "X-Api-Key": apiKey,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      });
+      const batchResults = await Promise.all(
+        batchPages.map(async (page) => {
+          const response = await fetch(`${apiUrl}?page=${page}`, {
+            headers: {
+              "X-Api-Key": apiKey,
+              "Content-Type": "application/json",
+            },
+            cache: "no-store",
+          });
 
-      if (!response.ok) {
-        console.error(
-          `Failed to fetch Nyamie venues page ${page}: ${response.statusText}`,
-        );
-        break;
+          if (!response.ok) return [];
+          const venues: NyamieVenue[] = await response.json();
+          return Array.isArray(venues) ? venues : [];
+        })
+      );
+
+      for (let i = 0; i < batchResults.length; i++) {
+        const venues = batchResults[i];
+        if (venues.length === 0) {
+          exhausted = true;
+          // We found an empty page, but we should still process the pages before this one in the batch
+        }
+        const features = venues.map(mapVenueToMerchantFeature);
+        allFeatures.push(...features);
+        
+        // If results are less than expected per page (usually 10), we've likely hit the end
+        if (venues.length < 10) {
+          exhausted = true;
+          break; 
+        }
       }
 
-      const venues: NyamieVenue[] = await response.json();
-
-      if (!venues || venues.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      const features = venues.map(mapVenueToMerchantFeature);
-      allFeatures = [...allFeatures, ...features];
-
-      if (venues.length < 10) {
-        hasMore = false;
-      } else {
-        page++;
-      }
-
-      if (page > 50) break;
+      if (exhausted) break;
+      currentStartPage += BATCH_SIZE;
     } catch (error) {
-      console.error(`Error fetching Nyamie venues page ${page}:`, error);
+      console.error(`Error fetching Nyamie venues batch starting at ${currentStartPage}:`, error);
       break;
     }
   }
 
+  cachedVenues = allFeatures;
+  lastFetchTime = now;
   return allFeatures;
 }

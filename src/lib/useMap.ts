@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Map as MapboxMap } from "mapbox-gl";
-import type { MerchantFeature } from "@/types";
+import { getPartnerId, type MerchantFeature } from "@/types";
 import { MAP_MAX_LAT_SPAN, MAP_MAX_LNG_SPAN } from "@/lib/config";
 
 const STORES_API_URL = "/api/merchants-geojson";
@@ -38,9 +38,48 @@ type BoundsPayload = {
   east: number;
 };
 
+const VIEWPORT_BUFFER_FACTOR_DESKTOP = 1.5;
+const VIEWPORT_BUFFER_FACTOR_MOBILE = 1.2;
+
+function getBufferedBounds(map: mapboxgl.Map, isMobile: boolean): BoundsPayload | null {
+  const bounds = map.getBounds();
+  if (!bounds) return null;
+
+  const north = bounds.getNorth();
+  const south = bounds.getSouth();
+  const east = bounds.getEast();
+  const west = bounds.getWest();
+
+  const latSpan = north - south;
+  const lngSpan = east - west;
+
+  // Expand bounds by buffer factor
+  const factor = isMobile ? VIEWPORT_BUFFER_FACTOR_MOBILE : VIEWPORT_BUFFER_FACTOR_DESKTOP;
+  const padding = (factor - 1) / 2;
+
+  return {
+    north: north + latSpan * padding,
+    south: south - latSpan * padding,
+    west: west - lngSpan * padding,
+    east: east + lngSpan * padding,
+  };
+}
+
+function isBoundsContained(
+  inner: BoundsPayload,
+  outer: BoundsPayload,
+): boolean {
+  return (
+    inner.north <= outer.north &&
+    inner.south >= outer.south &&
+    inner.west >= outer.west &&
+    inner.east <= outer.east
+  );
+}
+
 function haversineDistanceKm(
   pointA: [number, number],
-  pointB: [number, number]
+  pointB: [number, number],
 ): number {
   const [lng1, lat1] = pointA;
   const [lng2, lat2] = pointB;
@@ -63,7 +102,7 @@ export function useUserLocation() {
       (position) => {
         setUserLocation({
           lat: position.coords.latitude,
-          lng: position.coords.longitude
+          lng: position.coords.longitude,
         });
       },
       () => {
@@ -72,8 +111,8 @@ export function useUserLocation() {
       {
         enableHighAccuracy: true,
         timeout: 8000,
-        maximumAge: 60000
-      }
+        maximumAge: 60000,
+      },
     );
   }, []);
 
@@ -83,38 +122,55 @@ export function useUserLocation() {
 export function useViewportStoreQuery(
   mapRef: MutableRefObject<MapboxMap | null>,
   userLocation: UserLocation | null,
-  mapReady: boolean
+  mapReady: boolean,
 ) {
   const [state, setState] = useState<ViewportQueryState>({
     merchants: [],
     loading: true,
     updating: false,
     viewportTooWide: false,
-    error: null
+    error: null,
   });
+  const [isMobile, setIsMobile] = useState(false);
   const hasLoadedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const hasAppliedLocationFlyRef = useRef(false);
   const viewportCacheRef = useRef<Map<string, ViewportCacheEntry>>(new Map());
+  const globalStoreRef = useRef<Map<string, MerchantFeature>>(new Map());
+  const lastFetchedBufferedBoundsRef = useRef<BoundsPayload | null>(null);
   const latestStateRef = useRef(state);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     latestStateRef.current = state;
   }, [state]);
 
-  const sortFeatures = (features: MerchantFeature[]) =>
-    userLocation
-      ? [...features].sort((a, b) => {
-          const dA = haversineDistanceKm(a.geometry.coordinates, [userLocation.lng, userLocation.lat]);
-          const dB = haversineDistanceKm(b.geometry.coordinates, [userLocation.lng, userLocation.lat]);
-          return dA - dB;
-        })
-      : features;
+  const sortFeatures = (features: MerchantFeature[]) => {
+    if (!userLocation || features.length > 1000) return features; // Avoid heavy sorting of massive datasets
+    const sorted = [...features].sort((a, b) => {
+      const dA = haversineDistanceKm(a.geometry.coordinates, [
+        userLocation.lng,
+        userLocation.lat,
+      ]);
+      const dB = haversineDistanceKm(b.geometry.coordinates, [
+        userLocation.lng,
+        userLocation.lat,
+      ]);
+      return dA - dB;
+    });
+    return sorted;
+  };
 
   const fetchFeaturesForBounds = async (
     bounds: BoundsPayload,
-    signal: AbortSignal
+    signal: AbortSignal,
   ): Promise<MerchantFeature[]> => {
     const res = await fetch(STORES_API_URL, {
       method: "POST",
@@ -122,14 +178,14 @@ export function useViewportStoreQuery(
       body: JSON.stringify({
         north_west: {
           latitude: bounds.north,
-          longitude: bounds.west
+          longitude: bounds.west,
         },
         south_east: {
           latitude: bounds.south,
-          longitude: bounds.east
-        }
+          longitude: bounds.east,
+        },
       }),
-      signal
+      signal,
     });
     if (!res.ok) {
       console.error("Merchant API returned status:", res.status);
@@ -144,7 +200,9 @@ export function useViewportStoreQuery(
     });
   };
 
-  const downsampleForWidePreview = (features: MerchantFeature[]): MerchantFeature[] => {
+  const downsampleForWidePreview = (
+    features: MerchantFeature[],
+  ): MerchantFeature[] => {
     if (features.length <= WIDE_PREVIEW_MAX_FEATURES) return features;
     const byGrid = new Map<string, MerchantFeature>();
     for (const feature of features) {
@@ -156,7 +214,9 @@ export function useViewportStoreQuery(
     const compact = Array.from(byGrid.values());
     if (compact.length <= WIDE_PREVIEW_MAX_FEATURES) return compact;
     const step = Math.ceil(compact.length / WIDE_PREVIEW_MAX_FEATURES);
-    return compact.filter((_, index) => index % step === 0).slice(0, WIDE_PREVIEW_MAX_FEATURES);
+    return compact
+      .filter((_, index) => index % step === 0)
+      .slice(0, WIDE_PREVIEW_MAX_FEATURES);
   };
 
   const buildBoundsCacheKey = (map: MapboxMap) => {
@@ -167,7 +227,7 @@ export function useViewportStoreQuery(
       toFixed(bounds.getNorth()),
       toFixed(bounds.getWest()),
       toFixed(bounds.getSouth()),
-      toFixed(bounds.getEast())
+      toFixed(bounds.getEast()),
     ].join("|");
   };
 
@@ -193,15 +253,16 @@ export function useViewportStoreQuery(
     const fetchVisible = async (source: "initial" | "move") => {
       const bounds = map.getBounds();
       if (!bounds) return;
-      const boundsPayload: BoundsPayload = {
+
+      const currentViewport: BoundsPayload = {
         north: bounds.getNorth(),
         south: bounds.getSouth(),
         west: bounds.getWest(),
-        east: bounds.getEast()
+        east: bounds.getEast(),
       };
 
-      const latSpan = Math.abs(boundsPayload.north - boundsPayload.south);
-      const lngSpan = Math.abs(boundsPayload.east - boundsPayload.west);
+      const latSpan = Math.abs(currentViewport.north - currentViewport.south);
+      const lngSpan = Math.abs(currentViewport.east - currentViewport.west);
       const tooWide = latSpan > MAP_MAX_LAT_SPAN || lngSpan > MAP_MAX_LNG_SPAN;
 
       if (tooWide) {
@@ -214,56 +275,77 @@ export function useViewportStoreQuery(
           loading: false,
           updating: !hasPreviewData,
           viewportTooWide: true,
-          merchants: prev.merchants,
-          error: null
+          error: null,
         }));
         if (!hasPreviewData) {
           try {
-            const wideFeatures = await fetchFeaturesForBounds(boundsPayload, controller.signal);
+            const wideFeatures = await fetchFeaturesForBounds(
+              currentViewport,
+              controller.signal,
+            );
             if (controller.signal.aborted) return;
+            const processed = downsampleForWidePreview(
+              sortFeatures(wideFeatures),
+            );
+
+            // Merge wide features into global store
+            let hasNew = false;
+            processed.forEach((f) => {
+              const id = getPartnerId(f);
+              if (!globalStoreRef.current.has(id)) {
+                globalStoreRef.current.set(id, f);
+                hasNew = true;
+              }
+            });
+
+            if (hasNew || latestStateRef.current.viewportTooWide !== true || latestStateRef.current.loading || latestStateRef.current.updating) {
+              setState({
+                merchants: Array.from(globalStoreRef.current.values()),
+                loading: false,
+                updating: false,
+                viewportTooWide: true,
+                error: null,
+              });
+            }
+          } catch (err) {
+            if (err instanceof DOMException && err.name === "AbortError")
+              return;
             setState((prev) => ({
               ...prev,
-              merchants: downsampleForWidePreview(sortFeatures(wideFeatures)),
               loading: false,
               updating: false,
               viewportTooWide: true,
-              error: null
-            }));
-          } catch (err) {
-            if (err instanceof DOMException && err.name === "AbortError") return;
-            setState((prev) => ({
-              ...prev,
-              loading: false,
-              updating: false,
-              viewportTooWide: true
             }));
           }
         }
         return;
       }
 
-      const cacheKey = buildBoundsCacheKey(map);
-      if (cacheKey) {
-        const cached = viewportCacheRef.current.get(cacheKey);
-        if (cached && Date.now() - cached.createdAt <= VIEWPORT_CACHE_TTL_MS) {
-          hasLoadedRef.current = true;
-          setState({
-            merchants: sortFeatures(cached.features),
+      if (
+        lastFetchedBufferedBoundsRef.current &&
+        isBoundsContained(currentViewport, lastFetchedBufferedBoundsRef.current)
+      ) {
+        if (state.viewportTooWide || state.loading || state.updating) {
+          setState((prev) => ({
+            ...prev,
             loading: false,
-            // Show cached points immediately, then revalidate in background.
-            updating: true,
+            updating: false,
             viewportTooWide: false,
-            error: null
-          });
+            error: null,
+          }));
         }
+        return;
       }
+
+      const bufferedBounds = getBufferedBounds(map, isMobile);
+      if (!bufferedBounds) return;
 
       setState((prev) => ({
         ...prev,
         loading: !hasLoadedRef.current,
         updating: hasLoadedRef.current || source === "move",
         viewportTooWide: false,
-        error: null
+        error: null,
       }));
 
       abortRef.current?.abort();
@@ -271,18 +353,28 @@ export function useViewportStoreQuery(
       abortRef.current = controller;
 
       try {
-        const validFeatures = await fetchFeaturesForBounds(boundsPayload, controller.signal);
+        const validFeatures = await fetchFeaturesForBounds(
+          bufferedBounds,
+          controller.signal,
+        );
+        if (controller.signal.aborted) return;
 
-        if (cacheKey) writeViewportCache(cacheKey, validFeatures);
-        const sorted = sortFeatures(validFeatures);
+        validFeatures.forEach((f) => {
+          const id = getPartnerId(f);
+          if (!globalStoreRef.current.has(id)) {
+            globalStoreRef.current.set(id, f);
+          }
+        });
 
+        lastFetchedBufferedBoundsRef.current = bufferedBounds;
         hasLoadedRef.current = true;
+
         setState({
-          merchants: sorted,
+          merchants: Array.from(globalStoreRef.current.values()),
           loading: false,
           updating: false,
           viewportTooWide: false,
-          error: null
+          error: null,
         });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
@@ -291,7 +383,7 @@ export function useViewportStoreQuery(
           ...prev,
           loading: false,
           updating: false,
-          error: "Failed to load stores. Please try again."
+          error: "Failed to load stores. Please try again.",
         }));
       }
     };
@@ -309,7 +401,7 @@ export function useViewportStoreQuery(
         map.flyTo({
           center: [userLocation.lng, userLocation.lat],
           zoom: 13,
-          duration: 900
+          duration: 900,
         });
       } else {
         fetchVisible("initial");

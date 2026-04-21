@@ -19,11 +19,17 @@ const GREECE_MAX_BOUNDS: [[number, number], [number, number]] = [
   [28.75, 42.16]
 ];
 const SOURCE_ID = "merchants-source";
+const PREVIEW_SOURCE_ID = "merchants-preview-source";
+const HEATMAP_SOURCE_ID = "merchants-heatmap-source";
 const LAYER_ID = "merchants-markers";
 const SELECTED_LAYER_ID = "merchants-markers-selected";
 const CLUSTER_LAYER_ID = "merchants-clusters";
+const CLUSTER_GLOW_LAYER_ID = "merchants-clusters-glow";
 const CLUSTER_COUNT_LAYER_ID = "merchants-cluster-count";
 const HIGHLIGHT_LAYER_ID = "merchants-highlight";
+const HEATMAP_LAYER_ID = "merchants-heatmap";
+const CLUSTER_MAX_ZOOM = 13;
+const CLUSTER_RADIUS = 48;
 const MARKER_ICON_MEAL_ID = "merchant-marker-meal";
 const MARKER_ICON_REWARDS_ID = "merchant-marker-rewards";
 const MARKER_ICON_EXPENSES_ID = "merchant-marker-expenses";
@@ -175,8 +181,23 @@ const ensureMapLayers = (map: MapboxMap) => {
       type: "geojson",
       data: { type: "FeatureCollection", features: [] },
       cluster: true,
-      clusterMaxZoom: 14,
-      clusterRadius: 52
+      clusterMaxZoom: CLUSTER_MAX_ZOOM,
+      clusterRadius: CLUSTER_RADIUS
+    });
+  }
+
+  if (!map.getSource(PREVIEW_SOURCE_ID)) {
+    map.addSource(PREVIEW_SOURCE_ID, {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] }
+    });
+  }
+
+  if (!map.getSource(HEATMAP_SOURCE_ID)) {
+    map.addSource(HEATMAP_SOURCE_ID, {
+      type: "geojson",
+      data: "/api/heatmap",
+      buffer: 0 // No need for buffer on heatmap points
     });
   }
 
@@ -197,6 +218,45 @@ const ensureMapLayers = (map: MapboxMap) => {
     });
   }
 
+  if (!map.getLayer(CLUSTER_GLOW_LAYER_ID)) {
+    map.addLayer({
+      id: CLUSTER_GLOW_LAYER_ID,
+      type: "circle",
+      source: SOURCE_ID,
+      filter: ["has", "point_count"],
+      paint: {
+        "circle-color": "rgba(143, 73, 156, 0.42)",
+        "circle-blur": 0.9,
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          6,
+          ["step", ["get", "point_count"], 26, 20, 34, 80, 42],
+          9,
+          ["step", ["get", "point_count"], 24, 20, 32, 80, 40],
+          12,
+          ["step", ["get", "point_count"], 21, 20, 29, 80, 36]
+        ],
+        "circle-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          6,
+          0.72,
+          8.5,
+          0.58,
+          10.5,
+          0.28,
+          12,
+          0.12,
+          13,
+          0
+        ]
+      }
+    }, CLUSTER_LAYER_ID);
+  }
+
   if (!map.getLayer(CLUSTER_COUNT_LAYER_ID)) {
     map.addLayer({
       id: CLUSTER_COUNT_LAYER_ID,
@@ -210,6 +270,80 @@ const ensureMapLayers = (map: MapboxMap) => {
       },
       paint: { "text-color": "#ffffff" }
     });
+  }
+
+  if (!map.getLayer(HEATMAP_LAYER_ID)) {
+    map.addLayer({
+      id: HEATMAP_LAYER_ID,
+      type: "heatmap",
+      source: HEATMAP_SOURCE_ID,
+      maxzoom: 11,
+      paint: {
+        "heatmap-weight": [
+          "interpolate",
+          ["linear"],
+          ["get", "count"],
+          0,
+          0,
+          1,
+          0.1,
+          10,
+          0.5,
+          50,
+          1
+        ],
+        "heatmap-intensity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          5,
+          0.7,
+          8,
+          1.1,
+          10,
+          1.4
+        ],
+        "heatmap-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          4,
+          (window?.innerWidth > 1024 ? 25 : 15),
+          8,
+          (window?.innerWidth > 1024 ? 40 : 25),
+          12,
+          (window?.innerWidth > 1024 ? 60 : 40)
+        ],
+        "heatmap-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          5,
+          0.65,
+          8,
+          0.55,
+          10.5,
+          0.3,
+          11,
+          0
+        ],
+        "heatmap-color": [
+          "interpolate",
+          ["linear"],
+          ["heatmap-density"],
+          0,
+          "rgba(0,0,0,0)",
+          0.1,
+          "rgba(253, 186, 116, 0.15)",
+          0.35,
+          "rgba(251, 146, 60, 0.35)",
+          0.7,
+          "rgba(249, 115, 22, 0.6)",
+          1,
+          "rgba(255, 255, 255, 0.8)"
+        ]
+      }
+    }, CLUSTER_GLOW_LAYER_ID);
   }
 
   if (!map.getLayer(HIGHLIGHT_LAYER_ID)) {
@@ -302,12 +436,20 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     error: null as string | null
   });
   const [mapReady, setMapReady] = useState(false);
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
   const userLocation = useUserLocation();
   const { merchants: partners, loading, updating, viewportTooWide, error } = useViewportStoreQuery(
     mapRef,
     userLocation,
     mapReady
   );
+
+  useEffect(() => {
+    setIsLargeScreen(window.innerWidth > 1024);
+    const handleResize = () => setIsLargeScreen(window.innerWidth > 1024);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     onVisiblePartnersChangeRef.current = onVisiblePartnersChange;
@@ -339,11 +481,13 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     const map = mapRef.current;
     if (!map) return;
     const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
-    if (!source) return;
-    source.setData({
+    const previewSource = map.getSource(PREVIEW_SOURCE_ID) as GeoJSONSource | undefined;
+    const nextData = {
       type: "FeatureCollection",
       features: withClientIds(items)
-    } as GeoJSON.FeatureCollection);
+    } as GeoJSON.FeatureCollection;
+    source?.setData(nextData);
+    previewSource?.setData(nextData);
   };
 
   useImperativeHandle(ref, () => ({
@@ -385,11 +529,9 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       if (typeof minZoomForGreece === "number") map.setMinZoom(minZoomForGreece);
       ensureMapLayers(map);
       const latest = latestViewportStateRef.current;
-      const nextPartners = latest.viewportTooWide
-        ? []
-        : latest.partners.filter((partner) =>
-            (partnerFilter ?? merchantFilter) ? (partnerFilter ?? merchantFilter)!(partner) : true
-          );
+      const nextPartners = latest.partners.filter((partner) =>
+        (partnerFilter ?? merchantFilter) ? (partnerFilter ?? merchantFilter)!(partner) : true
+      );
       pushDataToMap(nextPartners);
       onVisiblePartnersChangeRef.current?.({
         partners: nextPartners,
@@ -484,11 +626,9 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
 
     const syncData = () => {
       ensureMapLayers(map);
-      const nextPartners = viewportTooWide
-        ? []
-        : partners.filter((partner) =>
-            (partnerFilter ?? merchantFilter) ? (partnerFilter ?? merchantFilter)!(partner) : true
-          );
+      const nextPartners = partners.filter((partner) =>
+        (partnerFilter ?? merchantFilter) ? (partnerFilter ?? merchantFilter)!(partner) : true
+      );
       pushDataToMap(nextPartners);
       onVisiblePartnersChangeRef.current?.({
         partners: nextPartners,
@@ -514,6 +654,88 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       map.off("load", syncData);
     };
   }, [error, loading, merchantFilter, onVisibleMerchantsChange, partnerFilter, partners, updating, viewportTooWide]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const showHeatmap = viewportTooWide;
+    const heatmapVisibility = showHeatmap ? "visible" : "none";
+    const regularVisibility = showHeatmap ? "none" : "visible";
+    if (map.getLayer(HEATMAP_LAYER_ID)) map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", heatmapVisibility);
+    if (map.getLayer(CLUSTER_GLOW_LAYER_ID)) map.setLayoutProperty(CLUSTER_GLOW_LAYER_ID, "visibility", regularVisibility);
+    if (map.getLayer(CLUSTER_LAYER_ID)) map.setLayoutProperty(CLUSTER_LAYER_ID, "visibility", regularVisibility);
+    if (map.getLayer(CLUSTER_COUNT_LAYER_ID)) map.setLayoutProperty(CLUSTER_COUNT_LAYER_ID, "visibility", regularVisibility);
+    if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", regularVisibility);
+    if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", regularVisibility);
+    if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", regularVisibility);
+  }, [viewportTooWide]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !viewportTooWide) return;
+
+    let rafId: number;
+    const start = Date.now();
+
+    const animate = () => {
+      if (!map.getLayer(HEATMAP_LAYER_ID)) return;
+      
+      const elapsed = Date.now() - start;
+      const pulse = 0.82 + Math.sin(elapsed / 700) * 0.18;
+
+      map.setPaintProperty(HEATMAP_LAYER_ID, "heatmap-opacity", [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        5,
+        0.65 * pulse,
+        8,
+        0.55 * pulse,
+        10.5,
+        0.3 * pulse,
+        11,
+        0
+      ]);
+
+      rafId = requestAnimationFrame(animate);
+    };
+
+    rafId = requestAnimationFrame(animate);
+    return () => {
+      cancelAnimationFrame(rafId);
+      // Reset opacity when animation stops
+      if (map.getLayer(HEATMAP_LAYER_ID)) {
+        map.setPaintProperty(HEATMAP_LAYER_ID, "heatmap-opacity", [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          5, 0.65,
+          8, 0.55,
+          10.5, 0.3,
+          11, 0
+        ]);
+      }
+    };
+  }, [mapReady, viewportTooWide]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    
+    if (map.getLayer(HEATMAP_LAYER_ID)) {
+      map.setPaintProperty(HEATMAP_LAYER_ID, "heatmap-radius", [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        4,
+        (isLargeScreen ? 25 : 15),
+        8,
+        (isLargeScreen ? 40 : 25),
+        12,
+        (isLargeScreen ? 60 : 40)
+      ]);
+    }
+  }, [isLargeScreen, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;

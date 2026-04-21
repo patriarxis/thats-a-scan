@@ -10,6 +10,8 @@ const MOVE_DEBOUNCE_MS = 300;
 const VIEWPORT_CACHE_TTL_MS = 60_000;
 const VIEWPORT_CACHE_DECIMALS = 3;
 const VIEWPORT_CACHE_MAX_ENTRIES = 40;
+const WIDE_PREVIEW_MAX_FEATURES = 220;
+const WIDE_PREVIEW_GRID_DECIMALS = 1;
 
 export type UserLocation = {
   lat: number;
@@ -27,6 +29,13 @@ type ViewportQueryState = {
 type ViewportCacheEntry = {
   createdAt: number;
   features: MerchantFeature[];
+};
+
+type BoundsPayload = {
+  north: number;
+  south: number;
+  west: number;
+  east: number;
 };
 
 function haversineDistanceKm(
@@ -88,6 +97,11 @@ export function useViewportStoreQuery(
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const hasAppliedLocationFlyRef = useRef(false);
   const viewportCacheRef = useRef<Map<string, ViewportCacheEntry>>(new Map());
+  const latestStateRef = useRef(state);
+
+  useEffect(() => {
+    latestStateRef.current = state;
+  }, [state]);
 
   const sortFeatures = (features: MerchantFeature[]) =>
     userLocation
@@ -97,6 +111,53 @@ export function useViewportStoreQuery(
           return dA - dB;
         })
       : features;
+
+  const fetchFeaturesForBounds = async (
+    bounds: BoundsPayload,
+    signal: AbortSignal
+  ): Promise<MerchantFeature[]> => {
+    const res = await fetch(STORES_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        north_west: {
+          latitude: bounds.north,
+          longitude: bounds.west
+        },
+        south_east: {
+          latitude: bounds.south,
+          longitude: bounds.east
+        }
+      }),
+      signal
+    });
+    if (!res.ok) {
+      console.error("Merchant API returned status:", res.status);
+      throw new Error("Failed to load stores");
+    }
+    const json = (await res.json()) as { features?: MerchantFeature[] };
+    const features = Array.isArray(json.features) ? json.features : [];
+    return features.filter((feature) => {
+      const lng = Number(feature.geometry.coordinates[0]);
+      const lat = Number(feature.geometry.coordinates[1]);
+      return Number.isFinite(lng) && Number.isFinite(lat);
+    });
+  };
+
+  const downsampleForWidePreview = (features: MerchantFeature[]): MerchantFeature[] => {
+    if (features.length <= WIDE_PREVIEW_MAX_FEATURES) return features;
+    const byGrid = new Map<string, MerchantFeature>();
+    for (const feature of features) {
+      const lng = Number(feature.geometry.coordinates[0]);
+      const lat = Number(feature.geometry.coordinates[1]);
+      const key = `${lat.toFixed(WIDE_PREVIEW_GRID_DECIMALS)}:${lng.toFixed(WIDE_PREVIEW_GRID_DECIMALS)}`;
+      if (!byGrid.has(key)) byGrid.set(key, feature);
+    }
+    const compact = Array.from(byGrid.values());
+    if (compact.length <= WIDE_PREVIEW_MAX_FEATURES) return compact;
+    const step = Math.ceil(compact.length / WIDE_PREVIEW_MAX_FEATURES);
+    return compact.filter((_, index) => index % step === 0).slice(0, WIDE_PREVIEW_MAX_FEATURES);
+  };
 
   const buildBoundsCacheKey = (map: MapboxMap) => {
     const bounds = map.getBounds();
@@ -132,22 +193,52 @@ export function useViewportStoreQuery(
     const fetchVisible = async (source: "initial" | "move") => {
       const bounds = map.getBounds();
       if (!bounds) return;
+      const boundsPayload: BoundsPayload = {
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        west: bounds.getWest(),
+        east: bounds.getEast()
+      };
 
-      const latSpan = Math.abs(bounds.getNorth() - bounds.getSouth());
-      const lngSpan = Math.abs(bounds.getEast() - bounds.getWest());
+      const latSpan = Math.abs(boundsPayload.north - boundsPayload.south);
+      const lngSpan = Math.abs(boundsPayload.east - boundsPayload.west);
       const tooWide = latSpan > MAP_MAX_LAT_SPAN || lngSpan > MAP_MAX_LNG_SPAN;
 
       if (tooWide) {
         abortRef.current?.abort();
-        abortRef.current = null;
+        const controller = new AbortController();
+        abortRef.current = controller;
+        const hasPreviewData = latestStateRef.current.merchants.length > 0;
         setState((prev) => ({
           ...prev,
           loading: false,
-          updating: false,
+          updating: !hasPreviewData,
           viewportTooWide: true,
-          merchants: [],
+          merchants: prev.merchants,
           error: null
         }));
+        if (!hasPreviewData) {
+          try {
+            const wideFeatures = await fetchFeaturesForBounds(boundsPayload, controller.signal);
+            if (controller.signal.aborted) return;
+            setState((prev) => ({
+              ...prev,
+              merchants: downsampleForWidePreview(sortFeatures(wideFeatures)),
+              loading: false,
+              updating: false,
+              viewportTooWide: true,
+              error: null
+            }));
+          } catch (err) {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+            setState((prev) => ({
+              ...prev,
+              loading: false,
+              updating: false,
+              viewportTooWide: true
+            }));
+          }
+        }
         return;
       }
 
@@ -180,38 +271,7 @@ export function useViewportStoreQuery(
       abortRef.current = controller;
 
       try {
-        const res = await fetch(STORES_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            north_west: {
-              latitude: bounds.getNorth(),
-              longitude: bounds.getWest()
-            },
-            south_east: {
-              latitude: bounds.getSouth(),
-              longitude: bounds.getEast()
-            }
-          }),
-          signal: controller.signal
-        });
-        if (!res.ok) {
-          console.error("Merchant API returned status:", res.status);
-          setState((prev) => ({
-            ...prev,
-            loading: false,
-            updating: false,
-            error: "Failed to load stores. Please try again."
-          }));
-          return;
-        }
-        const json = (await res.json()) as { features?: MerchantFeature[] };
-        const features = Array.isArray(json.features) ? json.features : [];
-        const validFeatures = features.filter((feature) => {
-          const lng = Number(feature.geometry.coordinates[0]);
-          const lat = Number(feature.geometry.coordinates[1]);
-          return Number.isFinite(lng) && Number.isFinite(lat);
-        });
+        const validFeatures = await fetchFeaturesForBounds(boundsPayload, controller.signal);
 
         if (cacheKey) writeViewportCache(cacheKey, validFeatures);
         const sorted = sortFeatures(validFeatures);

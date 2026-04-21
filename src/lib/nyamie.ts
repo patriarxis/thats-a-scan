@@ -1,4 +1,5 @@
 import { MerchantFeature } from "@/types";
+import { transliterateGreek, translateGreekAddress } from "./translationUtils";
 
 export interface NyamieVenue {
   name: string;
@@ -54,20 +55,20 @@ export function mapVenueToMerchantFeature(venue: NyamieVenue): MerchantFeature {
       ID: venue.slug,
       MerchantId: venue.slug,
       BrandNameGR: venue.name,
-      BrandNameEN: venue.name, // Fallback to same as GR if not available
+      BrandNameEN: transliterateGreek(venue.name),
       AddressGR: addressStr,
-      AddressEN: addressStr,
+      AddressEN: translateGreekAddress(addressStr),
       TownGR: venue.address.city,
-      TownEN: venue.address.city,
+      TownEN: translateGreekAddress(venue.address.city),
       MCCCategoryGR: venue.disciplines.map((d) => d.name).join(", "),
-      MCCCategoryEN: venue.disciplines.map((d) => d.name).join(", "),
-      // Align with UI expectations in PartnerDetailSheet.tsx
+      MCCCategoryEN: venue.disciplines
+        .map((d) => transliterateGreek(d.name))
+        .join(", "),
       Phone: venue.phones.find((p) => p !== null) || "",
       Website: venue.website || "",
       FacebookUrl: venue.social_networks.facebook || "",
       InstagramUrl: venue.social_networks.instagram || "",
       Description: venue.about_us.plain_text,
-      // Custom Nyamie fields
       nyamie_slug: venue.slug,
       rating: venue.rating,
       logo:
@@ -105,7 +106,7 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
           "X-Api-Key": apiKey,
           "Content-Type": "application/json",
         },
-        next: { revalidate: 60 },
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -125,14 +126,12 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
       const features = venues.map(mapVenueToMerchantFeature);
       allFeatures = [...allFeatures, ...features];
 
-      // If we got fewer than 10 items (assuming 10 is the page size based on initial tests), we reached the end
       if (venues.length < 10) {
         hasMore = false;
       } else {
         page++;
       }
 
-      // Safety break to avoid infinite loops if API behaves weirdly
       if (page > 50) break;
     } catch (error) {
       console.error(`Error fetching Nyamie venues page ${page}:`, error);

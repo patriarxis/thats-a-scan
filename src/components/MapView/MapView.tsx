@@ -20,6 +20,7 @@ const GREECE_MAX_BOUNDS: [[number, number], [number, number]] = [
 ];
 const SOURCE_ID = "merchants-source";
 const LAYER_ID = "merchants-markers";
+const SELECTED_LAYER_ID = "merchants-markers-selected";
 const CLUSTER_LAYER_ID = "merchants-clusters";
 const CLUSTER_COUNT_LAYER_ID = "merchants-cluster-count";
 const HIGHLIGHT_LAYER_ID = "merchants-highlight";
@@ -241,6 +242,27 @@ const ensureMapLayers = (map: MapboxMap) => {
       }
     });
   }
+
+  if (!map.getLayer(SELECTED_LAYER_ID)) {
+    map.addLayer({
+      id: SELECTED_LAYER_ID,
+      type: "symbol",
+      source: SOURCE_ID,
+      filter: ["==", "__merchant_id", "__none__"],
+      layout: {
+        "icon-image": ["coalesce", ["get", "__marker_icon"], MARKER_ICON_DEFAULT_ID],
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 9, 0.92, 12, 1, 15, 1.08],
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
+        "icon-anchor": "center"
+      }
+    });
+  }
+
+  // Keep highlight rings above regular markers, but still below the selected marker icon.
+  if (map.getLayer(HIGHLIGHT_LAYER_ID) && map.getLayer(SELECTED_LAYER_ID)) {
+    map.moveLayer(HIGHLIGHT_LAYER_ID, SELECTED_LAYER_ID);
+  }
 };
 
 const resolveMapStyle = (hasToken: boolean) =>
@@ -386,10 +408,16 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     map.on("mouseenter", LAYER_ID, () => {
       map.getCanvas().style.cursor = "pointer";
     });
+    map.on("mouseenter", SELECTED_LAYER_ID, () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
     map.on("mouseenter", CLUSTER_LAYER_ID, () => {
       map.getCanvas().style.cursor = "pointer";
     });
     map.on("mouseleave", LAYER_ID, () => {
+      map.getCanvas().style.cursor = "";
+    });
+    map.on("mouseleave", SELECTED_LAYER_ID, () => {
       map.getCanvas().style.cursor = "";
     });
     map.on("mouseleave", CLUSTER_LAYER_ID, () => {
@@ -419,12 +447,22 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
         onMerchantSelect?.(partner);
       }
     });
+    map.on("click", SELECTED_LAYER_ID, (e) => {
+      const feature = e.features?.[0];
+      if (!feature || feature.geometry.type !== "Point") return;
+      const merchantId = String(feature.properties?.__merchant_id ?? "");
+      const partner = partnersRef.current.find((item) => getPartnerId(item) === merchantId);
+      if (partner) {
+        onPartnerSelectRef.current?.(partner);
+        onMerchantSelect?.(partner);
+      }
+    });
 
     map.on("click", (e) => {
       // If the click hit a merchant marker or cluster, we let those specific handlers work.
       // queryRenderedFeatures is the most reliable way to check for generic map click vs feature click.
       const features = map.queryRenderedFeatures(e.point, {
-        layers: [LAYER_ID, CLUSTER_LAYER_ID]
+        layers: [LAYER_ID, SELECTED_LAYER_ID, CLUSTER_LAYER_ID]
       });
       if (!features.length) {
         onMapClickRef.current?.();
@@ -500,10 +538,11 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.getLayer(HIGHLIGHT_LAYER_ID)) return;
+    if (!map || !map.getLayer(HIGHLIGHT_LAYER_ID) || !map.getLayer(SELECTED_LAYER_ID) || !map.getLayer(LAYER_ID)) return;
+    const selectedId = selectedPartnerId ?? selectedMerchantId ?? null;
     const ids = Array.from(
       new Set([
-        ...((selectedPartnerId ?? selectedMerchantId) ? [selectedPartnerId ?? selectedMerchantId as string] : []),
+        ...(selectedId ? [selectedId] : []),
         ...(highlightedPartnerIds ?? highlightedMerchantIds ?? [])
       ])
     );
@@ -512,6 +551,18 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       ids.length > 0
         ? ["in", ["get", "__merchant_id"], ["literal", ids]]
         : ["==", "__merchant_id", "__none__"]
+    );
+    map.setFilter(
+      SELECTED_LAYER_ID,
+      selectedId
+        ? ["==", ["get", "__merchant_id"], selectedId]
+        : ["==", "__merchant_id", "__none__"]
+    );
+    map.setFilter(
+      LAYER_ID,
+      selectedId
+        ? ["all", ["!", ["has", "point_count"]], ["!=", ["get", "__merchant_id"], selectedId]]
+        : ["!", ["has", "point_count"]]
     );
   }, [highlightedMerchantIds, highlightedPartnerIds, selectedMerchantId, selectedPartnerId]);
 

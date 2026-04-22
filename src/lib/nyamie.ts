@@ -1,5 +1,6 @@
 import { MerchantFeature } from "@/types";
 import { transliterateGreek, translateGreekAddress } from "./translationUtils";
+import { fetchWebflowDescriptions, normalizeName } from "./webflow";
 
 export interface NyamieVenue {
   name: string;
@@ -42,7 +43,10 @@ export interface NyamieVenue {
   }>;
 }
 
-export function mapVenueToMerchantFeature(venue: NyamieVenue): MerchantFeature {
+export function mapVenueToMerchantFeature(
+  venue: NyamieVenue,
+  grDescriptions?: Map<string, string>
+): MerchantFeature {
   const addressStr = `${venue.address.street} ${venue.address.number}, ${venue.address.city}`;
 
   return {
@@ -69,6 +73,8 @@ export function mapVenueToMerchantFeature(venue: NyamieVenue): MerchantFeature {
       FacebookUrl: venue.social_networks.facebook || "",
       InstagramUrl: venue.social_networks.instagram || "",
       Description: venue.about_us.plain_text,
+      DescriptionEN: venue.about_us.plain_text,
+      DescriptionGR: grDescriptions?.get(normalizeName(venue.name)) ?? "",
       nyamie_slug: venue.slug,
       rating: venue.rating,
       logo:
@@ -106,6 +112,11 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
     return [];
   }
 
+  const grDescriptions = await fetchWebflowDescriptions().catch((error) => {
+    console.error("Failed to fetch Webflow gym descriptions:", error);
+    return new Map<string, string>();
+  });
+
   const allFeatures: MerchantFeature[] = [];
   let currentStartPage = 1;
   let exhausted = false;
@@ -138,7 +149,9 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
           exhausted = true;
           // We found an empty page, but we should still process the pages before this one in the batch
         }
-        const features = venues.map(mapVenueToMerchantFeature);
+        const features = venues.map((venue) =>
+          mapVenueToMerchantFeature(venue, grDescriptions)
+        );
         allFeatures.push(...features);
         
         // If results are less than expected per page (usually 10), we've likely hit the end

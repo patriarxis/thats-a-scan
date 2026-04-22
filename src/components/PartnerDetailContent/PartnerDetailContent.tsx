@@ -22,6 +22,7 @@ import {
 } from "@/lib/merchantFilters";
 import { RichText } from "../RichText";
 import styles from "./PartnerDetailContent.module.scss";
+import { LOCALE } from "@/enums";
 
 interface PartnerDetailContentProps extends PartnerDetailSheetProps {
   className?: string;
@@ -117,12 +118,29 @@ export const PartnerDetailContent = ({
   const facebook = props.FacebookUrl as string;
   const linkedin = props.LinkedinUrl as string;
   const instagram = props.InstagramUrl as string;
-  const description = (props.DescriptionGR ||
-    props.DescriptionEN ||
-    props.Description) as string;
   const featuredPhoto = props.featured_photo as string;
 
   const category = resolveMerchantCategory(partner);
+  const description = useMemo(() => {
+    if (category === "gyms") {
+      const localeDescription =
+        locale === LOCALE.EL
+          ? props.DescriptionGR
+          : props.DescriptionEN || props.Description;
+      return String(localeDescription ?? "").trim();
+    }
+
+    return String(
+      props.DescriptionGR || props.DescriptionEN || props.Description || ""
+    ).trim();
+  }, [
+    category,
+    locale,
+    props.Description,
+    props.DescriptionEN,
+    props.DescriptionGR,
+  ]);
+
   const acceptedProducts = useMemo(() => {
     const products = parseAcceptedProducts(props.AcceptedProducts);
     if (

@@ -247,12 +247,12 @@ const LocatorPageContent = () => {
       options?: { updateUrl?: boolean; historyMode?: "push" | "replace" },
     ) => {
       setSelectedPartner(partner);
-      mapRef.current?.flyTo(partner.geometry.coordinates, 15.5, {
+      mapRef.current?.panTo(partner.geometry.coordinates, {
         top: 64,
         right: 16,
         bottom: isMobile ? mobileDrawerOffsetPx : desktopDrawerOffsetPx,
         left: 16,
-      }, { preserveHigherZoom: true });
+      });
       if (options?.updateUrl !== false) {
         syncSelectionInUrl(partner, options?.historyMode ?? "push");
       }
@@ -424,9 +424,7 @@ const LocatorPageContent = () => {
               if (partner) {
                 handleSelectPartner(partner);
               } else {
-                mapRef.current?.flyTo(item.coordinates, 15, focusPadding, {
-                  preserveHigherZoom: true,
-                });
+                mapRef.current?.panTo(item.coordinates, focusPadding);
               }
               setQuery(item.label);
               setSuggestions([]);

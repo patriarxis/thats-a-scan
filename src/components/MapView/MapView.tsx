@@ -115,6 +115,7 @@ export type MapViewHandle = {
     padding?: mapboxgl.PaddingOptions,
     options?: { preserveHigherZoom?: boolean },
   ) => void;
+  panTo: (center: [number, number], padding?: mapboxgl.PaddingOptions) => void;
 };
 
 const withClientIds = (features: PartnerFeature[]): PartnerFeature[] =>
@@ -497,6 +498,11 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       const nextZoom =
         options?.preserveHigherZoom ? Math.max(map.getZoom(), zoom) : zoom;
       map.easeTo({ center, zoom: nextZoom, padding, duration: 700 });
+    },
+    panTo(center, padding) {
+      const map = mapRef.current;
+      if (!map) return;
+      map.easeTo({ center, padding, duration: 700 });
     }
   }));
 

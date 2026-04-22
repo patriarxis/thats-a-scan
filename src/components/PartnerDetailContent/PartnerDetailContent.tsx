@@ -51,7 +51,7 @@ export const PartnerDetailContent = ({
   const [shouldShowToggle, setShouldShowToggle] = useState(false);
   const descriptionRef = useRef<HTMLDivElement>(null);
 
-  const [emblaRef] = useEmblaCarousel({
+  const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
     containScroll: "trimSnaps",
     dragFree: true,
@@ -59,6 +59,13 @@ export const PartnerDetailContent = ({
 
   const address = partner ? getPartnerAddress(partner, locale) : "";
   const [lng, lat] = partner?.geometry.coordinates ?? [0, 0];
+
+  useEffect(() => {
+    setIsBioExpanded(false);
+    if (emblaApi) {
+      emblaApi.scrollTo(0, true);
+    }
+  }, [partner?.properties?.ID, emblaApi]);
 
   useEffect(() => {
     if (descriptionRef.current) {

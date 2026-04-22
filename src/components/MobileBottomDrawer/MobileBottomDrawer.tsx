@@ -6,6 +6,7 @@ interface MobileBottomDrawerProps {
   onClose: () => void;
   isOpen: boolean;
   closeSignal?: number;
+  contentKey?: string | number;
 }
 
 const CLOSE_ANIMATION_MS = 320;
@@ -22,6 +23,7 @@ export const MobileBottomDrawer = ({
   onClose,
   isOpen,
   closeSignal = 0,
+  contentKey,
 }: MobileBottomDrawerProps) => {
   const [drawerState, setDrawerState] = useState<"peek" | "full" | "closed">("closed");
   const [dragY, setDragY] = useState(0);
@@ -98,6 +100,12 @@ export const MobileBottomDrawer = ({
       contentRef.current.scrollTop = 0;
     }
   }, [drawerState, isDragging]);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+  }, [contentKey]);
 
   useEffect(() => {
     const syncViewportHeight = () => setViewportHeight(window.innerHeight);

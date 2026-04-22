@@ -6,6 +6,7 @@ interface DesktopSideSheetProps {
   onClose: () => void;
   isOpen: boolean;
   closeSignal?: number;
+  contentKey?: string | number;
 }
 
 const CLOSE_ANIMATION_MS = 320;
@@ -15,16 +16,24 @@ export const DesktopSideSheet = ({
   onClose,
   isOpen,
   closeSignal = 0,
+  contentKey,
 }: DesktopSideSheetProps) => {
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isClosing, setIsClosing] = useState(false);
   const closeTimerRef = useRef<number | null>(null);
   const onCloseRef = useRef(onClose);
   const prevCloseSignalRef = useRef(closeSignal);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+  }, [contentKey]);
 
   const clearCloseTimer = useCallback(() => {
     if (closeTimerRef.current !== null) {
@@ -69,7 +78,7 @@ export const DesktopSideSheet = ({
       role="region"
       aria-label="Partner details panel"
     >
-      <div className={styles.desktopContent}>
+      <div className={styles.desktopContent} ref={contentRef}>
         {children}
       </div>
     </aside>

@@ -40,6 +40,7 @@ export const PartnerDetailSheet = (props: PartnerDetailSheetProps) => {
         isOpen={!!partner}
         onClose={onClose}
         closeSignal={mobileCloseSignal}
+        contentKey={partner.properties.ID}
       >
         {content}
       </MobileBottomDrawer>
@@ -51,6 +52,7 @@ export const PartnerDetailSheet = (props: PartnerDetailSheetProps) => {
       isOpen={!!partner}
       onClose={onClose}
       closeSignal={desktopCloseSignal}
+      contentKey={partner.properties.ID}
     >
       {content}
     </DesktopSideSheet>

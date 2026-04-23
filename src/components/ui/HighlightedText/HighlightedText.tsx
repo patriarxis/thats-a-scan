@@ -7,9 +7,6 @@ type HighlightedTextProps = {
   query: string;
 };
 
-/**
- * Renders text with search query highlighted.
- */
 export const HighlightedText = ({ text, query }: HighlightedTextProps) => {
   const parts = useMemo(() => {
     const normalizedQuery = normalizeStr(query.trim());
@@ -27,7 +24,9 @@ export const HighlightedText = ({ text, query }: HighlightedTextProps) => {
       }
 
       if (matchIndex > currentIndex) {
-        result.push(<span key={currentIndex}>{text.slice(currentIndex, matchIndex)}</span>);
+        result.push(
+          <span key={currentIndex}>{text.slice(currentIndex, matchIndex)}</span>,
+        );
       }
 
       const matchText = text.slice(matchIndex, matchIndex + normalizedQuery.length);

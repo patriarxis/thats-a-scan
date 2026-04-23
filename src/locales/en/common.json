@@ -21,6 +21,8 @@
   "clearSearch": "Clear search",
   "noAddress": "No address available",
   "loadingSuggestions": "Loading suggestions",
+  "searchSectionCategories": "Categories",
+  "searchSectionPlaces": "Places",
   "loadingMap": "Loading map...",
   "updatingArea": "Updating area...",
   "address": "Address",

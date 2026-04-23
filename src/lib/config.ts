@@ -1,7 +1,7 @@
 // Search & suggestions
 export const SEARCH_DEBOUNCE_MS = 250;
-export const SEARCH_SUGGESTION_LIMIT = 8;
-export const MERCHANT_SUGGESTION_LIMIT = 6;
+export const SEARCH_SUGGESTION_LIMIT = 10;
+export const MERCHANT_SUGGESTION_LIMIT = 10;
 export const GEOCODING_RESULT_LIMIT = 6;
 export const GEOCODING_MIN_QUERY_LENGTH = 2;
 export const GEOCODING_FETCH_TIMEOUT_MS = 5000;

@@ -1,50 +1,128 @@
 "use client";
 
-import { ArrowRight, Search, X } from "lucide-react";
-import { useEffect, useId, useMemo, useState } from "react";
-import { normalizeStr } from "@/lib/stringUtils";
+import { ArrowLeft, Search, SlidersHorizontal, X } from "lucide-react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useAnimatedPresence } from "@/lib/useAnimatedPresence";
+import { SearchResultsPanel } from "@/components/SearchPanel/SearchResultsPanel";
+import { FiltersModal, type FiltersModalProps } from "@/components/FiltersModal/FiltersModal";
 import styles from "./SearchBar.module.scss";
 
-import { SearchDropdown } from "./SearchDropdown/SearchDropdown";
+import { useSearchFocusShell } from "./useSearchFocusShell";
 
 export type SearchSuggestion = {
-  type: "merchant";
+  type: "merchant" | "category";
   id: string;
   label: string;
   sublabel: string;
-  merchantId: string;
-  coordinates: [number, number];
+  merchantId?: string;
+  coordinates?: [number, number];
+  categoryId?: string;
 };
 
 type SearchBarProps = {
   value: string;
   suggestions: SearchSuggestion[];
-  loading: boolean;
+  suppressSuggestions?: boolean;
   placeholder: string;
   searchAriaLabel: string;
   clearAriaLabel: string;
-  loadingAriaLabel: string;
+  openFiltersAriaLabel: string;
+  filterActiveCount?: number;
+  categorySectionLabel: string;
+  placeSectionLabel: string;
   onChange: (value: string) => void;
   onSelect: (suggestion: SearchSuggestion) => void;
   onClear: () => void;
+  onOpenFilters: () => void;
+  onFocusInput?: () => void;
+  focusInputSignal?: number;
+  closeActiveSignal?: number;
+  isFiltersOpen?: boolean;
+  filtersPanelProps?: Omit<FiltersModalProps, "isOpen">;
 };
 
 export const SearchBar = ({
   value,
   suggestions,
-  loading,
+  suppressSuggestions = false,
   placeholder,
   searchAriaLabel,
   clearAriaLabel,
-  loadingAriaLabel,
+  openFiltersAriaLabel,
+  filterActiveCount = 0,
+  categorySectionLabel,
+  placeSectionLabel,
   onChange,
   onSelect,
   onClear,
+  onOpenFilters,
+  onFocusInput,
+  focusInputSignal,
+  closeActiveSignal,
+  isFiltersOpen = false,
+  filtersPanelProps,
 }: SearchBarProps) => {
+  const MOBILE_SEARCH_CLOSE_ANIMATION_MS = 180;
+  const MOBILE_ONLY_MEDIA_QUERY = "(max-width: 639px)";
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [isFocused, setIsFocused] = useState(false);
+  const prevFocusInputSignalRef = useRef<number | undefined>(focusInputSignal);
+  const prevCloseActiveSignalRef = useRef<number | undefined>(closeActiveSignal);
+  const skipBlurCloseRef = useRef(false);
+  const closeSearchToDefaultRef = useRef<() => void>(() => {});
+  const closeFiltersToSearchRef = useRef<() => boolean>(() => false);
   const listboxId = useId();
-  const isOpen = isFocused && suggestions.length > 0;
+  const handleMobileBack = useCallback(() => {
+    if (isFiltersOpen) {
+      return closeFiltersToSearchRef.current();
+    }
+    const activeElement = document.activeElement;
+    if (
+      activeElement instanceof HTMLInputElement &&
+      activeElement.id === "locator-search"
+    ) {
+      activeElement.blur();
+      return true;
+    }
+    closeSearchToDefaultRef.current();
+    return true;
+  }, [isFiltersOpen]);
+  const {
+    inputRef,
+    isFocused,
+    isClosing,
+    isFocusShellActive,
+    wrapperStyle,
+    closeFocusShell,
+    closeFocusShellDirect,
+    handleInputFocus,
+  } = useSearchFocusShell({
+    mobileMediaQuery: MOBILE_ONLY_MEDIA_QUERY,
+    closeAnimationMs: MOBILE_SEARCH_CLOSE_ANIMATION_MS,
+    onMobileBack: handleMobileBack,
+  });
+  const closeSearchToDefault = useCallback(() => {
+    closeFocusShellDirect(() => setActiveIndex(-1));
+  }, [closeFocusShellDirect]);
+
+  const closeFiltersToSearch = useCallback(() => {
+    if (!filtersPanelProps?.onClose) return false;
+    filtersPanelProps.onClose();
+    window.setTimeout(() => {
+      if (!inputRef.current) return;
+      inputRef.current.focus();
+      handleInputFocus();
+    }, 0);
+    return true;
+  }, [filtersPanelProps, handleInputFocus, inputRef]);
+  useEffect(() => {
+    closeSearchToDefaultRef.current = closeSearchToDefault;
+    closeFiltersToSearchRef.current = closeFiltersToSearch;
+  }, [closeFiltersToSearch, closeSearchToDefault]);
+  const isSearchUiActive = isFocusShellActive || isFiltersOpen;
+  const isOpen =
+    isSearchUiActive && !isFiltersOpen && !suppressSuggestions && suggestions.length > 0;
+  const { isMounted: showSuggestionsPanel, isClosing: isSuggestionsPanelClosing } =
+    useAnimatedPresence(isOpen, 180);
   const activeId = useMemo(
     () => (activeIndex >= 0 ? `search-opt-${activeIndex}` : undefined),
     [activeIndex],
@@ -56,31 +134,66 @@ export const SearchBar = ({
     if (!isOpen) setActiveIndex(-1);
   }, [isOpen]);
 
+  useEffect(() => {
+    if (typeof focusInputSignal !== "number") return;
+    if (focusInputSignal === prevFocusInputSignalRef.current) return;
+    prevFocusInputSignalRef.current = focusInputSignal;
+    if (!inputRef.current) return;
+    inputRef.current.focus();
+    handleInputFocus();
+  }, [focusInputSignal, handleInputFocus, inputRef]);
+
+  useEffect(() => {
+    if (typeof closeActiveSignal !== "number") return;
+    if (closeActiveSignal === prevCloseActiveSignalRef.current) return;
+    prevCloseActiveSignalRef.current = closeActiveSignal;
+    if (inputRef.current && document.activeElement === inputRef.current) {
+      inputRef.current.blur();
+    }
+    closeFocusShellDirect(() => setActiveIndex(-1));
+  }, [closeActiveSignal, closeFocusShellDirect]);
+
   const handleSelect = (item: SearchSuggestion) => {
+    if (inputRef.current && document.activeElement === inputRef.current) {
+      inputRef.current.blur();
+    }
     onSelect(item);
-    setActiveIndex(-1);
-    setIsFocused(false);
+    closeFocusShell(() => setActiveIndex(-1));
+  };
+
+  const handleMobileBackButton = () => {
+    if (isFiltersOpen) {
+      closeFiltersToSearch();
+      return;
+    }
+    if (inputRef.current && document.activeElement === inputRef.current) {
+      inputRef.current.blur();
+      return;
+    }
+    closeSearchToDefault();
   };
 
   return (
-    <form
-      className={styles.wrapper}
+    <div
+      className={`${styles.wrapper} ${isSearchUiActive ? styles.wrapperFocused : ""} ${isClosing ? styles.wrapperClosing : ""}`}
+      style={wrapperStyle}
       role="search"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!selectedSuggestion) return;
-        handleSelect(selectedSuggestion);
-      }}
     >
       <div className={styles.inputWrapper}>
         <div className={styles.searchIconWrapper}>
-          {loading ? (
-            <span className={styles.spinner} aria-label={loadingAriaLabel} />
-          ) : (
-            <Search className={styles.searchIcon} aria-hidden />
-          )}
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={handleMobileBackButton}
+            className={styles.mobileBackBtn}
+            aria-label={clearAriaLabel}
+          >
+            <ArrowLeft className={styles.mobileBackIcon} />
+          </button>
+          <Search className={styles.searchIcon} aria-hidden />
         </div>
         <input
+          ref={inputRef}
           id="locator-search"
           role="combobox"
           aria-label={searchAriaLabel}
@@ -91,15 +204,23 @@ export const SearchBar = ({
           aria-haspopup="listbox"
           autoComplete="off"
           value={value}
+          onPointerDown={() => {
+            onFocusInput?.();
+          }}
           onChange={(e) => {
             onChange(e.target.value);
             setActiveIndex(-1);
           }}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => {
+            handleInputFocus(onFocusInput);
+          }}
           onBlur={() => {
+            if (skipBlurCloseRef.current || isFiltersOpen) {
+              skipBlurCloseRef.current = false;
+              return;
+            }
             window.setTimeout(() => {
-              setIsFocused(false);
-              setActiveIndex(-1);
+              closeFocusShell(() => setActiveIndex(-1));
             }, 120);
           }}
           onKeyDown={(e) => {
@@ -119,8 +240,7 @@ export const SearchBar = ({
               handleSelect(selectedSuggestion);
             }
             if (e.key === "Escape") {
-              setActiveIndex(-1);
-              setIsFocused(false);
+              closeFocusShell(() => setActiveIndex(-1));
             }
           }}
           placeholder={placeholder}
@@ -130,6 +250,7 @@ export const SearchBar = ({
           {value && (
             <button
               type="button"
+              onMouseDown={(event) => event.preventDefault()}
               onClick={onClear}
               className={styles.clearBtn}
               aria-label={clearAriaLabel}
@@ -138,25 +259,46 @@ export const SearchBar = ({
             </button>
           )}
           <button
-            type="submit"
-            className={styles.submitBtn}
-            aria-label={searchAriaLabel}
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              skipBlurCloseRef.current = true;
+              handleInputFocus(onFocusInput);
+              if (inputRef.current && document.activeElement === inputRef.current) {
+                inputRef.current.blur();
+              }
+              onOpenFilters();
+              setActiveIndex(-1);
+            }}
+            className={styles.filtersBtn}
+            aria-label={openFiltersAriaLabel}
           >
-            <ArrowRight className={styles.submitIcon} />
+            <SlidersHorizontal className={styles.filtersIcon} />
+            {filterActiveCount > 0 && (
+              <span className={styles.filtersBadge}>{filterActiveCount}</span>
+            )}
           </button>
         </div>
       </div>
 
-      {isOpen && (
-        <SearchDropdown
+      {isFiltersOpen && filtersPanelProps ? (
+        <FiltersModal isOpen={isFiltersOpen} {...filtersPanelProps} />
+      ) : (
+        showSuggestionsPanel && (
+        <SearchResultsPanel
           id={listboxId}
           suggestions={suggestions}
           activeIndex={activeIndex}
           query={value}
+          categorySectionLabel={categorySectionLabel}
+          placeSectionLabel={placeSectionLabel}
+          mobileFullscreen={isSearchUiActive}
+          mobileClosing={isClosing || isSuggestionsPanelClosing}
           onSelect={handleSelect}
           onHover={setActiveIndex}
         />
+        )
       )}
-    </form>
+    </div>
   );
 };

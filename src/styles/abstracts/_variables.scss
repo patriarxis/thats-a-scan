@@ -82,9 +82,10 @@ $neutral-7: #999999;
 $neutral-8: #b2b2b2;
 $neutral-9: #cccccc;
 $neutral-10: #e5e5e5;
-$white: #ffffff;
 
 // White Opacity Variants
+$white: rgba(255, 255, 255, 1);
+$white-95: rgba(255, 255, 255, 0.95);
 $white-90: rgba(255, 255, 255, 0.9);
 $white-80: rgba(255, 255, 255, 0.8);
 $white-60: rgba(255, 255, 255, 0.6);
@@ -95,6 +96,7 @@ $white-05: rgba(255, 255, 255, 0.05);
 $white-03: rgba(255, 255, 255, 0.03);
 
 // Black Opacity Variants
+$black: rgba(0, 0, 0, 1);
 $black-95: rgba(0, 0, 0, 0.95);
 $black-90: rgba(0, 0, 0, 0.9);
 $black-85: rgba(0, 0, 0, 0.85);

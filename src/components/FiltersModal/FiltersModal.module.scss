@@ -1,29 +1,70 @@
 @use "../../styles/abstracts" as *;
 
 .overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  background: rgba($neutral-1, 0.58);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: $spacing-md;
+  position: absolute;
+  top: calc(100% + $spacing-xs);
+  left: 0;
+  right: 0;
+  z-index: 95;
+  padding: 0;
+  animation: panelOverlayIn 0.2s ease-out forwards;
+
+  @include mobile-only {
+    position: relative;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin-top: $spacing-xs;
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+  }
+
+  @include desktop-up {
+    pointer-events: none;
+  }
 }
 
 .modal {
-  width: min(46rem, 100%);
-  max-height: min(78vh, 42rem);
+  width: 100%;
+  max-height: 22rem;
   overflow: auto;
-  border: 1px solid rgba($white, 0.08);
-  border-radius: $border-radius-lg;
-  background: rgba($neutral-2, 0.96);
-  box-shadow:
-    0 20px 60px rgba($neutral-1, 0.6),
-    inset 0 1px 0 rgba($white, 0.05);
-  padding: $spacing-lg;
+  overscroll-behavior: contain;
+  border-radius: $border-radius-md;
+  background: $neutral-2;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: $spacing-sm;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  transform-origin: top center;
+  animation: panelIn 0.2s ease-out forwards;
+
+  @include mobile-only {
+    width: 100%;
+    max-height: none;
+    height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: $border-radius-lg;
+    background: $neutral-2;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+    padding: $spacing-sm;
+  }
+
+  @include desktop-up {
+    pointer-events: auto;
+  }
+}
+
+.overlayClosing {
+  animation: panelOverlayOut 0.16s ease-in forwards;
+}
+
+.modalClosing {
+  animation: panelOut 0.16s ease-in forwards;
 }
 
 .header {
@@ -213,4 +254,44 @@
   text-align: center;
   line-height: 1.2;
   font-weight: $font-weight-medium;
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: scaleY(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes panelOut {
+  from {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: scaleY(0.92);
+  }
+}
+
+@keyframes panelOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes panelOverlayOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }

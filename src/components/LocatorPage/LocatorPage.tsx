@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { SlidersHorizontal } from "lucide-react";
 import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { LocaleProvider } from "@/lib/LocaleContext";
 import { useLocale } from "@/lib";
@@ -10,11 +9,18 @@ import {
   type SearchSuggestion
 } from "@/components/SearchBar/SearchBar";
 import { SearchBar } from "@/components/SearchBar/SearchBar";
+import type { FiltersModalProps } from "@/components/FiltersModal/FiltersModal";
 import { QuickFilterChips } from "@/components/QuickFilterChips/QuickFilterChips";
 import type { MapViewHandle } from "@/components/MapView/MapView";
 import { LocatorHeader } from "@/components/LocatorHeader/LocatorHeader";
 import { LocatorFooter } from "@/components/LocatorFooter/LocatorFooter";
 import { searchMerchantSuggestions } from "@/lib/merchantSearchIndex";
+import {
+  findPopularCategoriesForQuery,
+  getPopularSearchCategories,
+  merchantMatchesPopularCategory,
+  type PopularSearchCategoryId,
+} from "@/lib/searchCategories";
 import { useMerchantFilters } from "@/lib/useMerchantFilters";
 import {
   getPartnerId,
@@ -32,13 +38,6 @@ import styles from "./LocatorPage.module.scss";
 
 const MapView = dynamic(
   () => import("@/components/MapView/MapView").then((module) => module.MapView),
-  { ssr: false },
-);
-const FiltersModal = dynamic(
-  () =>
-    import("@/components/FiltersModal/FiltersModal").then(
-      (module) => module.FiltersModal,
-    ),
   { ssr: false },
 );
 const PartnerDetailSheet = dynamic(
@@ -69,11 +68,11 @@ const parseSelectionFromLocation = (): UrlSelectionState => {
 };
 
 const LocatorPageContent = () => {
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapViewHandle | null>(null);
   const searchRequestRef = useRef(0);
   const geocodeAbortRef = useRef<AbortController | null>(null);
   const urlSelectionAppliedRef = useRef<string | null>(null);
-  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const isMobile = useIsMobileUx();
   const { locale, setLocale, t } = useLocale();
   const [urlSelection, setUrlSelection] = useState<UrlSelectionState>({
@@ -90,6 +89,9 @@ const LocatorPageContent = () => {
   const [selectedPartner, setSelectedPartner] = useState<PartnerFeature | null>(null);
   const [sheetCloseSignal, setSheetCloseSignal] = useState(0);
   const [query, setQuery] = useState("");
+  const [focusInputSignal, setFocusInputSignal] = useState(0);
+  const [closeActiveSignal, setCloseActiveSignal] = useState(0);
+  const [activeQuickCategoryId, setActiveQuickCategoryId] = useState<PopularSearchCategoryId | null>(null);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [mapLoading, setMapLoading] = useState(true);
@@ -99,6 +101,33 @@ const LocatorPageContent = () => {
   const allKnownMerchants = useMemo(
     () => Object.values(allKnownById),
     [allKnownById],
+  );
+  const popularCategories = useMemo(() => getPopularSearchCategories(locale), [locale]);
+  const quickChipOptions = useMemo(
+    () =>
+      popularCategories.map((category) => ({
+        id: category.id,
+        label: category.label,
+      })),
+    [popularCategories],
+  );
+  const recommendedCategorySuggestions = useMemo(
+    () =>
+      popularCategories.slice(0, SEARCH_SUGGESTION_LIMIT).map(
+        (category) =>
+          ({
+            type: "category",
+            id: `category:${category.id}`,
+            label: category.label,
+            sublabel: category.helperText,
+            categoryId: category.id,
+          }) satisfies SearchSuggestion,
+      ),
+    [popularCategories],
+  );
+  const activeQuickCategory = useMemo(
+    () => popularCategories.find((item) => item.id === activeQuickCategoryId) ?? null,
+    [activeQuickCategoryId, popularCategories],
   );
   const {
     selectedNetworkIds,
@@ -124,6 +153,17 @@ const LocatorPageContent = () => {
   const sidebarOpen = !!selectedPartner;
   const desktopDrawerOffsetPx = 340;
   const mobileDrawerOffsetPx = 280;
+  const closeFiltersToResults = useCallback(() => {
+    setIsFiltersOpen(false);
+    setSuggestions((prev) =>
+      prev.length > 0 ? prev : recommendedCategorySuggestions,
+    );
+    setFocusInputSignal((value) => value + 1);
+  }, [recommendedCategorySuggestions, setIsFiltersOpen]);
+  const closeFiltersToDefault = useCallback(() => {
+    setIsFiltersOpen(false);
+    setCloseActiveSignal((value) => value + 1);
+  }, [setIsFiltersOpen]);
 
   useEffect(() => {
     const syncFromBrowserLocation = () => {
@@ -133,6 +173,22 @@ const LocatorPageContent = () => {
     window.addEventListener("popstate", syncFromBrowserLocation);
     return () => window.removeEventListener("popstate", syncFromBrowserLocation);
   }, []);
+
+  useEffect(() => {
+    if (!isFiltersOpen) return;
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (searchContainerRef.current?.contains(target)) return;
+      closeFiltersToDefault();
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [closeFiltersToDefault, isFiltersOpen]);
 
   const syncSelectionInUrl = useCallback(
     (partner: PartnerFeature | null, historyMode: "push" | "replace" = "replace") => {
@@ -179,7 +235,7 @@ const LocatorPageContent = () => {
   useEffect(() => {
     if (!query.trim()) {
       geocodeAbortRef.current?.abort();
-      setSuggestions([]);
+      setSuggestions(recommendedCategorySuggestions);
       setSearchLoading(false);
       return;
     }
@@ -220,9 +276,19 @@ const LocatorPageContent = () => {
             coordinates: result.coordinates,
           }) satisfies SearchSuggestion,
       );
+      const categoryResults = findPopularCategoriesForQuery(query, locale, 2).map(
+        (category) =>
+          ({
+            type: "category",
+            id: `category:${category.id}`,
+            label: category.label,
+            sublabel: category.helperText,
+            categoryId: category.id,
+          }) satisfies SearchSuggestion,
+      );
 
       if (requestId === searchRequestRef.current) {
-        setSuggestions(merchantResults);
+        setSuggestions([...categoryResults, ...merchantResults].slice(0, SEARCH_SUGGESTION_LIMIT));
         setSearchLoading(false);
       }
     }, SEARCH_DEBOUNCE_MS);
@@ -231,14 +297,27 @@ const LocatorPageContent = () => {
       clearTimeout(timer);
       geocodeAbortRef.current?.abort();
     };
-  }, [allKnownMerchants, locale, query, t, visiblePartners]);
+  }, [allKnownMerchants, locale, query, recommendedCategorySuggestions, t, visiblePartners]);
 
   const highlightedPartnerIds = useMemo(
     () =>
       suggestions
-        .filter((item) => item.type === "merchant")
+        .filter(
+          (item): item is SearchSuggestion & { merchantId: string } =>
+            item.type === "merchant" && typeof item.merchantId === "string",
+        )
         .map((item) => item.merchantId),
     [suggestions],
+  );
+  const showQuickChips = !query.trim() && !mapLoading && visiblePartners.length > 0;
+
+  const merchantMatchesAllFilters = useCallback(
+    (merchant: PartnerFeature) => {
+      if (!merchantMatchesFilters(merchant)) return false;
+      if (!activeQuickCategory) return true;
+      return merchantMatchesPopularCategory(merchant, activeQuickCategory, locale);
+    },
+    [activeQuickCategory, locale, merchantMatchesFilters],
   );
 
   const handleSelectPartner = useCallback(
@@ -374,6 +453,35 @@ const LocatorPageContent = () => {
     health: t("walletHealth"),
     safety: t("walletSafety"),
   };
+  const filtersPanelProps: Omit<FiltersModalProps, "isOpen"> = {
+    title: t("filters"),
+    closeLabel: t("close"),
+    networkCategoryLabel: t("networkCategory"),
+    productLabel: t("product"),
+    walletLabel: t("wallets"),
+    walletFlexOneLabel: t("walletFlexOne"),
+    cashbackLabel: t("cashback"),
+    cashbackOnlyLabel: t("cashbackOnly"),
+    clearAllFiltersLabel: t("clearAllFilters"),
+    applyFiltersLabel: t("applyFilters"),
+    noAvailableProductsLabel: t("noAvailableProducts"),
+    networkLabels: filterLabels,
+    walletLabels,
+    selectedNetworkIds,
+    selectedProductIds,
+    selectedWalletIds,
+    isFlexOneWalletActive,
+    productOptions: productFilterOptions,
+    walletOptions: walletFilterOptions,
+    cashbackOnly,
+    onClose: closeFiltersToResults,
+    onToggleNetwork: toggleNetwork,
+    onToggleProduct: toggleProduct,
+    onToggleWallet: toggleWallet,
+    onToggleAllWallets: toggleAllWallets,
+    onToggleCashback: () => setCashbackOnly((prev) => !prev),
+    onClearAll: clearAllFilters,
+  };
 
   return (
     <div
@@ -385,7 +493,7 @@ const LocatorPageContent = () => {
         selectedPartnerId={selectedId}
         highlightedPartnerIds={highlightedPartnerIds}
         zoomInMessage={t("zoomInToSeeStores")}
-        partnerFilter={merchantMatchesFilters}
+        partnerFilter={merchantMatchesAllFilters}
         onPartnerSelect={handleSelectPartner}
         onVisiblePartnersChange={handleVisiblePartnersChange}
         onMapClick={requestCloseSelectedPartner}
@@ -405,21 +513,44 @@ const LocatorPageContent = () => {
       <LocatorHeader locale={locale} onChangeLocale={setLocale} />
 
       <div className={styles.searchOverlay}>
-        <div className={styles.searchContainer}>
+        <div
+          ref={searchContainerRef}
+          className={styles.searchContainer}
+          data-filters-open={isFiltersOpen ? "true" : "false"}
+        >
           <SearchBar
             value={query}
-            loading={searchLoading}
             suggestions={suggestions}
             placeholder={t("searchPlaceholder")}
             searchAriaLabel={t("searchAria")}
             clearAriaLabel={t("clearSearch")}
-            loadingAriaLabel={t("loadingSuggestions")}
-            onChange={setQuery}
+            openFiltersAriaLabel={t("openFilters")}
+            filterActiveCount={activeFilterCount}
+            categorySectionLabel={t("searchSectionCategories")}
+            placeSectionLabel={t("searchSectionPlaces")}
+            focusInputSignal={focusInputSignal}
+            closeActiveSignal={closeActiveSignal}
+            isFiltersOpen={isFiltersOpen}
+            filtersPanelProps={filtersPanelProps}
+            onChange={(nextQuery) => {
+              if (isFiltersOpen) {
+                setIsFiltersOpen(false);
+              }
+              setQuery(nextQuery);
+            }}
             onClear={() => {
               setQuery("");
               setSuggestions([]);
+              setActiveQuickCategoryId(null);
             }}
             onSelect={(item) => {
+              if (item.type === "category" && item.categoryId) {
+                setActiveQuickCategoryId(item.categoryId as PopularSearchCategoryId);
+                setQuery(item.label);
+                setSuggestions([]);
+                return;
+              }
+              if (!item.merchantId || !item.coordinates) return;
               const partner = allKnownById[item.merchantId];
               if (partner) {
                 handleSelectPartner(partner);
@@ -429,60 +560,31 @@ const LocatorPageContent = () => {
               setQuery(item.label);
               setSuggestions([]);
             }}
+            onOpenFilters={() => setIsFiltersOpen(true)}
+            onFocusInput={() => {
+              if (isFiltersOpen) {
+                setIsFiltersOpen(false);
+              }
+            }}
           />
         </div>
 
-        <div className={styles.filtersContainer}>
-          <QuickFilterChips
-            selectedIds={selectedNetworkIds}
-            onToggle={toggleNetwork}
-            labels={filterLabels}
-          />
-          <button
-            type="button"
-            className={styles.filtersButton}
-            onClick={() => setIsFiltersOpen(true)}
-            aria-label={t("openFilters")}
-          >
-            <SlidersHorizontal size={16} />
-            <span>{t("filters")}</span>
-            {activeFilterCount > 0 && (
-              <span className={styles.filtersBadge}>{activeFilterCount}</span>
-            )}
-          </button>
-        </div>
+        {showQuickChips && (
+          <div className={styles.filtersContainer}>
+            <QuickFilterChips
+              options={quickChipOptions}
+              onToggle={(id) => {
+                const nextId = id as PopularSearchCategoryId;
+                setActiveQuickCategoryId((prev) => (prev === nextId ? null : nextId));
+                const selectedCategory = popularCategories.find((item) => item.id === id);
+                if (selectedCategory) {
+                  setQuery(selectedCategory.label);
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
-      <FiltersModal
-        isOpen={isFiltersOpen}
-        title={t("filters")}
-        closeLabel={t("close")}
-        networkCategoryLabel={t("networkCategory")}
-        productLabel={t("product")}
-        walletLabel={t("wallets")}
-        walletFlexOneLabel={t("walletFlexOne")}
-        cashbackLabel={t("cashback")}
-        cashbackOnlyLabel={t("cashbackOnly")}
-        clearAllFiltersLabel={t("clearAllFilters")}
-        applyFiltersLabel={t("applyFilters")}
-        noAvailableProductsLabel={t("noAvailableProducts")}
-        networkLabels={filterLabels}
-        walletLabels={walletLabels}
-        selectedNetworkIds={selectedNetworkIds}
-        selectedProductIds={selectedProductIds}
-        selectedWalletIds={selectedWalletIds}
-        isFlexOneWalletActive={isFlexOneWalletActive}
-        productOptions={productFilterOptions}
-        walletOptions={walletFilterOptions}
-        cashbackOnly={cashbackOnly}
-        onClose={() => setIsFiltersOpen(false)}
-        onToggleNetwork={toggleNetwork}
-        onToggleProduct={toggleProduct}
-        onToggleWallet={toggleWallet}
-        onToggleAllWallets={toggleAllWallets}
-        onToggleCashback={() => setCashbackOnly((prev) => !prev)}
-        onClearAll={clearAllFilters}
-      />
-
       <div
         className={styles.bottomDrawer}
         data-sheet-layout={isMobile ? "mobile" : "desktop"}

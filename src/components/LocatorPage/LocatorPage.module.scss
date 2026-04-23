@@ -75,7 +75,7 @@
   top: $spacing-lg;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 35;
+  z-index: 90;
   width: calc(100vw - 2 * $spacing-md);
   max-width: $max-width-2xl;
   display: flex;
@@ -83,12 +83,18 @@
   align-items: stretch;
   gap: $spacing-md;
 
-  @media (max-width: 768px) {
+  @include mobile-only {
     top: calc($spacing-xs + 4.5rem);
     width: calc(100vw - 2 * $spacing-xs - 2 * $spacing-sm);
     left: calc($spacing-xs + $spacing-sm);
     transform: none;
     gap: $spacing-sm;
+  }
+
+  @include desktop-up {
+    &:focus-within {
+      z-index: 120;
+    }
   }
 }
 
@@ -96,50 +102,51 @@
   width: 100%;
   max-width: $max-width-sm;
   align-self: center;
+  position: relative;
+  z-index: 92;
+  transform-origin: center top;
+  transition: transform $transition-normal;
+
+  @include desktop-up {
+    &::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 300vw;
+      height: 300vh;
+      transform: translate(-50%, -50%);
+      background: rgba($neutral-1, 0.35);
+      backdrop-filter: blur(0.125rem);
+      -webkit-backdrop-filter: blur(0.125rem);
+      z-index: -1;
+      opacity: 0;
+      transition: opacity $transition-normal;
+      pointer-events: none;
+    }
+
+    &:focus-within,
+    &[data-filters-open="true"] {
+      z-index: 121;
+      transform: scale(1.035);
+    }
+
+    &:focus-within::before,
+    &[data-filters-open="true"]::before {
+      opacity: 1;
+    }
+  }
 }
 
 .filtersContainer {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
   justify-content: center;
 
-  @media (max-width: 768px) {
+  @include mobile-only {
     justify-content: flex-start;
   }
-}
-
-.filtersButton {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-xs;
-  border-radius: $border-radius-full;
-  border: 1px solid $white-10;
-  background: rgba($neutral-2, 0.78);
-  color: $white-90;
-  padding: $spacing-sm $spacing-md;
-  white-space: nowrap;
-  transition: all $transition-normal;
-
-  &:hover {
-    background: rgba($neutral-2, 0.92);
-    border-color: $white-20;
-  }
-}
-
-.filtersBadge {
-  min-width: 1.2rem;
-  height: 1.2rem;
-  border-radius: $border-radius-full;
-  background: $brand-primary-5;
-  color: $white;
-  font-size: 0.7rem;
-  font-weight: $font-weight-semibold;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 $spacing-xs;
 }
 
 .bottomDrawer {
@@ -147,7 +154,7 @@
   justify-content: center;
   position: fixed;
   bottom: 0;
-  z-index: 50;
+  z-index: 110;
   width: 100vw;
   overflow: hidden;
   background: transparent;

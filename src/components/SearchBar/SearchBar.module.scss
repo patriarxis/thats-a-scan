@@ -3,16 +3,10 @@
 .wrapper {
   position: relative;
   width: 100%;
-}
-
-.inputWrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
+  z-index: 92;
 }
 
 .searchIconWrapper {
-  pointer-events: none;
   position: absolute;
   left: $spacing-lg;
   top: 50%;
@@ -24,6 +18,32 @@
   justify-content: center;
 }
 
+.mobileBackBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: $white-80;
+  border-radius: $border-radius-full;
+  transition: background-color $transition-normal;
+
+  &:hover {
+    background: $white-10;
+  }
+
+  @include mobile-only {
+    .wrapperFocused & {
+      display: inline-flex;
+    }
+  }
+}
+
+.mobileBackIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
 .searchIcon {
   width: 1.5rem;
   height: 1.5rem;
@@ -33,6 +53,12 @@
   .inputWrapper:focus-within & {
     color: $white;
   }
+
+  @include mobile-only {
+    .wrapperFocused & {
+      display: none;
+    }
+  }
 }
 
 .input {
@@ -41,7 +67,7 @@
   padding-top: $spacing-sm;
   padding-bottom: $spacing-sm;
   padding-left: calc($spacing-lg + 1.5rem + $spacing-sm);
-  padding-right: calc($spacing-md + 2 * $spacing-sm + 1.25rem + $spacing-sm);
+  padding-right: calc($spacing-md + 1.75rem + $spacing-xs + 2rem + $spacing-sm);
   border-radius: $border-radius-full;
   background: $neutral-2;
   color: $white-90;
@@ -57,6 +83,59 @@
   &:focus {
     border-color: $brand-primary-5;
   }
+
+  transition:
+    border-color $transition-normal,
+    box-shadow $transition-normal,
+    background-color $transition-normal;
+}
+
+.wrapperFocused {
+  @include mobile-only {
+    position: fixed;
+    inset: 0;
+    z-index: 94;
+    width: 100vw;
+    height: var(--mobile-search-vh, 100dvh);
+    padding: $spacing-md;
+    background: rgba($neutral-1, 0.5);
+    backdrop-filter: blur(0.125rem);
+    -webkit-backdrop-filter: blur(0.125rem);
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    animation: mobileSearchFocusIn 0.22s ease-out;
+  }
+}
+
+.wrapperClosing {
+  @include mobile-only {
+    position: fixed;
+    inset: 0;
+    z-index: 94;
+    width: 100vw;
+    height: var(--mobile-search-vh, 100dvh);
+    padding: $spacing-md;
+    background: $neutral-2;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    animation: mobileSearchFocusOut 0.18s ease-in forwards;
+  }
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .wrapperFocused & {
+    flex-shrink: 0;
+  }
+
+  .wrapperClosing & {
+    flex-shrink: 0;
+  }
 }
 
 .controlsWrapper {
@@ -66,24 +145,7 @@
   transform: translateY(-50%);
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
-}
-
-.spinner {
-  display: block;
-  width: 1.125rem;
-  height: 1.125rem;
-  border-radius: $border-radius-full;
-  border: 2px solid rgba($brand-primary-5, 0.3);
-  border-top-color: $brand-primary-5;
-  animation: spin 0.65s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  gap: $spacing-xs;
 }
 
 .clearBtn {
@@ -94,7 +156,9 @@
   height: 1.75rem;
   border-radius: $border-radius-full;
   color: $white-40;
-  transition: all $transition-normal;
+  transition:
+    color $transition-normal,
+    background-color $transition-normal;
   flex-shrink: 0;
 
   &:hover {
@@ -108,35 +172,80 @@
   height: 0.875rem;
 }
 
-.submitBtn {
+.filtersBtn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border-radius: $border-radius-full;
-  background: linear-gradient(
-    to right,
-    $brand-primary-5 0%,
-    $fitpass-primary-5 33%,
-    $flexone-primary-5 66%,
-    $expense-primary-3 100%
-  );
-  color: $white;
-  transition: all $transition-normal;
+  color: $white-40;
+  background: transparent;
+  border: none;
+  transition:
+    color $transition-normal,
+    background-color $transition-normal;
   flex-shrink: 0;
 
   &:hover {
-    filter: brightness(1.2);
-  }
-
-  &:active {
-    filter: brightness(0.9);
+    background: $white-10;
+    color: $white;
   }
 }
 
-.submitIcon {
-  width: 1.125rem;
-  height: 1.125rem;
+.filtersIcon {
+  width: 1rem;
+  height: 1rem;
 }
 
+.filtersBadge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  min-width: 1rem;
+  height: 1rem;
+  border-radius: $border-radius-full;
+  background: $brand-primary-5;
+  color: $white;
+  font-size: 0.65rem;
+  font-weight: $font-weight-semibold;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 $spacing-xs;
+  box-shadow: 0 0 0 2px $neutral-2;
+}
+
+
+@keyframes mobileSearchFocusIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mobileSearchFocusOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrapperFocused,
+  .wrapperClosing {
+    animation: none;
+  }
+}

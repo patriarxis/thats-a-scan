@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Check
 } from "lucide-react";
+import { useAnimatedPresence } from "@/lib/useAnimatedPresence";
 import type { CategoryId } from "@/types";
 import type { ProductFilterOption, WalletFilterOption } from "@/lib/merchantFilters";
 import styles from "./FiltersModal.module.scss";
@@ -38,7 +39,7 @@ const WALLET_ICONS: Record<string, React.ReactNode> = {
   safety: <ShieldCheck size={20} />,
 };
 
-type FiltersModalProps = {
+export type FiltersModalProps = {
   isOpen: boolean;
   title: string;
   closeLabel: string;
@@ -99,14 +100,33 @@ export const FiltersModal = ({
   onToggleCashback,
   onClearAll,
 }: FiltersModalProps) => {
-  if (!isOpen) return null;
+  const { isMounted, isClosing } = useAnimatedPresence(isOpen, 180);
+  if (!isMounted) return null;
 
   return (
-    <div className={styles.overlay} role="presentation">
-      <section className={styles.modal} role="dialog" aria-modal aria-label={title}>
+    <div
+      className={`${styles.overlay} ${isClosing ? styles.overlayClosing : ""}`}
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <section
+        className={`${styles.modal} ${isClosing ? styles.modalClosing : ""}`}
+        role="dialog"
+        aria-modal
+        aria-label={title}
+      >
         <div className={styles.header}>
           <h3>{title}</h3>
-          <button type="button" className={styles.closeButton} onClick={onClose}>
+          <button
+            type="button"
+            className={styles.closeButton}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={onClose}
+          >
             {closeLabel}
           </button>
         </div>
@@ -181,7 +201,12 @@ export const FiltersModal = ({
           <button type="button" className={styles.clearButton} onClick={onClearAll}>
             {clearAllFiltersLabel}
           </button>
-          <button type="button" className={styles.applyButton} onClick={onClose}>
+          <button
+            type="button"
+            className={styles.applyButton}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={onClose}
+          >
             {applyFiltersLabel}
           </button>
         </div>

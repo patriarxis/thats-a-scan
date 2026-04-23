@@ -82,12 +82,17 @@
   --neutral-9: #{$neutral-9};
   --neutral-10: #{$neutral-10};
   --white: #{$white};
+  --black: #{$black};
 
   // Opacity Variants (White)
+  --white-95: #{$white-95};
   --white-90: #{$white-90};
   --white-80: #{$white-80};
+  --white-70: #{$white-70};
   --white-60: #{$white-60};
+  --white-50: #{$white-50};
   --white-40: #{$white-40};
+  --white-30: #{$white-30};
   --white-20: #{$white-20};
   --white-10: #{$white-10};
   --white-05: #{$white-05};
@@ -96,15 +101,24 @@
   // Opacity Variants (Black)
   --black-95: #{$black-95};
   --black-90: #{$black-90};
-  --black-85: #{$black-85};
   --black-80: #{$black-80};
+  --black-70: #{$black-70};
   --black-60: #{$black-60};
+  --black-50: #{$black-50};
   --black-40: #{$black-40};
   --black-30: #{$black-30};
   --black-20: #{$black-20};
   --black-10: #{$black-10};
   --black-05: #{$black-05};
   --black-03: #{$black-03};
+
+  // Semantic Colors
+  --danger: #{$danger};
+  --danger-hover: #{$danger-hover};
+  --danger-bg: #{$danger-bg};
+  --danger-1: #{$danger-1};
+  --success: #{$success};
+  --success-bg: #{$success-bg};
 
   // Up Coop Product Families
   --up-coop-eat: #{$up-coop-eat};
@@ -128,23 +142,19 @@
   );
   --gradient-flexone: linear-gradient(
     to right,
-    #{$brand-primary-5},
-    #{$flexone-primary-4}
+    #{$flexone-primary-4},
+    #{$flexone-primary-6}
   );
   --gradient-fitpass: linear-gradient(
     to right,
-    #{$brand-primary-5},
-    #{$fitpass-primary-5}
+    #{$fitpass-primary-5},
+    #{$fitpass-primary-3}
   );
-  --gradient-gift: linear-gradient(
-    to right,
-    #{$brand-primary-5},
-    #{$gift-primary-3}
-  );
+  --gradient-gift: linear-gradient(135deg, #{$gift-primary-3}, #{$gift-primary-5});
   --gradient-expense: linear-gradient(
     to right,
-    #{$brand-primary-5},
-    #{$expense-primary-3}
+    #{$expense-primary-3},
+    #{$expense-primary-5}
   );
 
   // Spacing Scale
@@ -215,7 +225,7 @@
   --color-primary: #{$flexone-primary-4};
   --color-secondary: #{$flexone-secondary-6};
   --color-accent: #{$brand-primary-5};
-  --color-success: #10b981;
+  --color-success: #{$success};
   --color-warning: #f59e0b;
-  --color-error: #ef4444;
+  --color-error: #{$danger};
 }

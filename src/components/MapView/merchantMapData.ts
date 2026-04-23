@@ -53,12 +53,7 @@ const maxMarkerCountForZoom = (zoom: number): number => {
 /**
  * Prefer pins inside the viewport, but never drop an on-screen pin to make room for off-screen ones.
  */
-export const prioritizeAndCapByZoom = (
-  map: MapboxMap,
-  features: PartnerFeature[],
-  zoom: number,
-): PartnerFeature[] => {
-  const maxCount = maxMarkerCountForZoom(zoom);
+const pickPrioritizedUpTo = (map: MapboxMap, features: PartnerFeature[], maxCount: number): PartnerFeature[] => {
   if (features.length <= maxCount) return features;
 
   const bounds = map.getBounds();
@@ -83,10 +78,45 @@ export const prioritizeAndCapByZoom = (
   return [...inView, ...outOfView.slice(0, maxCount - inView.length)];
 };
 
-export const buildMerchantsFeatureCollection = (map: MapboxMap, items: PartnerFeature[]) => {
+export const prioritizeAndCapByZoom = (
+  map: MapboxMap,
+  features: PartnerFeature[],
+  zoom: number,
+  alwaysKeepIds?: ReadonlySet<string>,
+): PartnerFeature[] => {
+  const maxCount = maxMarkerCountForZoom(zoom);
+
+  if (!alwaysKeepIds?.size) {
+    return pickPrioritizedUpTo(map, features, maxCount);
+  }
+
+  const mustKeep: PartnerFeature[] = [];
+  const seenMust = new Set<string>();
+  const pool: PartnerFeature[] = [];
+  for (const feature of features) {
+    const id = getPartnerId(feature);
+    if (alwaysKeepIds.has(id)) {
+      if (!seenMust.has(id)) {
+        seenMust.add(id);
+        mustKeep.push(feature);
+      }
+    } else {
+      pool.push(feature);
+    }
+  }
+
+  const budget = Math.max(0, maxCount - mustKeep.length);
+  return [...mustKeep, ...pickPrioritizedUpTo(map, pool, budget)];
+};
+
+export const buildMerchantsFeatureCollection = (
+  map: MapboxMap,
+  items: PartnerFeature[],
+  alwaysKeepIds?: ReadonlySet<string>,
+) => {
   const dedupedItems = dedupeByMerchantId(items);
   const zoom = map.getZoom();
-  const zoomCappedItems = prioritizeAndCapByZoom(map, dedupedItems, zoom);
+  const zoomCappedItems = prioritizeAndCapByZoom(map, dedupedItems, zoom, alwaysKeepIds);
   return {
     type: "FeatureCollection" as const,
     features: withClientIds(zoomCappedItems),

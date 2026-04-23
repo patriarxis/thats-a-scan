@@ -167,7 +167,6 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
       type: "symbol",
       source: SOURCE_ID,
       filter: ["==", "__merchant_id", "__none__"],
-      minzoom: DETAILED_MARKER_MIN_ZOOM,
       layout: {
         "icon-image": ["coalesce", ["get", "__marker_icon_active"], MARKER_ICON_DEFAULT_ID],
         "icon-size": ["interpolate", ["linear"], ["zoom"], 9, 0.92, 12, 1, 15, 1.08],

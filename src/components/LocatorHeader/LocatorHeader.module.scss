@@ -12,6 +12,10 @@
   width: 100%;
   padding: $spacing-lg;
 
+  @include mobile-only {
+    display: none;
+  }
+
   > * {
     pointer-events: auto;
   }

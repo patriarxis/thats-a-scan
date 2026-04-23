@@ -84,9 +84,9 @@
   gap: $spacing-md;
 
   @include mobile-only {
-    top: calc($spacing-xs + 4.5rem);
-    width: calc(100vw - 2 * $spacing-xs - 2 * $spacing-sm);
-    left: calc($spacing-xs + $spacing-sm);
+    top: $spacing-md;
+    width: calc(100vw - 2 * $spacing-md);
+    left: $spacing-md;
     transform: none;
     gap: $spacing-sm;
   }
@@ -159,4 +159,57 @@
   overflow: hidden;
   background: transparent;
   pointer-events: none;
+}
+
+.languageModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba($neutral-1, 0.5);
+  backdrop-filter: blur(0.125rem);
+  -webkit-backdrop-filter: blur(0.125rem);
+  opacity: 0;
+  transition: opacity 0.18s ease-in-out;
+}
+
+.languageModalOverlayOpen {
+  opacity: 1;
+}
+
+.languageModalOverlayClosing {
+  opacity: 0;
+}
+
+.languageModalActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xl;
+}
+
+.languageOption {
+  min-width: 5.5rem;
+  background: transparent;
+  border: 0;
+  color: $white-70;
+  font-size: clamp(2rem, 10vw, 2.75rem);
+  line-height: 1;
+  font-weight: $font-weight-bold;
+  letter-spacing: 0.08em;
+  transition:
+    color $transition-normal,
+    transform $transition-normal;
+
+  &:hover {
+    color: $white;
+    transform: scale(1.04);
+  }
+}
+
+.languageOptionActive {
+  color: $brand-primary-5;
 }

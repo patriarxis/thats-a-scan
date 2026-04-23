@@ -5,12 +5,14 @@ import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { LocaleProvider } from "@/lib/LocaleContext";
 import { useLocale } from "@/lib";
 import { useIsMobileUx } from "@/lib/useIsMobileUx";
+import { LOCALE } from "@/enums";
 import {
   type SearchSuggestion
 } from "@/components/SearchBar/SearchBar";
 import { SearchBar } from "@/components/SearchBar/SearchBar";
 import type { FiltersModalProps } from "@/components/FiltersModal/FiltersModal";
 import { QuickFilterChips } from "@/components/QuickFilterChips/QuickFilterChips";
+import { Backdrop } from "@/components/ui/Backdrop/Backdrop";
 import type { MapViewHandle } from "@/components/MapView/MapView";
 import { LocatorHeader } from "@/components/LocatorHeader/LocatorHeader";
 import { LocatorFooter } from "@/components/LocatorFooter/LocatorFooter";
@@ -97,6 +99,7 @@ const LocatorPageContent = () => {
   const [mapLoading, setMapLoading] = useState(true);
   const [mapUpdating, setMapUpdating] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
 
   const allKnownMerchants = useMemo(
     () => Object.values(allKnownById),
@@ -164,6 +167,10 @@ const LocatorPageContent = () => {
     setIsFiltersOpen(false);
     setCloseActiveSignal((value) => value + 1);
   }, [setIsFiltersOpen]);
+  const handleOpenLanguageModal = useCallback(() => {
+    closeFiltersToDefault();
+    setIsLanguageModalOpen(true);
+  }, [closeFiltersToDefault]);
 
   useEffect(() => {
     const syncFromBrowserLocation = () => {
@@ -510,7 +517,7 @@ const LocatorPageContent = () => {
         <div className={styles.mapUpdatingChip}>{t("updatingArea")}</div>
       )}
 
-      <LocatorHeader locale={locale} onChangeLocale={setLocale} />
+      {!isMobile && <LocatorHeader locale={locale} onChangeLocale={setLocale} />}
 
       <div className={styles.searchOverlay}>
         <div
@@ -521,15 +528,20 @@ const LocatorPageContent = () => {
           <SearchBar
             value={query}
             suggestions={suggestions}
+            suppressSuggestions={isLanguageModalOpen}
             placeholder={t("searchPlaceholder")}
             searchAriaLabel={t("searchAria")}
             clearAriaLabel={t("clearSearch")}
             openFiltersAriaLabel={t("openFilters")}
+            showLocaleSwitcher={isMobile}
+            localeSwitcherAriaLabel={t("language")}
+            onOpenLocalePanel={handleOpenLanguageModal}
             filterActiveCount={activeFilterCount}
             categorySectionLabel={t("searchSectionCategories")}
             placeSectionLabel={t("searchSectionPlaces")}
             focusInputSignal={focusInputSignal}
             closeActiveSignal={closeActiveSignal}
+            onCloseSearch={closeFiltersToDefault}
             isFiltersOpen={isFiltersOpen}
             filtersPanelProps={filtersPanelProps}
             onChange={(nextQuery) => {
@@ -585,6 +597,45 @@ const LocatorPageContent = () => {
           </div>
         )}
       </div>
+      {isMobile && (
+        <Backdrop
+          isOpen={isLanguageModalOpen}
+          onClick={() => setIsLanguageModalOpen(false)}
+          className={styles.languageModalOverlay}
+          openClassName={styles.languageModalOverlayOpen}
+          closingClassName={styles.languageModalOverlayClosing}
+          exitDurationMs={180}
+        >
+          <div
+            className={styles.languageModalActions}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("language")}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={`${styles.languageOption} ${locale === LOCALE.EL ? styles.languageOptionActive : ""}`}
+              onClick={() => {
+                setLocale(LOCALE.EL);
+                setIsLanguageModalOpen(false);
+              }}
+            >
+              ΕΛ
+            </button>
+            <button
+              type="button"
+              className={`${styles.languageOption} ${locale === LOCALE.EN ? styles.languageOptionActive : ""}`}
+              onClick={() => {
+                setLocale(LOCALE.EN);
+                setIsLanguageModalOpen(false);
+              }}
+            >
+              EN
+            </button>
+          </div>
+        </Backdrop>
+      )}
       <div
         className={styles.bottomDrawer}
         data-sheet-layout={isMobile ? "mobile" : "desktop"}

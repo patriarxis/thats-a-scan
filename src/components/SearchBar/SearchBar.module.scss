@@ -55,6 +55,28 @@
   }
 
   @include mobile-only {
+    display: none;
+
+    .wrapperFocused & {
+      display: none;
+    }
+  }
+}
+
+.mobileInfinityIcon {
+  display: none;
+  width: 1.5rem;
+  height: auto;
+  fill: $brand-primary-5;
+  transition: fill $transition-normal;
+
+  .inputWrapper:focus-within & {
+    fill: $brand-primary-4;
+  }
+
+  @include mobile-only {
+    display: block;
+
     .wrapperFocused & {
       display: none;
     }
@@ -67,7 +89,7 @@
   padding-top: $spacing-sm;
   padding-bottom: $spacing-sm;
   padding-left: calc($spacing-lg + 1.5rem + $spacing-sm);
-  padding-right: calc($spacing-md + 1.75rem + $spacing-xs + 2rem + $spacing-sm);
+  padding-right: calc($spacing-md + 1.75rem + $spacing-xs + 2rem + $spacing-xs + 1.75rem + $spacing-sm);
   border-radius: $border-radius-full;
   background: $neutral-2;
   color: $white-90;
@@ -97,14 +119,23 @@
     z-index: 94;
     width: 100vw;
     height: var(--mobile-search-vh, 100dvh);
-    padding: $spacing-md;
-    background: rgba($neutral-1, 0.5);
-    backdrop-filter: blur(0.125rem);
-    -webkit-backdrop-filter: blur(0.125rem);
+    padding: $spacing-md $spacing-md $spacing-md;
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
-    animation: mobileSearchFocusIn 0.22s ease-out;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba($neutral-1, 0.5);
+      backdrop-filter: blur(0.125rem);
+      -webkit-backdrop-filter: blur(0.125rem);
+      opacity: 1;
+      transition: opacity 0.18s ease-in-out;
+      z-index: 0;
+      pointer-events: none;
+    }
   }
 }
 
@@ -115,12 +146,23 @@
     z-index: 94;
     width: 100vw;
     height: var(--mobile-search-vh, 100dvh);
-    padding: $spacing-md;
-    background: $neutral-2;
+    padding: $spacing-md $spacing-md $spacing-md;
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
-    animation: mobileSearchFocusOut 0.18s ease-in forwards;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba($neutral-1, 0.5);
+      backdrop-filter: blur(0.125rem);
+      -webkit-backdrop-filter: blur(0.125rem);
+      opacity: 0;
+      transition: opacity 0.18s ease-in-out;
+      z-index: 0;
+      pointer-events: none;
+    }
   }
 }
 
@@ -128,6 +170,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  z-index: 1;
 
   .wrapperFocused & {
     flex-shrink: 0;
@@ -152,8 +195,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: $border-radius-full;
   color: $white-40;
   transition:
@@ -177,8 +220,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: $border-radius-full;
   color: $white-40;
   background: transparent;
@@ -218,34 +261,39 @@
   box-shadow: 0 0 0 2px $neutral-2;
 }
 
+.localeControl {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
 
-@keyframes mobileSearchFocusIn {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
+.localeControlDivider {
+  width: 1px;
+  height: 1.25rem;
+  margin: 0 $spacing-xs 0 0.125rem;
+  background: $white-10;
+}
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
+.localeMenuBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: $border-radius-full;
+  color: $white-50;
+  transition:
+    color $transition-normal,
+    background-color $transition-normal;
+
+  &:hover {
+    color: $white;
+    background: $white-10;
   }
 }
 
-@keyframes mobileSearchFocusOut {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  to {
-    opacity: 0;
-    transform: translateY(14px);
-  }
+.localeMenuIcon {
+  width: 1rem;
+  height: 1rem;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .wrapperFocused,
-  .wrapperClosing {
-    animation: none;
-  }
-}

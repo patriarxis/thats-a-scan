@@ -13,3 +13,4 @@ export * from "./PartnerDetailContent/PartnerDetailContent";
 export * from "./ErrorBoundary/ErrorBoundary";
 export * from "./LocatorHeader/LocatorHeader";
 export * from "./LocatorFooter/LocatorFooter";
+export * from "./ui";

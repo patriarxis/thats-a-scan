@@ -1,0 +1,85 @@
+@use "../../../styles/abstracts" as *;
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: $border-radius-full;
+  color: $neutral-6;
+  background: transparent;
+  transition:
+    color $transition-normal,
+    background-color $transition-normal,
+    opacity $transition-normal;
+
+  &:hover:not(.disabled),
+  &:focus-visible:not(.disabled),
+  &:active:not(.disabled) {
+    color: $white;
+    background: $white-10;
+  }
+}
+
+.sm {
+  width: 1.75rem;
+  height: 1.75rem;
+
+  @include mobile-only {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+.md {
+  width: 2rem;
+  height: 2rem;
+
+  @include mobile-only {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
+.lg {
+  width: 2.5rem;
+  height: 2.5rem;
+
+  @include mobile-only {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+.ghost {
+  background: transparent;
+}
+
+.solid {
+  color: $white;
+  background: $brand-primary-5;
+
+  &:hover:not(.disabled) {
+    background: $brand-primary-4;
+  }
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon {
+  width: 1.125rem;
+  height: 1.125rem;
+
+  :global(path) {
+    fill: currentColor;
+    stroke: currentColor;
+  }
+
+  @include mobile-only {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}

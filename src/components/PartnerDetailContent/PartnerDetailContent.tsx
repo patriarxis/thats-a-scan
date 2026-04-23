@@ -1,13 +1,3 @@
-import {
-  Navigation,
-  Share2,
-  Phone,
-  Globe,
-  Facebook,
-  Linkedin,
-  Instagram,
-  X,
-} from "lucide-react";
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import {
@@ -20,9 +10,10 @@ import {
   parseAcceptedProducts,
   merchantHasCashback,
 } from "@/lib/merchantFilters";
+import { Icon } from "@/components/ui";
 import { RichText } from "../RichText";
 import styles from "./PartnerDetailContent.module.scss";
-import { LOCALE } from "@/enums";
+import { ICONS, LOCALE } from "@/enums";
 
 interface PartnerDetailContentProps extends PartnerDetailSheetProps {
   className?: string;
@@ -118,6 +109,7 @@ export const PartnerDetailContent = ({
   const facebook = props.FacebookUrl as string;
   const linkedin = props.LinkedinUrl as string;
   const instagram = props.InstagramUrl as string;
+  const tiktok = (props.TikTokUrl || props.TiktokUrl || props.Tiktok) as string;
   const featuredPhoto = props.featured_photo as string;
 
   const category = resolveMerchantCategory(partner);
@@ -279,7 +271,7 @@ export const PartnerDetailContent = ({
         </div>
         <div className={styles.controls}>
           <button type="button" onClick={onClose} className={styles.controlBtn}>
-            <X size={18} />
+            <Icon name={ICONS.X} width={18} height={18} />
           </button>
         </div>
       </div>
@@ -290,7 +282,7 @@ export const PartnerDetailContent = ({
           onClick={handleOpenMaps}
           className={`${styles.actionCard} ${styles.primary} ${styles.maps}`}
         >
-          <Navigation size={22} />
+          <Icon name={ICONS.NAVIGATION_ARROW} width={22} height={22} />
           <span>{labels.openMaps}</span>
         </button>
 
@@ -299,7 +291,7 @@ export const PartnerDetailContent = ({
             href={`tel:${phone}`}
             className={`${styles.actionCard} ${styles.primary}`}
           >
-            <Phone size={22} />
+            <Icon name={ICONS.PHONE} width={22} height={22} />
             <span>{labels.phone}</span>
           </a>
         )}
@@ -311,7 +303,7 @@ export const PartnerDetailContent = ({
             rel="noreferrer"
             className={`${styles.actionCard} ${styles.secondary}`}
           >
-            <Globe size={16} />
+            <Icon name={ICONS.GLOBE} width={16} height={16} />
           </a>
         )}
         {instagram && (
@@ -321,7 +313,7 @@ export const PartnerDetailContent = ({
             rel="noreferrer"
             className={`${styles.actionCard} ${styles.secondary}`}
           >
-            <Instagram size={16} />
+            <Icon name={ICONS.SOCIAL_MEDIA_ICON_2} width={16} height={16} />
           </a>
         )}
         {facebook && (
@@ -331,7 +323,7 @@ export const PartnerDetailContent = ({
             rel="noreferrer"
             className={`${styles.actionCard} ${styles.secondary}`}
           >
-            <Facebook size={16} />
+            <Icon name={ICONS.SOCIAL_MEDIA_ICON} width={16} height={16} />
           </a>
         )}
         {linkedin && (
@@ -341,7 +333,18 @@ export const PartnerDetailContent = ({
             rel="noreferrer"
             className={`${styles.actionCard} ${styles.secondary}`}
           >
-            <Linkedin size={16} />
+            <Icon name={ICONS.SOCIAL_MEDIA_ICON_1} width={16} height={16} />
+          </a>
+        )}
+        {tiktok && (
+          <a
+            href={tiktok}
+            target="_blank"
+            rel="noreferrer"
+            className={`${styles.actionCard} ${styles.secondary}`}
+            aria-label="TikTok"
+          >
+            <Icon name={ICONS.SOCIAL_MEDIA_ICON_3} width={16} height={16} />
           </a>
         )}
         <button
@@ -350,7 +353,7 @@ export const PartnerDetailContent = ({
           className={`${styles.actionCard} ${styles.secondary} ${styles.share}`}
           aria-label={labels.share}
         >
-          <Share2 size={16} />
+          <Icon name={ICONS.SHARE_NETWORK} width={16} height={16} />
         </button>
       </div>
 

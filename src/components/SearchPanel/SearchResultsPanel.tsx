@@ -1,7 +1,17 @@
-import { Store, Tags } from "lucide-react";
+import { Icon } from "@/components/ui";
+import { ICONS } from "@/enums";
 import styles from "./SearchResultsPanel.module.scss";
 import { HighlightedText } from "@/components/ui/HighlightedText/HighlightedText";
 import type { SearchSuggestion } from "@/components/SearchBar/SearchBar";
+
+const CATEGORY_ICON_MAP: Record<string, ICONS> = {
+  supermarket: ICONS.BASKET,
+  restaurant: ICONS.FORK_KNIFE,
+  coffee: ICONS.COFFEE,
+  pharmacy: ICONS.ASCLEPIUS,
+  bakery: ICONS.COOKIE,
+  gym: ICONS.BARBELL,
+};
 
 type SearchResultsPanelProps = {
   id: string;
@@ -37,6 +47,11 @@ export const SearchResultsPanel = ({
 
   const renderOption = (item: SearchSuggestion, index: number) => {
     const isActive = index === activeIndex;
+    const categoryIcon =
+      item.type === "category" && item.categoryId
+        ? (CATEGORY_ICON_MAP[item.categoryId] ?? ICONS.TAG)
+        : ICONS.STOREFRONT;
+
     return (
       <li
         id={`search-opt-${index}`}
@@ -51,7 +66,7 @@ export const SearchResultsPanel = ({
         className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
       >
         <div className={styles.optionIcon}>
-          {item.type === "category" ? <Tags size={14} /> : <Store size={14} />}
+          <Icon name={categoryIcon} className={styles.optionIconGlyph} />
         </div>
         <div className={styles.optionBody}>
           <p className={styles.optionLabel}>
@@ -73,7 +88,7 @@ export const SearchResultsPanel = ({
     >
       {categoryEntries.length > 0 && (
         <li className={styles.sectionLabel} aria-hidden>
-          <Tags size={12} />
+          <Icon name={ICONS.TAG} className={styles.sectionLabelIcon} />
           <span>{categorySectionLabel}</span>
         </li>
       )}
@@ -83,7 +98,7 @@ export const SearchResultsPanel = ({
       )}
       {merchantEntries.length > 0 && (
         <li className={styles.sectionLabel} aria-hidden>
-          <Store size={12} />
+          <Icon name={ICONS.STOREFRONT} className={styles.sectionLabelIcon} />
           <span>{placeSectionLabel}</span>
         </li>
       )}

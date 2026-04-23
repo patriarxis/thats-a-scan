@@ -5,7 +5,7 @@ import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { LocaleProvider } from "@/lib/LocaleContext";
 import { useLocale } from "@/lib";
 import { useIsMobileUx } from "@/lib/useIsMobileUx";
-import { LOCALE } from "@/enums";
+import { ICONS, LOCALE } from "@/enums";
 import {
   type SearchSuggestion
 } from "@/components/SearchBar/SearchBar";
@@ -70,6 +70,14 @@ const parseSelectionFromLocation = (): UrlSelectionState => {
 };
 
 const LocatorPageContent = () => {
+  const quickCategoryIconMap: Record<PopularSearchCategoryId, ICONS> = {
+    supermarket: ICONS.BASKET,
+    restaurant: ICONS.FORK_KNIFE,
+    coffee: ICONS.COFFEE,
+    pharmacy: ICONS.ASCLEPIUS,
+    bakery: ICONS.COOKIE,
+    gym: ICONS.BARBELL,
+  };
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapViewHandle | null>(null);
   const searchRequestRef = useRef(0);
@@ -111,6 +119,7 @@ const LocatorPageContent = () => {
       popularCategories.map((category) => ({
         id: category.id,
         label: category.label,
+        icon: quickCategoryIconMap[category.id],
       })),
     [popularCategories],
   );

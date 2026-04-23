@@ -3,7 +3,6 @@ import {
   Gift, 
   Car, 
   Bus, 
-  Dumbbell, 
   BookOpen, 
   Palmtree, 
   Baby, 
@@ -15,6 +14,8 @@ import {
   ShieldCheck,
   Check
 } from "lucide-react";
+import { Icon } from "@/components/ui";
+import { ICONS } from "@/enums";
 import { useAnimatedPresence } from "@/lib/useAnimatedPresence";
 import type { CategoryId } from "@/types";
 import type { ProductFilterOption, WalletFilterOption } from "@/lib/merchantFilters";
@@ -27,7 +28,7 @@ const WALLET_ICONS: Record<string, React.ReactNode> = {
   rewards: <Gift size={20} />,
   mobility: <Car size={20} />,
   public_transport: <Bus size={20} />,
-  wellness: <Dumbbell size={20} />,
+  wellness: <Icon name={ICONS.BARBELL} width={20} height={20} />,
   learning: <BookOpen size={20} />,
   vacations: <Palmtree size={20} />,
   childcare: <Baby size={20} />,

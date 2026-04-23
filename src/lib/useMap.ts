@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Map as MapboxMap } from "mapbox-gl";
-import { getPartnerId, type MerchantFeature } from "@/types";
+import { type MerchantFeature } from "@/types";
 import { MAP_MAX_LAT_SPAN, MAP_MAX_LNG_SPAN } from "@/lib/config";
 
 const STORES_API_URL = "/api/merchants-geojson";
@@ -38,10 +38,11 @@ type BoundsPayload = {
   east: number;
 };
 
-const VIEWPORT_BUFFER_FACTOR_DESKTOP = 1.5;
-const VIEWPORT_BUFFER_FACTOR_MOBILE = 1.2;
+/** Same buffer on all viewports so mobile/desktop request comparable store sets at the same map state. */
+const VIEWPORT_BUFFER_FACTOR = 1.9;
+const MIN_FETCH_ZOOM_DELTA = 0.2;
 
-function getBufferedBounds(map: mapboxgl.Map, isMobile: boolean): BoundsPayload | null {
+function getBufferedBounds(map: mapboxgl.Map): BoundsPayload | null {
   const bounds = map.getBounds();
   if (!bounds) return null;
 
@@ -53,9 +54,7 @@ function getBufferedBounds(map: mapboxgl.Map, isMobile: boolean): BoundsPayload 
   const latSpan = north - south;
   const lngSpan = east - west;
 
-  // Expand bounds by buffer factor
-  const factor = isMobile ? VIEWPORT_BUFFER_FACTOR_MOBILE : VIEWPORT_BUFFER_FACTOR_DESKTOP;
-  const padding = (factor - 1) / 2;
+  const padding = (VIEWPORT_BUFFER_FACTOR - 1) / 2;
 
   return {
     north: north + latSpan * padding,
@@ -131,7 +130,6 @@ export function useViewportStoreQuery(
     viewportTooWide: false,
     error: null,
   });
-  const [isMobile, setIsMobile] = useState(false);
   const hasLoadedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -139,14 +137,40 @@ export function useViewportStoreQuery(
   const viewportCacheRef = useRef<Map<string, ViewportCacheEntry>>(new Map());
   const globalStoreRef = useRef<Map<string, MerchantFeature>>(new Map());
   const lastFetchedBufferedBoundsRef = useRef<BoundsPayload | null>(null);
+  const lastWidePreviewBoundsRef = useRef<BoundsPayload | null>(null);
   const latestStateRef = useRef(state);
+  const lastFetchedZoomRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const getCanonicalFeatureKey = (feature: MerchantFeature): string => {
+    const rawId = String(
+      feature.properties.ID ??
+      feature.properties.MerchantId ??
+      feature.properties.mongo_id ??
+      "",
+    )
+      .trim()
+      .toLowerCase();
+    if (rawId) return rawId;
+    const name = String(
+      feature.properties.BrandName_EN ??
+      feature.properties.BrandNameEN ??
+      feature.properties.BrandName_GR ??
+      feature.properties.BrandNameGR ??
+      feature.properties.VATName_EN ??
+      feature.properties.VATNameEN ??
+      feature.properties.VATName_GR ??
+      feature.properties.VATNameGR ??
+      "",
+    )
+      .trim()
+      .toLowerCase();
+    const lng = Number(feature.geometry.coordinates[0]);
+    const lat = Number(feature.geometry.coordinates[1]);
+    const coordKey = `${lng.toFixed(5)}:${lat.toFixed(5)}`;
+    if (rawId) return `${rawId}|${coordKey}`;
+    if (name) return `${name}|${coordKey}`;
+    return coordKey;
+  };
 
   useEffect(() => {
     latestStateRef.current = state;
@@ -253,6 +277,7 @@ export function useViewportStoreQuery(
     const fetchVisible = async (source: "initial" | "move") => {
       const bounds = map.getBounds();
       if (!bounds) return;
+      const currentZoom = map.getZoom();
 
       const currentViewport: BoundsPayload = {
         north: bounds.getNorth(),
@@ -266,57 +291,81 @@ export function useViewportStoreQuery(
       const tooWide = latSpan > MAP_MAX_LAT_SPAN || lngSpan > MAP_MAX_LNG_SPAN;
 
       if (tooWide) {
-        abortRef.current?.abort();
-        const controller = new AbortController();
-        abortRef.current = controller;
-        const hasPreviewData = latestStateRef.current.merchants.length > 0;
-        setState((prev) => ({
-          ...prev,
-          loading: false,
-          updating: !hasPreviewData,
-          viewportTooWide: true,
-          error: null,
-        }));
-        if (!hasPreviewData) {
-          try {
-            const wideFeatures = await fetchFeaturesForBounds(
-              currentViewport,
-              controller.signal,
-            );
-            if (controller.signal.aborted) return;
-            const processed = downsampleForWidePreview(
-              sortFeatures(wideFeatures),
-            );
-
-            // Merge wide features into global store
-            let hasNew = false;
-            processed.forEach((f) => {
-              const id = getPartnerId(f);
-              if (!globalStoreRef.current.has(id)) {
-                globalStoreRef.current.set(id, f);
-                hasNew = true;
-              }
-            });
-
-            if (hasNew || latestStateRef.current.viewportTooWide !== true || latestStateRef.current.loading || latestStateRef.current.updating) {
-              setState({
-                merchants: Array.from(globalStoreRef.current.values()),
-                loading: false,
-                updating: false,
-                viewportTooWide: true,
-                error: null,
-              });
-            }
-          } catch (err) {
-            if (err instanceof DOMException && err.name === "AbortError")
-              return;
+        if (
+          lastWidePreviewBoundsRef.current &&
+          isBoundsContained(currentViewport, lastWidePreviewBoundsRef.current)
+        ) {
+          if (latestStateRef.current.loading || latestStateRef.current.updating || !latestStateRef.current.viewportTooWide) {
             setState((prev) => ({
               ...prev,
               loading: false,
               updating: false,
               viewportTooWide: true,
+              error: null,
             }));
           }
+          return;
+        }
+
+        abortRef.current?.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          updating: true,
+          viewportTooWide: true,
+          error: null,
+        }));
+        try {
+          const wideFeatures = await fetchFeaturesForBounds(
+            currentViewport,
+            controller.signal,
+          );
+          if (controller.signal.aborted) return;
+          const processed = downsampleForWidePreview(
+            sortFeatures(wideFeatures),
+          );
+
+          // Merge wide features into global store
+          let hasNew = false;
+          processed.forEach((f) => {
+            const id = getCanonicalFeatureKey(f);
+            const prev = globalStoreRef.current.get(id);
+            if (!prev) {
+              globalStoreRef.current.set(id, f);
+              hasNew = true;
+              return;
+            }
+            const sameCoords =
+              prev.geometry.coordinates[0] === f.geometry.coordinates[0] &&
+              prev.geometry.coordinates[1] === f.geometry.coordinates[1];
+            if (!sameCoords || JSON.stringify(prev.properties) !== JSON.stringify(f.properties)) {
+              globalStoreRef.current.set(id, f);
+              hasNew = true;
+            }
+          });
+
+          lastWidePreviewBoundsRef.current = currentViewport;
+
+          if (hasNew || latestStateRef.current.viewportTooWide !== true || latestStateRef.current.loading || latestStateRef.current.updating) {
+            setState({
+              merchants: Array.from(globalStoreRef.current.values()),
+              loading: false,
+              updating: false,
+              viewportTooWide: true,
+              error: null,
+            });
+          }
+        } catch (err) {
+          if (err instanceof DOMException && err.name === "AbortError")
+            return;
+          setState((prev) => ({
+            ...prev,
+            loading: false,
+            updating: false,
+            viewportTooWide: true,
+          }));
         }
         return;
       }
@@ -325,6 +374,23 @@ export function useViewportStoreQuery(
         lastFetchedBufferedBoundsRef.current &&
         isBoundsContained(currentViewport, lastFetchedBufferedBoundsRef.current)
       ) {
+        const lastFetchedZoom = lastFetchedZoomRef.current;
+        const zoomDelta =
+          typeof lastFetchedZoom === "number"
+            ? Math.abs(currentZoom - lastFetchedZoom)
+            : Number.POSITIVE_INFINITY;
+        if (zoomDelta < MIN_FETCH_ZOOM_DELTA) {
+          if (state.viewportTooWide || state.loading || state.updating) {
+            setState((prev) => ({
+              ...prev,
+              loading: false,
+              updating: false,
+              viewportTooWide: false,
+              error: null,
+            }));
+          }
+          return;
+        }
         if (state.viewportTooWide || state.loading || state.updating) {
           setState((prev) => ({
             ...prev,
@@ -337,7 +403,7 @@ export function useViewportStoreQuery(
         return;
       }
 
-      const bufferedBounds = getBufferedBounds(map, isMobile);
+      const bufferedBounds = getBufferedBounds(map);
       if (!bufferedBounds) return;
 
       setState((prev) => ({
@@ -360,13 +426,22 @@ export function useViewportStoreQuery(
         if (controller.signal.aborted) return;
 
         validFeatures.forEach((f) => {
-          const id = getPartnerId(f);
-          if (!globalStoreRef.current.has(id)) {
+          const id = getCanonicalFeatureKey(f);
+          const prev = globalStoreRef.current.get(id);
+          if (!prev) {
+            globalStoreRef.current.set(id, f);
+            return;
+          }
+          const sameCoords =
+            prev.geometry.coordinates[0] === f.geometry.coordinates[0] &&
+            prev.geometry.coordinates[1] === f.geometry.coordinates[1];
+          if (!sameCoords || JSON.stringify(prev.properties) !== JSON.stringify(f.properties)) {
             globalStoreRef.current.set(id, f);
           }
         });
 
         lastFetchedBufferedBoundsRef.current = bufferedBounds;
+        lastFetchedZoomRef.current = currentZoom;
         hasLoadedRef.current = true;
 
         setState({

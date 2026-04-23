@@ -58,6 +58,3 @@ export const PartnerDetailSheet = (props: PartnerDetailSheetProps) => {
     </DesktopSideSheet>
   );
 };
-
-export const MerchantDetailSheet = PartnerDetailSheet;
-export const StoreDetailSheet = PartnerDetailSheet;

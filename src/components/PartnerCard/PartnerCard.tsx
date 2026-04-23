@@ -53,6 +53,3 @@ export const PartnerCard = ({
     </button>
   );
 };
-
-export const MerchantCard = PartnerCard;
-export const StoreCard = PartnerCard;

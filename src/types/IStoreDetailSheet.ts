@@ -42,19 +42,3 @@ export type VisiblePartnersChangePayload = {
   updating: boolean;
   error: string | null;
 };
-
-// Backward-compatible aliases during migration.
-export type StoreDetailSheetLabels = PartnerDetailSheetLabels;
-export type StoreDetailSheetProps = {
-  merchant: PartnerFeature | null;
-  isMobile?: boolean;
-  locale: ILocale;
-  labels: StoreDetailSheetLabels;
-  onClose: () => void;
-};
-export type VisibleMerchantsChangePayload = {
-  merchants: PartnerFeature[];
-  loading: boolean;
-  updating: boolean;
-  error: string | null;
-};

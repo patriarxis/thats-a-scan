@@ -4,7 +4,6 @@ export * from "./PartnerResultsPanel/PartnerResultsPanel";
 export * from "./PartnerCard/PartnerCard";
 export * from "./QuickFilterChips/QuickFilterChips";
 export * from "./FiltersModal/FiltersModal";
-export * from "./ViewModeToggle/ViewModeToggle";
 export * from "./MapView/MapView";
 export * from "./PartnerDetailSheet/PartnerDetailSheet";
 export * from "./DesktopSideSheet/DesktopSideSheet";

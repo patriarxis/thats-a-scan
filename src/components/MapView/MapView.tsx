@@ -64,12 +64,6 @@ type MapViewProps = {
   onVisiblePartnersChange: (payload: VisiblePartnersChangePayload) => void;
   onPartnerSelect: (partner: PartnerFeature) => void;
   onMapClick?: () => void;
-  // Backward-compatible props during migration.
-  selectedMerchantId?: string | null;
-  highlightedMerchantIds?: string[];
-  merchantFilter?: (merchant: PartnerFeature) => boolean;
-  onVisibleMerchantsChange?: (payload: { merchants: PartnerFeature[]; loading: boolean; updating: boolean; error: string | null }) => void;
-  onMerchantSelect?: (merchant: PartnerFeature) => void;
 };
 
 type MarkerCategory = "meal" | "rewards" | "expenses" | "gyms";
@@ -412,11 +406,6 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     partnerFilter,
     onVisiblePartnersChange,
     onPartnerSelect,
-    selectedMerchantId,
-    highlightedMerchantIds,
-    merchantFilter,
-    onVisibleMerchantsChange,
-    onMerchantSelect,
     onMapClick
   },
   ref
@@ -536,17 +525,11 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       ensureMapLayers(map);
       const latest = latestViewportStateRef.current;
       const nextPartners = latest.partners.filter((partner) =>
-        (partnerFilter ?? merchantFilter) ? (partnerFilter ?? merchantFilter)!(partner) : true
+        partnerFilter ? partnerFilter(partner) : true
       );
       pushDataToMap(nextPartners);
       onVisiblePartnersChangeRef.current?.({
         partners: nextPartners,
-        loading: latest.loading,
-        updating: latest.updating,
-        error: latest.error
-      });
-      onVisibleMerchantsChange?.({
-        merchants: nextPartners,
         loading: latest.loading,
         updating: latest.updating,
         error: latest.error
@@ -592,7 +575,6 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       const partner = partnersRef.current.find((item) => getPartnerId(item) === merchantId);
       if (partner) {
         onPartnerSelectRef.current?.(partner);
-        onMerchantSelect?.(partner);
       }
     });
     map.on("click", SELECTED_LAYER_ID, (e) => {
@@ -602,7 +584,6 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       const partner = partnersRef.current.find((item) => getPartnerId(item) === merchantId);
       if (partner) {
         onPartnerSelectRef.current?.(partner);
-        onMerchantSelect?.(partner);
       }
     });
 
@@ -633,17 +614,11 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     const syncData = () => {
       ensureMapLayers(map);
       const nextPartners = partners.filter((partner) =>
-        (partnerFilter ?? merchantFilter) ? (partnerFilter ?? merchantFilter)!(partner) : true
+        partnerFilter ? partnerFilter(partner) : true
       );
       pushDataToMap(nextPartners);
       onVisiblePartnersChangeRef.current?.({
         partners: nextPartners,
-        loading,
-        updating,
-        error
-      });
-      onVisibleMerchantsChange?.({
-        merchants: nextPartners,
         loading,
         updating,
         error
@@ -659,7 +634,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     return () => {
       map.off("load", syncData);
     };
-  }, [error, loading, merchantFilter, onVisibleMerchantsChange, partnerFilter, partners, updating, viewportTooWide]);
+  }, [error, loading, partnerFilter, partners, updating, viewportTooWide]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -767,11 +742,11 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.getLayer(HIGHLIGHT_LAYER_ID) || !map.getLayer(SELECTED_LAYER_ID) || !map.getLayer(LAYER_ID)) return;
-    const selectedId = selectedPartnerId ?? selectedMerchantId ?? null;
+    const selectedId = selectedPartnerId ?? null;
     const ids = Array.from(
       new Set([
         ...(selectedId ? [selectedId] : []),
-        ...(highlightedPartnerIds ?? highlightedMerchantIds ?? [])
+        ...highlightedPartnerIds
       ])
     );
     map.setFilter(
@@ -792,7 +767,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
         ? ["all", ["!", ["has", "point_count"]], ["!=", ["get", "__merchant_id"], selectedId]]
         : ["!", ["has", "point_count"]]
     );
-  }, [highlightedMerchantIds, highlightedPartnerIds, selectedMerchantId, selectedPartnerId]);
+  }, [highlightedPartnerIds, selectedPartnerId]);
 
   return (
     <div className={styles.wrapper}>

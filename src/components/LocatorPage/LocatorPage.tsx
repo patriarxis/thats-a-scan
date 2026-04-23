@@ -687,5 +687,3 @@ export const LocatorPage = () => {
     </LocaleProvider>
   );
 };
-
-export const LocatorExperience = LocatorPage;

@@ -116,6 +116,3 @@ export const PartnerResultsPanel = ({
     </section>
   );
 };
-
-export const MerchantResultsPanel = PartnerResultsPanel;
-export const ResultsPanel = PartnerResultsPanel;

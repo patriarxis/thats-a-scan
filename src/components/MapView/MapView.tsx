@@ -5,6 +5,7 @@ import mapboxgl, { GeoJSONSource, Map as MapboxMap, Marker as MapboxMarker } fro
 import "mapbox-gl/dist/mapbox-gl.css";
 import {
   getPartnerId,
+  type ILocale,
   type PartnerFeature,
   type VisiblePartnersChangePayload,
 } from "@/types";
@@ -32,6 +33,7 @@ export type { MapViewHandle } from "./mapViewTypes";
 
 type MapViewProps = {
   className?: string;
+  locale: ILocale;
   selectedPartnerId: string | null;
   highlightedPartnerIds: string[];
   zoomInMessage: string;
@@ -44,6 +46,7 @@ type MapViewProps = {
 export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   {
     className,
+    locale,
     selectedPartnerId,
     highlightedPartnerIds,
     zoomInMessage,
@@ -241,6 +244,14 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       setMapReady(false);
     };
   }, [token]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !token) return;
+    const apply = () => map.setLanguage(locale);
+    if (map.isStyleLoaded()) apply();
+    else map.once("load", apply);
+  }, [locale, token]);
 
   useEffect(() => {
     const map = mapRef.current;

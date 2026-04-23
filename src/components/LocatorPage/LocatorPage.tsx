@@ -508,6 +508,7 @@ const LocatorPageContent = () => {
     >
       <MapView
         ref={mapRef}
+        locale={locale}
         selectedPartnerId={selectedId}
         highlightedPartnerIds={highlightedPartnerIds}
         zoomInMessage={t("zoomInToSeeStores")}

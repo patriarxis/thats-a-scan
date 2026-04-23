@@ -35,6 +35,11 @@ function hasAnyNeedle(haystack: string, needles: string[]): boolean {
 export function resolveMerchantCategoryFromProperties(
   properties: Record<string, unknown>,
 ): CategoryId {
+  const source = normalizeText(properties.__source);
+  if (source === "up_hellas") {
+    return "meal";
+  }
+
   const valuesBlob = Object.values(properties)
     .map((value) => normalizeText(value))
     .join(" ");

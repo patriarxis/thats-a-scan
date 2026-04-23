@@ -93,15 +93,71 @@ export function mapVenueToMerchantFeature(
 
 let cachedVenues: MerchantFeature[] | null = null;
 let lastFetchTime: number = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let cachedDescriptions: Map<string, string> | null = null;
+let lastDescriptionsFetchTime = 0;
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const DESCRIPTIONS_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 const BATCH_SIZE = 10;
 const MAX_PAGES = 50;
+const PAGE_SIZE = 10;
+const MAX_RETRIES = 2;
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchVenuesPage(
+  apiUrl: string,
+  apiKey: string,
+  page: number,
+): Promise<NyamieVenue[] | null> {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+    try {
+      const response = await fetch(`${apiUrl}?page=${page}`, {
+        headers: {
+          "X-Api-Key": apiKey,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      });
+
+      if (response.ok) {
+        const venues: NyamieVenue[] = await response.json();
+        return Array.isArray(venues) ? venues : [];
+      }
+
+      const shouldRetry = response.status === 429 || response.status >= 500;
+      if (!shouldRetry || attempt === MAX_RETRIES) {
+        console.error(
+          `Nyamie page ${page} failed with status ${response.status} after ${attempt + 1} attempt(s).`,
+        );
+        return null;
+      }
+    } catch (error) {
+      if (attempt === MAX_RETRIES) {
+        console.error(
+          `Nyamie page ${page} failed after ${attempt + 1} attempt(s):`,
+          error,
+        );
+        return null;
+      }
+    }
+
+    await sleep(300 * (attempt + 1));
+  }
+
+  return null;
+}
 
 export async function fetchAllVenues(): Promise<MerchantFeature[]> {
   const now = Date.now();
   if (cachedVenues && now - lastFetchTime < CACHE_TTL) {
+    console.info(
+      `[nyamie] cache_hit features=${cachedVenues.length} age_ms=${now - lastFetchTime}`,
+    );
     return cachedVenues;
   }
+  const fetchStartedAt = Date.now();
 
   const apiKey = process.env.NYAMIE_API_KEY;
   const apiUrl =
@@ -112,14 +168,25 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
     return [];
   }
 
-  const grDescriptions = await fetchWebflowDescriptions().catch((error) => {
-    console.error("Failed to fetch Webflow gym descriptions:", error);
-    return new Map<string, string>();
-  });
+  const shouldRefreshDescriptions =
+    !cachedDescriptions ||
+    now - lastDescriptionsFetchTime >= DESCRIPTIONS_CACHE_TTL;
+  if (shouldRefreshDescriptions) {
+    cachedDescriptions = await fetchWebflowDescriptions().catch((error) => {
+      console.error("Failed to fetch Webflow gym descriptions:", error);
+      return new Map<string, string>();
+    });
+    lastDescriptionsFetchTime = now;
+  }
+  const grDescriptions = cachedDescriptions ?? new Map<string, string>();
 
   const allFeatures: MerchantFeature[] = [];
   let currentStartPage = 1;
   let exhausted = false;
+  let successfulPages = 0;
+  let failedPages = 0;
+  let emptyPages = 0;
+  let partialPages = 0;
 
   // Fetch in parallel batches to speed up the process while respecting potential rate limits
   while (currentStartPage <= MAX_PAGES && !exhausted) {
@@ -128,25 +195,22 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
 
     try {
       const batchResults = await Promise.all(
-        batchPages.map(async (page) => {
-          const response = await fetch(`${apiUrl}?page=${page}`, {
-            headers: {
-              "X-Api-Key": apiKey,
-              "Content-Type": "application/json",
-            },
-            cache: "no-store",
-          });
-
-          if (!response.ok) return [];
-          const venues: NyamieVenue[] = await response.json();
-          return Array.isArray(venues) ? venues : [];
-        })
+        batchPages.map((page) => fetchVenuesPage(apiUrl, apiKey, page))
       );
 
       for (let i = 0; i < batchResults.length; i++) {
         const venues = batchResults[i];
+
+        // Do not treat transient fetch failures as end-of-dataset.
+        if (!venues) {
+          failedPages += 1;
+          continue;
+        }
+        successfulPages += 1;
+
         if (venues.length === 0) {
           exhausted = true;
+          emptyPages += 1;
           // We found an empty page, but we should still process the pages before this one in the batch
         }
         const features = venues.map((venue) =>
@@ -154,8 +218,9 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
         );
         allFeatures.push(...features);
         
-        // If results are less than expected per page (usually 10), we've likely hit the end
-        if (venues.length < 10) {
+        // If results are less than expected per page, we've likely hit the end.
+        if (venues.length < PAGE_SIZE) {
+          partialPages += 1;
           exhausted = true;
           break; 
         }
@@ -171,5 +236,8 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
 
   cachedVenues = allFeatures;
   lastFetchTime = now;
+  console.info(
+    `[nyamie] fetch_complete features=${allFeatures.length} successful_pages=${successfulPages} failed_pages=${failedPages} empty_pages=${emptyPages} partial_pages=${partialPages} elapsed_ms=${Date.now() - fetchStartedAt}`,
+  );
   return allFeatures;
 }

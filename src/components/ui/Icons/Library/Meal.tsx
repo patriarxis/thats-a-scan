@@ -2,19 +2,19 @@ import { IIconProps } from "@/types";
 import { ICONS } from "@/enums";
 import { IconVectorRegistry } from "../iconVectors";
 
-export const Barbell = ({ className, ...props }: IIconProps) => {
-  const barbell = IconVectorRegistry[ICONS.BARBELL];
-  if (!barbell) return null;
+export const Meal = ({ className, ...props }: IIconProps) => {
+  const meal = IconVectorRegistry[ICONS.MEAL];
+  if (!meal) return null;
   return (
     <svg
       width="24"
       height="24"
-      viewBox={`0 0 ${barbell.viewBoxWidth} ${barbell.viewBoxHeight}`}
+      viewBox={`0 0 ${meal.viewBoxWidth} ${meal.viewBoxHeight}`}
       fill="none"
       className={className}
       {...props}
     >
-      {barbell.paths.map((d, idx) => (
+      {meal.paths.map((d, idx) => (
         <path key={idx} d={d} fill="currentColor" />
       ))}
     </svg>

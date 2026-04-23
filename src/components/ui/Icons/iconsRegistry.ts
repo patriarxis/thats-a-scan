@@ -12,6 +12,8 @@ import { Faders } from "./Library/Faders";
 import { ForkKnife } from "./Library/ForkKnife";
 import { Globe } from "./Library/Globe";
 import { MagnifyingGlass } from "./Library/MagnifyingGlass";
+import { MapPin } from "./Library/MapPin";
+import { Meal } from "./Library/Meal";
 import { NavigationArrow } from "./Library/NavigationArrow";
 import { Phone } from "./Library/Phone";
 import { ShareNetwork } from "./Library/ShareNetwork";
@@ -34,6 +36,8 @@ export const IconRegistry: Record<ICONS, ComponentType<IIconProps>> = {
   [ICONS.FORK_KNIFE]: ForkKnife,
   [ICONS.GLOBE]: Globe,
   [ICONS.MAGNIFYING_GLASS]: MagnifyingGlass,
+  [ICONS.MAP_PIN]: MapPin,
+  [ICONS.MEAL]: Meal,
   [ICONS.NAVIGATION_ARROW]: NavigationArrow,
   [ICONS.PHONE]: Phone,
   [ICONS.SHARE_NETWORK]: ShareNetwork,

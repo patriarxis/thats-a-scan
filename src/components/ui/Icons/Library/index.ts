@@ -8,6 +8,8 @@ export * from "./Faders";
 export * from "./ForkKnife";
 export * from "./Globe";
 export * from "./MagnifyingGlass";
+export * from "./MapPin";
+export * from "./Meal";
 export * from "./NavigationArrow";
 export * from "./Phone";
 export * from "./ShareNetwork";

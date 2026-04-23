@@ -9,6 +9,8 @@ export enum ICONS {
   FORK_KNIFE = "fork-knife",
   GLOBE = "globe",
   MAGNIFYING_GLASS = "magnifying-glass",
+  MAP_PIN = "map-pin",
+  MEAL = "meal",
   NAVIGATION_ARROW = "navigation-arrow",
   PHONE = "phone",
   SHARE_NETWORK = "share-network",

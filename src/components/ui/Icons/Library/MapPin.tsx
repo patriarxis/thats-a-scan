@@ -2,19 +2,19 @@ import { IIconProps } from "@/types";
 import { ICONS } from "@/enums";
 import { IconVectorRegistry } from "../iconVectors";
 
-export const Barbell = ({ className, ...props }: IIconProps) => {
-  const barbell = IconVectorRegistry[ICONS.BARBELL];
-  if (!barbell) return null;
+export const MapPin = ({ className, ...props }: IIconProps) => {
+  const vector = IconVectorRegistry[ICONS.MAP_PIN];
+  if (!vector) return null;
   return (
     <svg
       width="24"
       height="24"
-      viewBox={`0 0 ${barbell.viewBoxWidth} ${barbell.viewBoxHeight}`}
+      viewBox={`0 0 ${vector.viewBoxWidth} ${vector.viewBoxHeight}`}
       fill="none"
       className={className}
       {...props}
     >
-      {barbell.paths.map((d, idx) => (
+      {vector.paths.map((d, idx) => (
         <path key={idx} d={d} fill="currentColor" />
       ))}
     </svg>

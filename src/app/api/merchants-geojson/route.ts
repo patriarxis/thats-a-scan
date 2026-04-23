@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchAllVenues } from "@/lib/nyamie";
+import type { PartnerFeature } from "@/types";
 
 const UP_HELLAS_API_URL = "https://merchants-map.uphellas.gr/geojson/search";
 
@@ -28,6 +29,7 @@ function isValidLongitude(v: number): boolean {
 }
 
 export async function POST(request: Request) {
+  const startedAt = Date.now();
   let bounds: BBoxPayload = DEFAULT_ATHENS_BBOX;
   try {
     const json = (await request.json()) as Partial<BBoxPayload>;
@@ -53,27 +55,46 @@ export async function POST(request: Request) {
   }
 
   try {
+    const upHellasStartedAt = Date.now();
+    const nyamieStartedAt = Date.now();
+
     // Fetch from both sources in parallel
     const [upHellasRes, nyamieAllFeatures] = await Promise.all([
       fetch(UP_HELLAS_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bounds),
-        next: { revalidate: 60 }
+        cache: "no-store",
       }).catch((err) => {
         console.error("Failed to fetch from Up Hellas:", err);
         return null;
+      }).finally(() => {
+        console.info(
+          `[merchants-geojson] up_hellas_fetch_done elapsed_ms=${Date.now() - upHellasStartedAt}`,
+        );
       }),
       fetchAllVenues().catch((err) => {
         console.error("Failed to fetch from Nyamie:", err);
         return [];
+      }).finally(() => {
+        console.info(
+          `[merchants-geojson] nyamie_fetch_done elapsed_ms=${Date.now() - nyamieStartedAt}`,
+        );
       })
     ]);
 
-    let upHellasFeatures = [];
+    let upHellasFeatures: PartnerFeature[] = [];
     if (upHellasRes?.ok) {
-      const data = await upHellasRes.json();
-      upHellasFeatures = Array.isArray(data.features) ? data.features : [];
+      const data = (await upHellasRes.json()) as { features?: PartnerFeature[] };
+      upHellasFeatures = Array.isArray(data.features)
+        ? data.features.map((feature: PartnerFeature) => ({
+            ...feature,
+            properties: {
+              ...feature.properties,
+              __source: "up_hellas",
+            },
+          }))
+        : [];
     }
 
     // Filter Nyamie venues locally by the requested bounding box
@@ -88,6 +109,11 @@ export async function POST(request: Request) {
         lng <= south_east.longitude
       );
     });
+
+    const totalFeatures = upHellasFeatures.length + filteredNyamie.length;
+    console.info(
+      `[merchants-geojson] request_complete total=${totalFeatures} up_hellas=${upHellasFeatures.length} nyamie_filtered=${filteredNyamie.length} nyamie_raw=${nyamieAllFeatures.length} elapsed_ms=${Date.now() - startedAt}`,
+    );
 
     return NextResponse.json({
       type: "FeatureCollection",

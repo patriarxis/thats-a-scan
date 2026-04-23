@@ -165,6 +165,8 @@ const LocatorPageContent = () => {
   const sidebarOpen = !!selectedPartner;
   const desktopDrawerOffsetPx = 340;
   const mobileDrawerOffsetPx = 280;
+  /** Extra bottom inset when a store is open so the map target sits nearer the visual center (mobile). */
+  const mobileSelectedMapBottomExtraPx = 48;
   const closeFiltersToResults = useCallback(() => {
     setIsFiltersOpen(false);
     setSuggestions((prev) =>
@@ -241,12 +243,12 @@ const LocatorPageContent = () => {
       return { top: 64, right: 16, bottom: 16, left: 16 };
     }
     return {
-      top: 64,
+      top: isMobile ? 52 : 64,
       right: 16,
-      bottom: isMobile ? mobileDrawerOffsetPx : desktopDrawerOffsetPx,
+      bottom: isMobile ? mobileDrawerOffsetPx + mobileSelectedMapBottomExtraPx : desktopDrawerOffsetPx,
       left: 16,
     };
-  }, [isMobile, sidebarOpen]);
+  }, [isMobile, sidebarOpen, mobileDrawerOffsetPx, mobileSelectedMapBottomExtraPx]);
 
   useEffect(() => {
     if (!query.trim()) {
@@ -343,16 +345,16 @@ const LocatorPageContent = () => {
     ) => {
       setSelectedPartner(partner);
       mapRef.current?.panTo(partner.geometry.coordinates, {
-        top: 64,
+        top: isMobile ? 52 : 64,
         right: 16,
-        bottom: isMobile ? mobileDrawerOffsetPx : desktopDrawerOffsetPx,
+        bottom: isMobile ? mobileDrawerOffsetPx + mobileSelectedMapBottomExtraPx : desktopDrawerOffsetPx,
         left: 16,
       });
       if (options?.updateUrl !== false) {
         syncSelectionInUrl(partner, options?.historyMode ?? "push");
       }
     },
-    [isMobile, syncSelectionInUrl],
+    [isMobile, mobileDrawerOffsetPx, mobileSelectedMapBottomExtraPx, syncSelectionInUrl],
   );
 
   const clearSelectedPartner = useCallback(

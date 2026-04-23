@@ -13,9 +13,12 @@ export const LocatorFooter = ({
   termsUrl,
   privacyUrl,
 }: LocatorFooterProps) => {
+  const year = new Date().getFullYear();
   return (
     <footer className={styles.footer}>
-      <span>© 2025 Up Hellas</span>
+      <span>
+        © {year} Up Hellas
+      </span>
       <a
         href={termsUrl}
         target="_blank"

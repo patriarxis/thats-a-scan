@@ -294,16 +294,7 @@ const LocatorPageContent = () => {
     };
   }, [allKnownMerchants, locale, query, recommendedCategorySuggestions, t, visiblePartners]);
 
-  const highlightedPartnerIds = useMemo(
-    () =>
-      suggestions
-        .filter(
-          (item): item is SearchSuggestion & { merchantId: string } =>
-            item.type === "merchant" && typeof item.merchantId === "string",
-        )
-        .map((item) => item.merchantId),
-    [suggestions],
-  );
+  const highlightedPartnerIds = useMemo(() => [], []);
   const showQuickChips = !query.trim() && !mapLoading && visiblePartners.length > 0;
 
   const merchantMatchesAllFilters = useCallback(
@@ -320,6 +311,9 @@ const LocatorPageContent = () => {
       partner: PartnerFeature,
       options?: { updateUrl?: boolean; historyMode?: "push" | "replace" },
     ) => {
+      if (options?.updateUrl !== false) {
+        syncSelectionInUrl(partner, options?.historyMode ?? "push");
+      }
       setSelectedPartner(partner);
       mapRef.current?.panTo(partner.geometry.coordinates, {
         top: isMobile ? 52 : 64,
@@ -327,9 +321,6 @@ const LocatorPageContent = () => {
         bottom: isMobile ? mobileDrawerOffsetPx + mobileSelectedMapBottomExtraPx : desktopDrawerOffsetPx,
         left: 16,
       });
-      if (options?.updateUrl !== false) {
-        syncSelectionInUrl(partner, options?.historyMode ?? "push");
-      }
     },
     [isMobile, mobileDrawerOffsetPx, mobileSelectedMapBottomExtraPx, syncSelectionInUrl],
   );
@@ -516,6 +507,7 @@ const LocatorPageContent = () => {
             }}
             onSelect={(item) => {
               if (item.type === "category" && item.categoryId) {
+                clearSelectedPartner("replace");
                 setActiveQuickCategoryId(item.categoryId as PopularSearchCategoryId);
                 setQuery(item.label);
                 setSuggestions([]);
@@ -545,6 +537,7 @@ const LocatorPageContent = () => {
             <QuickFilterChips
               options={quickChipOptions}
               onToggle={(id) => {
+                clearSelectedPartner("replace");
                 const nextId = id as PopularSearchCategoryId;
                 setActiveQuickCategoryId((prev) => (prev === nextId ? null : nextId));
                 const selectedCategory = popularCategories.find((item) => item.id === id);

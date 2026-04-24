@@ -1,6 +1,10 @@
 import type { Map as MapboxMap } from "mapbox-gl";
 import { getPartnerId, type PartnerFeature } from "@/types";
-import { SHOW_ALL_MARKERS_ZOOM, ZOOM_REVEAL_STEPS } from "./mapViewConstants";
+import {
+  DETAILED_MARKER_MIN_ZOOM,
+  SHOW_ALL_MARKERS_ZOOM,
+  ZOOM_REVEAL_STEPS,
+} from "./mapViewConstants";
 import { withClientIds } from "./merchantMarkerVisual";
 
 export const dedupeByMerchantId = (features: PartnerFeature[]): PartnerFeature[] => {
@@ -50,6 +54,16 @@ const maxMarkerCountForZoom = (zoom: number): number => {
   return maxCount;
 };
 
+type MarkerState = "hidden" | "small" | "default";
+
+const iconShareForZoom = (zoom: number): number => {
+  if (zoom >= SHOW_ALL_MARKERS_ZOOM) return 1;
+  if (zoom < DETAILED_MARKER_MIN_ZOOM) return 0.06;
+  const progress =
+    (zoom - DETAILED_MARKER_MIN_ZOOM) / (SHOW_ALL_MARKERS_ZOOM - DETAILED_MARKER_MIN_ZOOM);
+  return 0.22 + progress * 0.58;
+};
+
 /**
  * Prefer pins inside the viewport, but never drop an on-screen pin to make room for off-screen ones.
  */
@@ -76,6 +90,65 @@ const pickPrioritizedUpTo = (map: MapboxMap, features: PartnerFeature[], maxCoun
     return inView.slice(0, maxCount);
   }
   return [...inView, ...outOfView.slice(0, maxCount - inView.length)];
+};
+
+const stableHash = (value: string): number => {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+};
+
+const stableRankByMerchantId = (features: PartnerFeature[]): PartnerFeature[] => {
+  return [...features].sort((a, b) => {
+    const aId = getPartnerId(a).trim().toLowerCase();
+    const bId = getPartnerId(b).trim().toLowerCase();
+    const aHash = stableHash(aId);
+    const bHash = stableHash(bId);
+    if (aHash !== bHash) return aHash - bHash;
+    return aId.localeCompare(bId);
+  });
+};
+
+const assignMarkerStatesByZoom = (
+  features: PartnerFeature[],
+  zoom: number,
+  alwaysKeepIds?: ReadonlySet<string>,
+): PartnerFeature[] => {
+  const maxVisibleCount = maxMarkerCountForZoom(zoom);
+  const ranked = stableRankByMerchantId(features);
+  const maxIndexForVisible = ranked.length;
+  const iconBudget =
+    zoom >= SHOW_ALL_MARKERS_ZOOM
+      ? ranked.length
+      : Math.min(
+          Number.isFinite(maxVisibleCount) ? maxVisibleCount : ranked.length,
+          Math.max(0, Math.floor(maxIndexForVisible * iconShareForZoom(zoom))),
+        );
+
+  const alwaysKeep = alwaysKeepIds ?? new Set<string>();
+  const visibleIds = new Set<string>();
+  const iconIds = new Set<string>();
+
+  for (let i = 0; i < ranked.length; i++) {
+    const id = getPartnerId(ranked[i]);
+    if (i < maxIndexForVisible || alwaysKeep.has(id)) visibleIds.add(id);
+    if (i < iconBudget || (alwaysKeep.has(id) && zoom >= DETAILED_MARKER_MIN_ZOOM)) iconIds.add(id);
+  }
+
+  return ranked.map((feature) => {
+    const id = getPartnerId(feature);
+    const markerState: MarkerState = visibleIds.has(id) && iconIds.has(id) ? "default" : "small";
+    return {
+      ...feature,
+      properties: {
+        ...feature.properties,
+        __marker_state: markerState,
+      },
+    };
+  });
 };
 
 export const prioritizeAndCapByZoom = (
@@ -116,7 +189,7 @@ export const buildMerchantsFeatureCollection = (
 ) => {
   const dedupedItems = dedupeByMerchantId(items);
   const zoom = map.getZoom();
-  const zoomCappedItems = prioritizeAndCapByZoom(map, dedupedItems, zoom, alwaysKeepIds);
+  const zoomCappedItems = assignMarkerStatesByZoom(dedupedItems, zoom, alwaysKeepIds);
   return {
     type: "FeatureCollection" as const,
     features: withClientIds(zoomCappedItems),

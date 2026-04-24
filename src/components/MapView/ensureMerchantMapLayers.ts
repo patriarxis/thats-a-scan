@@ -135,6 +135,7 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
       type: "symbol",
       source: SOURCE_ID,
       minzoom: DETAILED_MARKER_MIN_ZOOM,
+      filter: ["==", ["get", "__marker_state"], "default"],
       layout: {
         "icon-image": ["coalesce", ["get", "__marker_icon"], MARKER_ICON_DEFAULT_ID],
         "icon-size": ["interpolate", ["linear"], ["zoom"], 9, 0.92, 12, 1, 15, 1.08],
@@ -151,10 +152,10 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
       type: "circle",
       source: SOURCE_ID,
       minzoom: 0,
-      maxzoom: DETAILED_MARKER_MIN_ZOOM,
+      filter: ["==", ["get", "__marker_state"], "small"],
       paint: {
         "circle-color": ["coalesce", ["get", "__marker_dot_color"], "#f59100"],
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 1.8, 8, 2.6, 11.5, 3.2],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 1.8, 8, 2.6, 11.5, 3.3, 14, 3.8, 16, 4.2],
         "circle-stroke-color": "rgba(15,23,42,0.7)",
         "circle-stroke-width": 0.8,
       },

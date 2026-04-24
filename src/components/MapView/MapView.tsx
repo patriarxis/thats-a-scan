@@ -483,9 +483,27 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
         ? ["==", ["get", "__merchant_id"], selectedId]
         : ["==", "__merchant_id", "__none__"],
     );
-    map.setFilter(LAYER_ID, selectedId ? ["!=", ["get", "__merchant_id"], selectedId] : null);
+    map.setFilter(
+      LAYER_ID,
+      selectedId
+        ? [
+            "all",
+            ["==", ["get", "__marker_state"], "default"],
+            ["!=", ["get", "__merchant_id"], selectedId],
+          ]
+        : ["==", ["get", "__marker_state"], "default"],
+    );
     if (map.getLayer(DOT_LAYER_ID)) {
-      map.setFilter(DOT_LAYER_ID, selectedId ? ["!=", ["get", "__merchant_id"], selectedId] : null);
+      map.setFilter(
+        DOT_LAYER_ID,
+        selectedId
+          ? [
+              "all",
+              ["==", ["get", "__marker_state"], "small"],
+              ["!=", ["get", "__merchant_id"], selectedId],
+            ]
+          : ["==", ["get", "__marker_state"], "small"],
+      );
     }
   }, [highlightedPartnerIds, selectedPartnerId]);
 

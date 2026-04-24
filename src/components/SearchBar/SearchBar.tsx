@@ -74,6 +74,7 @@ export const SearchBar = ({
 }: SearchBarProps) => {
   const MOBILE_SEARCH_CLOSE_ANIMATION_MS = 100;
   const MOBILE_ONLY_MEDIA_QUERY = "(max-width: 639px)";
+  const MAX_SEARCH_INPUT_CHARS = 120;
   const [activeIndex, setActiveIndex] = useState(-1);
   const prevFocusInputSignalRef = useRef<number | undefined>(focusInputSignal);
   const prevCloseActiveSignalRef = useRef<number | undefined>(closeActiveSignal);
@@ -229,6 +230,7 @@ export const SearchBar = ({
           aria-autocomplete="list"
           aria-haspopup="listbox"
           autoComplete="off"
+          maxLength={MAX_SEARCH_INPUT_CHARS}
           value={value}
           onPointerDown={() => {
             onFocusInput?.();

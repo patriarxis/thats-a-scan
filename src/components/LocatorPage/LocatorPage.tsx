@@ -115,6 +115,7 @@ const LocatorPageContent = () => {
   const geocodeAbortRef = useRef<AbortController | null>(null);
   const urlSelectionAppliedRef = useRef<string | null>(null);
   const isMobile = useIsMobileUx();
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false);
   const { locale, setLocale, t } = useLocale();
   const [urlSelection, setUrlSelection] = useState<UrlSelectionState>({
     storeId: null,
@@ -212,6 +213,14 @@ const LocatorPageContent = () => {
     closeFiltersToDefault();
     setIsLanguageModalOpen(true);
   }, [closeFiltersToDefault]);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 639px)");
+    const sync = () => setIsNarrowViewport(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+  const showSearchLocaleSwitcher = isMobile || isNarrowViewport;
 
   useEffect(() => {
     const syncFromBrowserLocation = () => {
@@ -579,7 +588,7 @@ const LocatorPageContent = () => {
             searchAriaLabel={t("searchAria")}
             clearAriaLabel={t("clearSearch")}
             openFiltersAriaLabel={t("openFilters")}
-            showLocaleSwitcher={isMobile}
+            showLocaleSwitcher={showSearchLocaleSwitcher}
             localeSwitcherAriaLabel={t("language")}
             onOpenLocalePanel={handleOpenLanguageModal}
             filterActiveCount={activeFilterCount}
@@ -645,7 +654,7 @@ const LocatorPageContent = () => {
           </div>
         )}
       </div>
-      {isMobile && (
+      {showSearchLocaleSwitcher && (
         <Backdrop
           isOpen={isLanguageModalOpen}
           onClick={() => setIsLanguageModalOpen(false)}

@@ -76,7 +76,7 @@
   padding-top: $spacing-sm;
   padding-bottom: $spacing-sm;
   padding-left: calc($spacing-lg + 1.5rem + $spacing-sm);
-  padding-right: calc($spacing-sm + 1.75rem + $spacing-xs + 2rem + $spacing-xs + 1.75rem + $spacing-sm);
+  padding-right: calc($spacing-md + 1.75rem + $spacing-xs + 2rem + $spacing-xs + 1rem);
   border-radius: $border-radius-full;
   background: $neutral-2;
   color: $white-90;
@@ -100,6 +100,7 @@
 
   @include mobile-only {
     padding-left: calc($spacing-lg + 2rem + $spacing-sm);
+    padding-right: calc($spacing-md + 1.75rem + $spacing-xs + 1.75rem + $spacing-xs + 1px + $spacing-xs + 1.75rem + $spacing-sm + 1.5rem);
   }
 }
 

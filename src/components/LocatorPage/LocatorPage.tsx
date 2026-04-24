@@ -27,7 +27,6 @@ import {
 import { useMerchantFilters } from "@/lib/useMerchantFilters";
 import {
   getPartnerId,
-  type CategoryId,
   type PartnerFeature,
   type PartnerDetailSheetLabels,
   type VisiblePartnersChangePayload,
@@ -143,22 +142,15 @@ const LocatorPageContent = () => {
     [activeQuickCategoryId, popularCategories],
   );
   const {
-    selectedNetworkIds,
     selectedProductIds,
-    selectedWalletIds,
-    isFlexOneWalletActive,
     cashbackOnly,
     isFiltersOpen,
     setIsFiltersOpen,
     setCashbackOnly,
     productFilterOptions,
-    walletFilterOptions,
     merchantMatchesFilters,
     activeFilterCount,
-    toggleNetwork,
     toggleProduct,
-    toggleWallet,
-    toggleAllWallets,
     clearAllFilters,
   } = useMerchantFilters(allKnownMerchants);
 
@@ -451,55 +443,19 @@ const LocatorPageContent = () => {
     photos: t("photos")
   };
 
-  const filterLabels: Record<CategoryId, string> = {
-    meal: t("categoryMeal"),
-    rewards: t("categoryRewards"),
-    expenses: t("categoryExpenses"),
-    gyms: t("categoryGyms"),
-  };
-
-  const walletLabels: Record<string, string> = {
-    meal: t("walletMeal"),
-    rewards: t("walletRewards"),
-    mobility: t("walletMobility"),
-    public_transport: t("walletPublicTransport"),
-    wellness: t("walletWellness"),
-    learning: t("walletLearning"),
-    vacations: t("walletVacations"),
-    childcare: t("walletChildcare"),
-    clothing: t("walletClothing"),
-    beauty: t("walletBeauty"),
-    wfh: t("walletWfh"),
-    culture: t("walletCulture"),
-    health: t("walletHealth"),
-    safety: t("walletSafety"),
-  };
   const filtersPanelProps: Omit<FiltersModalProps, "isOpen"> = {
     title: t("filters"),
     closeLabel: t("close"),
-    networkCategoryLabel: t("networkCategory"),
     productLabel: t("product"),
-    walletLabel: t("wallets"),
-    walletFlexOneLabel: t("walletFlexOne"),
     cashbackLabel: t("cashback"),
     cashbackOnlyLabel: t("cashbackOnly"),
     clearAllFiltersLabel: t("clearAllFilters"),
-    applyFiltersLabel: t("applyFilters"),
     noAvailableProductsLabel: t("noAvailableProducts"),
-    networkLabels: filterLabels,
-    walletLabels,
-    selectedNetworkIds,
     selectedProductIds,
-    selectedWalletIds,
-    isFlexOneWalletActive,
     productOptions: productFilterOptions,
-    walletOptions: walletFilterOptions,
     cashbackOnly,
     onClose: closeFiltersToResults,
-    onToggleNetwork: toggleNetwork,
     onToggleProduct: toggleProduct,
-    onToggleWallet: toggleWallet,
-    onToggleAllWallets: toggleAllWallets,
     onToggleCashback: () => setCashbackOnly((prev) => !prev),
     onClearAll: clearAllFilters,
   };

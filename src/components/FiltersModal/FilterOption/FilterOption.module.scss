@@ -3,19 +3,30 @@
 .option {
   border-radius: $border-radius-full;
   border: 1px solid $white-10;
-  background: rgba($white, 0.03);
-  color: $white-80;
-  padding: $spacing-xs $spacing-md;
-  transition: all $transition-normal;
+  background: rgba($neutral-1, 0.24);
+  color: $white-90;
+  padding: calc($spacing-xs + 1px) $spacing-md;
+  backdrop-filter: blur(0.125rem);
+  -webkit-backdrop-filter: blur(0.125rem);
+  transition:
+    border-color $transition-normal,
+    color $transition-normal,
+    background-color $transition-normal,
+    transform $transition-normal;
 
   &:hover {
     border-color: $white-20;
     color: $white;
+    transform: translateY(-1px);
   }
 }
 
 .optionActive {
-  background: rgba($brand-primary-5, 0.16);
-  border-color: $brand-primary-5;
-  color: $brand-primary-5;
+  background: linear-gradient(
+    90deg,
+    rgba($brand-primary-5, 0.18),
+    rgba($fitpass-primary-5, 0.14)
+  );
+  border-color: rgba($brand-primary-5, 0.75);
+  color: $white;
 }

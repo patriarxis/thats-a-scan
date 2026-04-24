@@ -1,86 +1,65 @@
 @use "../../styles/abstracts" as *;
 
-.overlay {
-  position: absolute;
-  top: calc(100% + $spacing-xs);
-  left: 0;
-  right: 0;
-  z-index: 95;
-  padding: 0;
-  animation: panelOverlayIn 0.2s ease-out forwards;
+.modal {
+  position: relative;
+  z-index: $z-search-elevated + 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  border-radius: $border-radius-lg;
+  background: $neutral-2;
+  padding: $spacing-sm;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  transform-origin: top center;
+  animation: dropdownPanelIn 0.2s ease-out forwards;
 
-  @include mobile-only {
-    position: relative;
-    top: 0;
+  @media (min-width: $breakpoint-sm) {
+    position: absolute;
+    top: calc(100% + $spacing-xs);
     left: 0;
     right: 0;
-    display: flex;
-    flex: 1 1 auto;
-    min-height: 0;
-    padding: 0;
+    max-height: 22rem;
+    height: auto;
+    border-radius: $border-radius-md;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   }
-
-  @include desktop-up {
-    pointer-events: none;
-  }
-}
-
-.modal {
-  width: 100%;
-  max-height: 22rem;
-  overflow: auto;
-  overscroll-behavior: contain;
-  border-radius: $border-radius-md;
-  background: $neutral-2;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: $spacing-sm;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  transform-origin: top center;
-  animation: panelIn 0.2s ease-out forwards;
 
   @include mobile-only {
-    width: 100%;
-    max-height: none;
-    height: 100%;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-    border-radius: $border-radius-lg;
-    background: $neutral-2;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
-    padding: $spacing-sm;
-  }
-
-  @include desktop-up {
-    pointer-events: auto;
+    animation: dropdownContainerIn 0.2s ease-out;
   }
 }
 
-.overlayClosing {
-  animation: panelOverlayOut 0.16s ease-in forwards;
-}
-
-.modalClosing {
-  animation: panelOut 0.16s ease-in forwards;
-}
-
-.header {
+.modalHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: $spacing-lg;
+}
 
-  h3 {
-    margin: 0;
-    color: $white-90;
-    @include h4;
-  }
+.modalTitle {
+  margin: 0;
+  color: $white-90;
+  @include h4;
+}
+
+.modalActions {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
 }
 
 .closeButton {
+  width: 2rem;
+  height: 2rem;
+}
+
+.clearButton {
   color: $white-60;
+  padding: 0;
+  @include p-sm;
   transition: color $transition-normal;
 
   &:hover {
@@ -94,203 +73,32 @@
   @include p-sm;
 }
 
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: $spacing-sm;
-  padding-top: $spacing-sm;
-}
-
-.clearButton,
-.applyButton {
-  border-radius: $border-radius-full;
-  padding: $spacing-sm $spacing-lg;
-  transition: all $transition-normal;
-}
-
-.clearButton {
-  border: 1px solid $white-10;
-  color: $white-80;
-
-  &:hover {
-    border-color: $white-20;
-    color: $white;
-  }
-}
-
-.applyButton {
-  background: linear-gradient(
-    to right,
-    $brand-primary-5 0%,
-    $fitpass-primary-5 33%,
-    $flexone-primary-5 66%,
-    $expense-primary-3 100%
-  );
-  color: $white;
-  font-weight: $font-weight-bold;
-
-  &:hover {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
+@keyframes dropdownContainerIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
 
-  &:active {
-    filter: brightness(0.9);
-  }
-}
-
-.walletGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
-  gap: $spacing-md $spacing-xs;
-  width: 100%;
-  padding-top: $spacing-sm;
-}
-
-.walletHeader {
-  display: flex;
-  align-items: center;
-  margin-bottom: $spacing-sm;
-}
-
-.parentToggle {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-xs $spacing-sm;
-  border-radius: $border-radius-lg;
-  background: rgba($white, 0.05);
-  border: 1px solid $white-10;
-  color: $white-90;
-  transition: all $transition-normal;
-  @include p-sm;
-  font-weight: $font-weight-medium;
-
-  &:hover {
-    background: rgba($white, 0.08);
-    border-color: $white-20;
-  }
-}
-
-.parentToggleActive {
-  background: rgba($flexone-primary-5, 0.15);
-  border-color: rgba($flexone-primary-5, 0.4);
-  color: $white;
-
-  .checkBox {
-    border-color: $flexone-primary-5;
-    background: $flexone-primary-5;
-    color: $white;
-  }
-}
-
-.checkBox {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  border: 2px solid $white-20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all $transition-normal;
-  color: transparent;
-}
-
-.walletTile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: $spacing-xs;
-  background: transparent;
-  padding: $spacing-xs;
-  transition: all $transition-normal;
-  opacity: 0.6;
-  filter: grayscale(0.4);
-
-  &:hover {
+  to {
     opacity: 1;
-    filter: none;
-    .iconCircle {
-      transform: scale(1.05);
-      border-color: $white-20;
-    }
+    transform: translateY(0);
   }
 }
 
-.walletTileActive {
-  opacity: 1;
-  filter: none;
-
-  .iconCircle {
-    background: rgba($flexone-primary-5, 0.2);
-    border-color: $flexone-primary-5;
-    color: $flexone-primary-5;
-    box-shadow: 0 0 16px rgba($flexone-primary-5, 0.2);
-  }
-
-  .walletName {
-    color: $white;
-    font-weight: $font-weight-bold;
-  }
-}
-
-.iconCircle {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 1px solid $white-10;
-  background: rgba($white, 0.04);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: $white-60;
-  transition: all $transition-normal;
-}
-
-.walletName {
-  @include p-xs;
-  color: $white-80;
-  text-align: center;
-  line-height: 1.2;
-  font-weight: $font-weight-medium;
-}
-
-@keyframes panelIn {
+@keyframes dropdownPanelIn {
   from {
     opacity: 0;
     transform: scaleY(0.92);
   }
+
   to {
     opacity: 1;
     transform: scaleY(1);
   }
 }
 
-@keyframes panelOut {
-  from {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-  to {
-    opacity: 0;
-    transform: scaleY(0.92);
-  }
-}
-
-@keyframes panelOverlayIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes panelOverlayOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
+@media (prefers-reduced-motion: reduce) {
+  .modal {
+    animation: none;
   }
 }

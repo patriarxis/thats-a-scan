@@ -1,5 +1,8 @@
 import { ICONS } from "@/enums";
-import { resolveMerchantCategoryFromProperties } from "@/lib/merchantFilters";
+import {
+  resolveMerchantCategoryFromProperties,
+  resolveMerchantProductIdsFromProperties,
+} from "@/lib/merchantFilters";
 import { getPartnerId, type CategoryId, type PartnerFeature } from "@/types";
 
 export type MarkerCategoryIconKey =
@@ -66,41 +69,15 @@ const circleFillForMainColor = (mainHex: string): string => {
   return PIN_CIRCLE_FILL_BY_MAIN_HEX[key] ?? key;
 };
 
-const normalizeText = (value: unknown): string => {
-  if (Array.isArray(value)) return value.map((v) => normalizeText(v)).join(" ");
-  if (typeof value === "string") return value.toLowerCase();
-  if (typeof value === "number") return String(value);
-  return "";
-};
-
 const resolveMerchantProducts = (properties: Record<string, unknown>): ProductDotKey[] => {
-  const accepted = normalizeText(properties.AcceptedProducts);
-  const source = normalizeText(properties.__source);
   const products = new Set<ProductDotKey>();
-
-  if (accepted.includes("fitpass")) products.add("fitpass");
-  if (accepted.includes("flexone")) products.add("flexone");
-  if (
-    accepted.includes("eat") ||
-    accepted.includes("meal") ||
-    accepted.includes("go for eat")
-  ) {
-    products.add("go_for_eat");
-  }
-  if (accepted.includes("gift")) products.add("up_gift");
-  if (accepted.includes("expense")) products.add("up_expense");
-  if (accepted.includes("cheque") || accepted.includes("dejeuner")) {
-    products.add("cheque_dejeuner");
-  }
-
-  if (source === "up_hellas") products.add("go_for_eat");
-
-  if (products.size === 0) {
-    const walletCategory = resolveMerchantCategoryFromProperties(properties);
-    if (walletCategory === "gyms") products.add("fitpass");
-    else if (walletCategory === "meal") products.add("go_for_eat");
-    else if (walletCategory === "expenses") products.add("up_expense");
-    else if (walletCategory === "rewards") products.add("up_gift");
+  for (const id of resolveMerchantProductIdsFromProperties(properties)) {
+    if (id === "fitpass") products.add("fitpass");
+    if (id === "flexone") products.add("flexone");
+    if (id === "go-for-eat") products.add("go_for_eat");
+    if (id === "up-gift") products.add("up_gift");
+    if (id === "up-expense") products.add("up_expense");
+    if (id === "cheque-dejeuner") products.add("cheque_dejeuner");
   }
 
   return PRODUCT_DOT_ORDER.filter((p) => products.has(p));

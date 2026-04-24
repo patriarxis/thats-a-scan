@@ -7,7 +7,7 @@ import {
 } from "@/types";
 import {
   resolveMerchantCategory,
-  parseAcceptedProducts,
+  resolveMerchantProductIds,
   merchantHasCashback,
 } from "@/lib/merchantFilters";
 import { Icon } from "@/components/ui";
@@ -183,16 +183,7 @@ export const PartnerDetailContent = ({
     props.DescriptionGR,
   ]);
 
-  const acceptedProducts = useMemo(() => {
-    const products = parseAcceptedProducts(props.AcceptedProducts);
-    if (
-      category === "gyms" &&
-      !products.some((p) => p.toLowerCase() === "fitpass")
-    ) {
-      products.push("Fitpass");
-    }
-    return products;
-  }, [category, props.AcceptedProducts]);
+  const acceptedProducts = useMemo(() => resolveMerchantProductIds(partner), [partner]);
 
   const hasCashback = merchantHasCashback(partner);
 
@@ -239,33 +230,38 @@ export const PartnerDetailContent = ({
       });
     }
 
-    acceptedProducts.forEach((p) => {
-      const pLower = p.toLowerCase();
-      let label = p;
-      let initials = p.substring(0, 1).toUpperCase();
+    acceptedProducts.forEach((productId) => {
+      let label = productId;
+      let initials = productId.substring(0, 1).toUpperCase();
 
-      if (pLower === "flexone") {
+      if (productId === "flexone") {
         label = labels.flexone;
         initials = "F1";
-      } else if (pLower === "fitpass") {
+      } else if (productId === "fitpass") {
         label = labels.fitpass;
         initials = "FP";
-      } else if (pLower.includes("expense")) {
+      } else if (productId === "up-expense") {
         label = labels.upExpense;
         initials = "EX";
-      } else if (pLower.includes("meal")) {
+      } else if (productId === "go-for-eat") {
+        label = "go for EAT";
+        initials = "EAT";
+      } else if (productId === "cheque-dejeuner") {
+        label = "Chèque Déjeuner";
+        initials = "CD";
+      } else if (productId === "up-meal") {
         label = labels.upMeal;
         initials = "M";
-      } else if (pLower.includes("gift")) {
+      } else if (productId === "up-gift") {
         label = labels.upGift;
         initials = "G";
       }
 
       logoItems.push({
-        id: pLower,
+        id: productId,
         label,
         initials,
-        type: pLower.replace(/\s+/g, "-"),
+        type: productId.replace(/\s+/g, "-"),
       });
     });
 

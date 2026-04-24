@@ -195,7 +195,7 @@ export const SearchBar = ({
       <Backdrop
         isOpen={isSearchUiActive || isClosing}
         onClick={handleMobileBackButton}
-        className={styles.searchBackdrop}
+        className={styles.backdrop}
         usePortal={false}
         exitDurationMs={MOBILE_SEARCH_CLOSE_ANIMATION_MS}
       />

@@ -1,27 +1,55 @@
 @use "../../styles/abstracts" as *;
 
 .footer {
+  position: relative;
   pointer-events: none;
   position: absolute;
   bottom: calc($spacing-xs + $spacing-xs);
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: $spacing-md;
+  padding: $spacing-xs $spacing-md;
   white-space: nowrap;
   font-size: $font-size-xs;
   color: rgba($white, 0.4);
 
-  > * {
-    pointer-events: auto;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translate(-50%, 62%);
+    width: 120%;
+    height: 500%;
+    background: radial-gradient(
+      ellipse at center,
+      rgba($neutral-1, 0.28) 0%,
+      rgba($neutral-1, 0.2) 34%,
+      rgba($neutral-1, 0.1) 54%,
+      rgba($neutral-1, 0.04) 70%,
+      rgba($neutral-1, 0) 100%
+    );
+    filter: blur(0.5rem);
+    -webkit-filter: blur(0.5rem);
+    z-index: -1;
+    pointer-events: none;
   }
 
-  @media (max-width: 768px) {
+  > * {
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  @include mobile-only {
     bottom: calc($spacing-xs + $spacing-xs);
     font-size: 0.65rem;
     gap: $spacing-sm;
+    padding: $spacing-xs $spacing-sm;
   }
 }
 

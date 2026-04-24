@@ -79,7 +79,6 @@ const LocatorPageContent = () => {
     bakery: ICONS.COOKIE,
     gym: ICONS.BARBELL,
   };
-  const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapViewHandle | null>(null);
   const searchRequestRef = useRef(0);
   const geocodeAbortRef = useRef<AbortController | null>(null);
@@ -193,22 +192,6 @@ const LocatorPageContent = () => {
     window.addEventListener("popstate", syncFromBrowserLocation);
     return () => window.removeEventListener("popstate", syncFromBrowserLocation);
   }, []);
-
-  useEffect(() => {
-    if (!isFiltersOpen) return;
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (searchContainerRef.current?.contains(target)) return;
-      closeFiltersToDefault();
-    };
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("touchstart", handlePointerDown);
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("touchstart", handlePointerDown);
-    };
-  }, [closeFiltersToDefault, isFiltersOpen]);
 
   const syncSelectionInUrl = useCallback(
     (partner: PartnerFeature | null, historyMode: "push" | "replace" = "replace") => {
@@ -542,7 +525,6 @@ const LocatorPageContent = () => {
 
       <div className={styles.searchOverlay}>
         <div
-          ref={searchContainerRef}
           className={styles.searchContainer}
           data-filters-open={isFiltersOpen ? "true" : "false"}
         >
@@ -623,9 +605,8 @@ const LocatorPageContent = () => {
           isOpen={isLanguageModalOpen}
           onClick={() => setIsLanguageModalOpen(false)}
           className={styles.languageModalOverlay}
-          openClassName={styles.languageModalOverlayOpen}
-          closingClassName={styles.languageModalOverlayClosing}
-          exitDurationMs={180}
+          tone="strong"
+          exitDurationMs={100}
         >
           <div
             className={styles.languageModalActions}

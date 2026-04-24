@@ -1,14 +1,17 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAnimatedPresence } from "@/lib/useAnimatedPresence";
+import styles from "./Backdrop.module.scss";
 
 type BackdropProps = {
   isOpen: boolean;
   onClick?: () => void;
-  className: string;
-  openClassName?: string;
-  closingClassName?: string;
+  className?: string;
+  contentClassName?: string;
+  tone?: "default" | "strong";
+  usePortal?: boolean;
   exitDurationMs?: number;
   children?: ReactNode;
 };
@@ -17,13 +20,19 @@ export const Backdrop = ({
   isOpen,
   onClick,
   className,
-  openClassName,
-  closingClassName,
-  exitDurationMs = 180,
+  contentClassName,
+  tone = "default",
+  usePortal = true,
+  exitDurationMs = 100,
   children,
 }: BackdropProps) => {
   const { isMounted, isClosing } = useAnimatedPresence(isOpen, exitDurationMs);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [isEntered, setIsEntered] = useState(false);
+
+  useEffect(() => {
+    setPortalTarget(document.body);
+  }, []);
 
   useEffect(() => {
     if (!isMounted) {
@@ -39,16 +48,22 @@ export const Backdrop = ({
   if (!isMounted) return null;
 
   const composedClassName = [
-    className,
-    isEntered && !isClosing && openClassName ? openClassName : "",
-    isClosing && closingClassName ? closingClassName : "",
+    styles.backdrop,
+    tone === "strong" ? styles.strong : "",
+    isEntered && !isClosing ? styles.open : "",
+    isClosing ? styles.closing : "",
+    className || "",
   ]
     .filter(Boolean)
     .join(" ");
 
-  return (
+  const backdropNode = (
     <div className={composedClassName} onClick={onClick} role="presentation">
-      {children}
+      {children ? <div className={contentClassName}>{children}</div> : null}
     </div>
   );
+
+  if (!usePortal) return backdropNode;
+  if (!portalTarget) return null;
+  return createPortal(backdropNode, portalTarget);
 };

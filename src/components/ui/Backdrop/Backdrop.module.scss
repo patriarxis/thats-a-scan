@@ -1,0 +1,28 @@
+@use "../../../styles/abstracts" as *;
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: $z-search-backdrop;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  opacity: 0;
+  background: rgba($neutral-1, 0.35);
+  backdrop-filter: blur(0.125rem);
+  -webkit-backdrop-filter: blur(0.125rem);
+  transition: opacity 0.1s ease-out;
+}
+
+.open {
+  opacity: 1;
+}
+
+.closing {
+  opacity: 0;
+}
+
+.strong {
+  background: rgba($neutral-1, 0.5);
+}

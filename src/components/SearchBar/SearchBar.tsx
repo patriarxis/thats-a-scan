@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type MouseEvent } from "react";
 import { useAnimatedPresence } from "@/lib/useAnimatedPresence";
 import { SearchResultsPanel } from "@/components/SearchPanel/SearchResultsPanel";
 import { FiltersModal, type FiltersModalProps } from "@/components/FiltersModal/FiltersModal";
+import { Backdrop } from "@/components/ui/Backdrop/Backdrop";
 import { Icon, IconButton } from "@/components/ui";
 import { ICONS } from "@/enums";
 import styles from "./SearchBar.module.scss";
@@ -71,7 +72,7 @@ export const SearchBar = ({
   localeSwitcherAriaLabel = "Change language",
   onOpenLocalePanel,
 }: SearchBarProps) => {
-  const MOBILE_SEARCH_CLOSE_ANIMATION_MS = 180;
+  const MOBILE_SEARCH_CLOSE_ANIMATION_MS = 100;
   const MOBILE_ONLY_MEDIA_QUERY = "(max-width: 639px)";
   const [activeIndex, setActiveIndex] = useState(-1);
   const prevFocusInputSignalRef = useRef<number | undefined>(focusInputSignal);
@@ -181,13 +182,30 @@ export const SearchBar = ({
     closeSearchToDefault();
   };
 
+  const handleWrapperClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (!isSearchUiActive && !isClosing) return;
+    if (event.target !== event.currentTarget) return;
+    event.preventDefault();
+    event.stopPropagation();
+    handleMobileBackButton();
+  };
+
   return (
-    <div
-      className={`${styles.wrapper} ${isSearchUiActive ? styles.wrapperFocused : ""} ${isClosing ? styles.wrapperClosing : ""}`}
-      style={wrapperStyle}
-      role="search"
-    >
-      <div className={styles.inputWrapper}>
+    <>
+      <Backdrop
+        isOpen={isSearchUiActive || isClosing}
+        onClick={handleMobileBackButton}
+        className={styles.searchBackdrop}
+        usePortal={false}
+        exitDurationMs={MOBILE_SEARCH_CLOSE_ANIMATION_MS}
+      />
+      <div
+        className={`${styles.wrapper} ${isSearchUiActive ? styles.wrapperFocused : ""} ${isClosing ? styles.wrapperClosing : ""}`}
+        style={wrapperStyle}
+        role="search"
+        onClick={handleWrapperClick}
+      >
+        <div className={styles.inputWrapper}>
         <div className={styles.searchIconWrapper}>
           <IconButton
             onMouseDown={(event) => event.preventDefault()}
@@ -295,26 +313,27 @@ export const SearchBar = ({
             </div>
           )}
         </div>
-      </div>
+        </div>
 
-      {isFiltersOpen && filtersPanelProps ? (
-        <FiltersModal isOpen={isFiltersOpen} {...filtersPanelProps} />
-      ) : (
-        showSuggestionsPanel && (
-        <SearchResultsPanel
-          id={listboxId}
-          suggestions={suggestions}
-          activeIndex={activeIndex}
-          query={value}
-          categorySectionLabel={categorySectionLabel}
-          placeSectionLabel={placeSectionLabel}
-          mobileFullscreen={isSearchUiActive}
-          mobileClosing={isClosing || isSuggestionsPanelClosing}
-          onSelect={handleSelect}
-          onHover={setActiveIndex}
-        />
-        )
-      )}
-    </div>
+        {isFiltersOpen && filtersPanelProps ? (
+          <FiltersModal isOpen={isFiltersOpen} {...filtersPanelProps} />
+        ) : (
+          showSuggestionsPanel && (
+            <SearchResultsPanel
+              id={listboxId}
+              suggestions={suggestions}
+              activeIndex={activeIndex}
+              query={value}
+              categorySectionLabel={categorySectionLabel}
+              placeSectionLabel={placeSectionLabel}
+              mobileFullscreen={isSearchUiActive}
+              mobileClosing={isClosing || isSuggestionsPanelClosing}
+              onSelect={handleSelect}
+              onHover={setActiveIndex}
+            />
+          )
+        )}
+      </div>
+    </>
   );
 };

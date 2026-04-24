@@ -19,7 +19,7 @@
 }
 
 .mapToastStack {
-  z-index: 120;
+  z-index: $z-toast;
   bottom: calc($spacing-3xl + env(safe-area-inset-bottom));
 
   @include mobile-only {
@@ -30,11 +30,12 @@
 .searchOverlay {
   position: absolute;
   top: $spacing-lg;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 90;
-  width: calc(100vw - 2 * $spacing-md);
+  left: $spacing-md;
+  right: $spacing-md;
+  z-index: $z-search-overlay;
+  width: auto;
   max-width: $max-width-2xl;
+  margin-inline: auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -42,15 +43,16 @@
 
   @include mobile-only {
     top: $spacing-md;
-    width: calc(100vw - 2 * $spacing-md);
     left: $spacing-md;
+    right: $spacing-md;
+    width: auto;
     transform: none;
     gap: $spacing-sm;
   }
 
   @include desktop-up {
     &:focus-within {
-      z-index: 120;
+      z-index: $z-search-elevated;
     }
   }
 }
@@ -60,37 +62,12 @@
   max-width: $max-width-sm;
   align-self: center;
   position: relative;
-  z-index: 92;
-  transform-origin: center top;
-  transition: transform $transition-normal;
+  z-index: $z-search-elevated;
 
   @include desktop-up {
-    &::before {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 300vw;
-      height: 300vh;
-      transform: translate(-50%, -50%);
-      background: rgba($neutral-1, 0.35);
-      backdrop-filter: blur(0.125rem);
-      -webkit-backdrop-filter: blur(0.125rem);
-      z-index: -1;
-      opacity: 0;
-      transition: opacity $transition-normal;
-      pointer-events: none;
-    }
-
     &:focus-within,
     &[data-filters-open="true"] {
-      z-index: 121;
-      transform: scale(1.035);
-    }
-
-    &:focus-within::before,
-    &[data-filters-open="true"]::before {
-      opacity: 1;
+      z-index: $z-search-elevated;
     }
   }
 }
@@ -111,7 +88,7 @@
   justify-content: center;
   position: fixed;
   bottom: 0;
-  z-index: 110;
+  z-index: $z-sheet;
   width: 100vw;
   overflow: hidden;
   background: transparent;
@@ -119,25 +96,7 @@
 }
 
 .languageModalOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 130;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba($neutral-1, 0.5);
-  backdrop-filter: blur(0.125rem);
-  -webkit-backdrop-filter: blur(0.125rem);
-  opacity: 0;
-  transition: opacity 0.18s ease-in-out;
-}
-
-.languageModalOverlayOpen {
-  opacity: 1;
-}
-
-.languageModalOverlayClosing {
-  opacity: 0;
+  z-index: $z-modal-backdrop;
 }
 
 .languageModalActions {

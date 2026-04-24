@@ -3,7 +3,12 @@
 .wrapper {
   position: relative;
   width: 100%;
-  z-index: 92;
+  z-index: $z-search-elevated;
+  isolation: isolate;
+}
+
+.searchBackdrop {
+  z-index: $z-search-backdrop;
 }
 
 .searchIconWrapper {
@@ -102,26 +107,13 @@
   @include mobile-only {
     position: fixed;
     inset: 0;
-    z-index: 94;
+    z-index: $z-search-elevated;
     width: 100vw;
     height: var(--mobile-search-vh, 100dvh);
     padding: $spacing-md $spacing-md $spacing-md;
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
-
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: rgba($neutral-1, 0.5);
-      backdrop-filter: blur(0.125rem);
-      -webkit-backdrop-filter: blur(0.125rem);
-      opacity: 1;
-      transition: opacity 0.18s ease-in-out;
-      z-index: 0;
-      pointer-events: none;
-    }
   }
 }
 
@@ -129,26 +121,13 @@
   @include mobile-only {
     position: fixed;
     inset: 0;
-    z-index: 94;
+    z-index: $z-search-elevated;
     width: 100vw;
     height: var(--mobile-search-vh, 100dvh);
     padding: $spacing-md $spacing-md $spacing-md;
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
-
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: rgba($neutral-1, 0.5);
-      backdrop-filter: blur(0.125rem);
-      -webkit-backdrop-filter: blur(0.125rem);
-      opacity: 0;
-      transition: opacity 0.18s ease-in-out;
-      z-index: 0;
-      pointer-events: none;
-    }
   }
 }
 

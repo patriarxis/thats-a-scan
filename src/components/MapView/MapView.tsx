@@ -13,6 +13,7 @@ import { useUserLocation, useViewportStoreQuery } from "@/lib/useMap";
 import { ensureMerchantMapLayers } from "./ensureMerchantMapLayers";
 import { buildMerchantsFeatureCollection } from "./merchantMapData";
 import {
+  ACTIVE_PIN_QUICK_ZOOM,
   ATHENS_CENTER,
   ATHENS_INITIAL_ZOOM,
   DOT_LAYER_ID,
@@ -231,6 +232,12 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       const partner = partnersRef.current.find((item) => getPartnerId(item) === merchantId);
       if (partner) {
         onPartnerSelectRef.current?.(partner);
+        const targetZoom = Math.max(map.getZoom(), ACTIVE_PIN_QUICK_ZOOM);
+        map.easeTo({
+          center: partner.geometry.coordinates as [number, number],
+          zoom: targetZoom,
+          duration: 450,
+        });
       }
     });
 

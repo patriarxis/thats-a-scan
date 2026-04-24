@@ -23,6 +23,7 @@ export const MARKER_ICON_DEFAULT_ID = MARKER_ICON_REWARDS_ID;
 
 export const DETAILED_MARKER_MIN_ZOOM = 13;
 export const SHOW_ALL_MARKERS_ZOOM = 16;
+export const ACTIVE_PIN_QUICK_ZOOM = 16;
 export const ZOOM_REVEAL_STEPS: Array<{ minZoom: number; maxCount: number }> = [
   { minZoom: 0, maxCount: 200 },
   { minZoom: 8, maxCount: 400 },

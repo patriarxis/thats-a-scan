@@ -94,3 +94,18 @@ export function searchMerchantSuggestions(
     .sort((a, b) => (b.score || 0) - (a.score || 0))
     .slice(0, limit);
 }
+
+export function merchantMatchesSearchQuery(
+  merchant: MerchantFeature,
+  query: string,
+  locale: ILocale,
+): boolean {
+  const normalizedQuery = normalizeStr(query.trim());
+  if (!normalizedQuery) return true;
+  const normalizedName = normalizeStr(getMerchantName(merchant, locale));
+  const normalizedAddress = normalizeStr(getMerchantAddress(merchant, locale));
+  return (
+    normalizedName.includes(normalizedQuery) ||
+    normalizedAddress.includes(normalizedQuery)
+  );
+}

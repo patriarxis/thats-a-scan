@@ -250,6 +250,18 @@ export const SearchBar = ({
             }, 120);
           }}
           onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (inputRef.current && document.activeElement === inputRef.current) {
+                inputRef.current.blur();
+              }
+              closeFocusShellDirect(() => setActiveIndex(-1));
+              return;
+            }
+            if (e.key === "Escape") {
+              closeFocusShellDirect(() => setActiveIndex(-1));
+              return;
+            }
             if (!isOpen) return;
             if (e.key === "ArrowDown") {
               e.preventDefault();
@@ -260,13 +272,6 @@ export const SearchBar = ({
             if (e.key === "ArrowUp") {
               e.preventDefault();
               setActiveIndex((prev) => Math.max(prev - 1, 0));
-            }
-            if (e.key === "Enter" && selectedSuggestion) {
-              e.preventDefault();
-              handleSelect(selectedSuggestion);
-            }
-            if (e.key === "Escape") {
-              closeFocusShell(() => setActiveIndex(-1));
             }
           }}
           placeholder={placeholder}

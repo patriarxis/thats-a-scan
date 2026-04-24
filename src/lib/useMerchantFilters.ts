@@ -42,6 +42,7 @@ export function useMerchantFilters(allKnownMerchants: MerchantFeature[]) {
 
   return {
     selectedProductIds,
+    setSelectedProductIds,
     cashbackOnly,
     isFiltersOpen,
     setIsFiltersOpen,

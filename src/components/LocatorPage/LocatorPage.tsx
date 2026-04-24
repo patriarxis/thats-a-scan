@@ -17,13 +17,17 @@ import { ToastStack, type ToastStackItem } from "@/components/ui/ToastStack";
 import type { MapViewHandle } from "@/components/MapView/MapView";
 import { LocatorHeader } from "@/components/LocatorHeader/LocatorHeader";
 import { LocatorFooter } from "@/components/LocatorFooter/LocatorFooter";
-import { searchMerchantSuggestions } from "@/lib/merchantSearchIndex";
+import {
+  merchantMatchesSearchQuery,
+  searchMerchantSuggestions,
+} from "@/lib/merchantSearchIndex";
 import {
   findPopularCategoriesForQuery,
   getPopularSearchCategories,
   merchantMatchesPopularCategory,
   type PopularSearchCategoryId,
 } from "@/lib/searchCategories";
+import { PRODUCT_DEFINITIONS } from "@/lib/merchantFilters";
 import { useMerchantFilters } from "@/lib/useMerchantFilters";
 import {
   getPartnerId,
@@ -56,6 +60,16 @@ type UrlSelectionState = {
   lng: number;
 };
 
+type UrlSearchState = {
+  query: string;
+  selectedProductIds: string[];
+  cashbackOnly: boolean;
+};
+
+const PRODUCT_FILTER_ID_SET: ReadonlySet<string> = new Set(
+  PRODUCT_DEFINITIONS.map((item) => item.id),
+);
+
 const parseSelectionFromLocation = (): UrlSelectionState => {
   if (typeof window === "undefined") {
     return { storeId: null, lat: Number.NaN, lng: Number.NaN };
@@ -67,6 +81,24 @@ const parseSelectionFromLocation = (): UrlSelectionState => {
   const lat = Number(url.searchParams.get("lat"));
   const lng = Number(url.searchParams.get("lng"));
   return { storeId, lat, lng };
+};
+
+const parseSearchStateFromLocation = (): UrlSearchState => {
+  if (typeof window === "undefined") {
+    return { query: "", selectedProductIds: [], cashbackOnly: false };
+  }
+  const url = new URL(window.location.href);
+  const query = url.searchParams.get("q") ?? "";
+  const selectedProductIds = (url.searchParams.get("products") ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item): item is string => Boolean(item) && PRODUCT_FILTER_ID_SET.has(item));
+  const cashbackOnly = url.searchParams.get("cashback") === "1";
+  return {
+    query,
+    selectedProductIds: Array.from(new Set(selectedProductIds)),
+    cashbackOnly,
+  };
 };
 
 const LocatorPageContent = () => {
@@ -141,8 +173,13 @@ const LocatorPageContent = () => {
     () => popularCategories.find((item) => item.id === activeQuickCategoryId) ?? null,
     [activeQuickCategoryId, popularCategories],
   );
+  const popularCategoryById = useMemo(
+    () => new Map(popularCategories.map((category) => [category.id, category])),
+    [popularCategories],
+  );
   const {
     selectedProductIds,
+    setSelectedProductIds,
     cashbackOnly,
     isFiltersOpen,
     setIsFiltersOpen,
@@ -178,12 +215,17 @@ const LocatorPageContent = () => {
 
   useEffect(() => {
     const syncFromBrowserLocation = () => {
+      const nextSearchState = parseSearchStateFromLocation();
+      setQuery(nextSearchState.query);
+      setSelectedProductIds(nextSearchState.selectedProductIds);
+      setCashbackOnly(nextSearchState.cashbackOnly);
+      setActiveQuickCategoryId(null);
       setUrlSelection(parseSelectionFromLocation());
     };
     syncFromBrowserLocation();
     window.addEventListener("popstate", syncFromBrowserLocation);
     return () => window.removeEventListener("popstate", syncFromBrowserLocation);
-  }, []);
+  }, [setCashbackOnly, setSelectedProductIds]);
 
   const syncSelectionInUrl = useCallback(
     (partner: PartnerFeature | null, historyMode: "push" | "replace" = "replace") => {
@@ -214,6 +256,37 @@ const LocatorPageContent = () => {
     },
     [],
   );
+
+  useEffect(() => {
+    const currentUrl = new URL(window.location.href);
+    const nextParams = new URLSearchParams(currentUrl.searchParams.toString());
+    const trimmedQuery = query.trim();
+
+    if (trimmedQuery) {
+      nextParams.set("q", trimmedQuery);
+    } else {
+      nextParams.delete("q");
+    }
+
+    if (selectedProductIds.length > 0) {
+      nextParams.set("products", selectedProductIds.join(","));
+    } else {
+      nextParams.delete("products");
+    }
+
+    if (cashbackOnly) {
+      nextParams.set("cashback", "1");
+    } else {
+      nextParams.delete("cashback");
+    }
+
+    const nextQuery = nextParams.toString();
+    const nextUrl = nextQuery ? `${currentUrl.pathname}?${nextQuery}` : currentUrl.pathname;
+    const currentHref = `${currentUrl.pathname}${currentUrl.search}`;
+    if (nextUrl !== currentHref) {
+      window.history.replaceState(null, "", nextUrl);
+    }
+  }, [cashbackOnly, query, selectedProductIds]);
 
   const focusPadding = useMemo(() => {
     if (!sidebarOpen) {
@@ -296,14 +369,37 @@ const LocatorPageContent = () => {
 
   const highlightedPartnerIds = useMemo(() => [], []);
   const showQuickChips = !query.trim() && !mapLoading && visiblePartners.length > 0;
+  const queryMatchedCategoryIds = useMemo(
+    () =>
+      query.trim()
+        ? findPopularCategoriesForQuery(query, locale, SEARCH_SUGGESTION_LIMIT).map(
+            (category) => category.id,
+          )
+        : [],
+    [locale, query],
+  );
 
   const merchantMatchesAllFilters = useCallback(
     (merchant: PartnerFeature) => {
       if (!merchantMatchesFilters(merchant)) return false;
+      if (!activeQuickCategory && query.trim()) {
+        if (merchantMatchesSearchQuery(merchant, query, locale)) return true;
+        return queryMatchedCategoryIds.some((categoryId) => {
+          const category = popularCategoryById.get(categoryId);
+          return category ? merchantMatchesPopularCategory(merchant, category, locale) : false;
+        });
+      }
       if (!activeQuickCategory) return true;
       return merchantMatchesPopularCategory(merchant, activeQuickCategory, locale);
     },
-    [activeQuickCategory, locale, merchantMatchesFilters],
+    [
+      activeQuickCategory,
+      locale,
+      merchantMatchesFilters,
+      popularCategoryById,
+      query,
+      queryMatchedCategoryIds,
+    ],
   );
 
   const handleSelectPartner = useCallback(

@@ -10,20 +10,3 @@
   height: 100%;
   width: 100%;
 }
-
-.zoomMessage {
-  pointer-events: none;
-  position: absolute;
-  left: 50%;
-  bottom: $spacing-3xl;
-  z-index: 20;
-  transform: translateX(-50%);
-  border-radius: $border-radius-full;
-  background: $neutral-2;
-  padding: $spacing-sm $spacing-md;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-  color: $white-60;
-  box-shadow: $shadow-lg;
-  backdrop-filter: blur(4px);
-}

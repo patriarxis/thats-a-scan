@@ -13,6 +13,7 @@ import { SearchBar } from "@/components/SearchBar/SearchBar";
 import type { FiltersModalProps } from "@/components/FiltersModal/FiltersModal";
 import { QuickFilterChips } from "@/components/QuickFilterChips/QuickFilterChips";
 import { Backdrop } from "@/components/ui/Backdrop/Backdrop";
+import { ToastStack, type ToastStackItem } from "@/components/ui/ToastStack";
 import type { MapViewHandle } from "@/components/MapView/MapView";
 import { LocatorHeader } from "@/components/LocatorHeader/LocatorHeader";
 import { LocatorFooter } from "@/components/LocatorFooter/LocatorFooter";
@@ -106,6 +107,7 @@ const LocatorPageContent = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [mapLoading, setMapLoading] = useState(true);
   const [mapUpdating, setMapUpdating] = useState(false);
+  const [mapViewportTooWide, setMapViewportTooWide] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
 
@@ -371,10 +373,11 @@ const LocatorPageContent = () => {
   }, [selectedPartner]);
 
   const handleVisiblePartnersChange = useCallback(
-    ({ partners, loading, updating, error }: VisiblePartnersChangePayload) => {
+    ({ partners, loading, updating, viewportTooWide, error }: VisiblePartnersChangePayload) => {
       setVisiblePartners(partners);
       setMapLoading(loading);
       setMapUpdating(updating);
+      setMapViewportTooWide(viewportTooWide);
       setMapError(error);
       setAllKnownById((prev) => {
         const next = { ...prev };
@@ -386,6 +389,23 @@ const LocatorPageContent = () => {
     },
     [],
   );
+
+  const mapToasts = useMemo<ToastStackItem[]>(() => {
+    const items: ToastStackItem[] = [];
+    if (mapError) {
+      items.push({ id: "map-error", message: mapError, tone: "error" });
+    }
+    if (mapLoading) {
+      items.push({ id: "map-loading", message: t("loadingMap"), tone: "neutral" });
+    }
+    if (!mapLoading && mapUpdating && !mapError) {
+      items.push({ id: "map-updating", message: t("updatingArea"), tone: "neutral" });
+    }
+    if (mapViewportTooWide && !selectedId) {
+      items.push({ id: "map-zoom-hint", message: t("zoomInToSeeStores"), tone: "neutral" });
+    }
+    return items;
+  }, [mapError, mapLoading, mapUpdating, mapViewportTooWide, selectedId, t]);
 
   useEffect(() => {
     const { storeId, lat, lng } = urlSelection;
@@ -511,23 +531,12 @@ const LocatorPageContent = () => {
         locale={locale}
         selectedPartnerId={selectedId}
         highlightedPartnerIds={highlightedPartnerIds}
-        zoomInMessage={t("zoomInToSeeStores")}
         partnerFilter={merchantMatchesAllFilters}
         onPartnerSelect={handleSelectPartner}
         onVisiblePartnersChange={handleVisiblePartnersChange}
         onMapClick={requestCloseSelectedPartner}
       />
-
-      {mapLoading && (
-        <div className={styles.mapLoadingOverlay}>
-          <div className={styles.mapLoadingLabel}>{t("loadingMap")}</div>
-        </div>
-      )}
-
-      {mapError && <div className={styles.mapErrorOverlay}>{mapError}</div>}
-      {!mapLoading && mapUpdating && !mapError && (
-        <div className={styles.mapUpdatingChip}>{t("updatingArea")}</div>
-      )}
+      <ToastStack items={mapToasts} className={styles.mapToastStack} />
 
       {!isMobile && <LocatorHeader locale={locale} onChangeLocale={setLocale} />}
 

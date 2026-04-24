@@ -36,7 +36,6 @@ type MapViewProps = {
   locale: ILocale;
   selectedPartnerId: string | null;
   highlightedPartnerIds: string[];
-  zoomInMessage: string;
   partnerFilter?: (partner: PartnerFeature) => boolean;
   onVisiblePartnersChange: (payload: VisiblePartnersChangePayload) => void;
   onPartnerSelect: (partner: PartnerFeature) => void;
@@ -49,7 +48,6 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     locale,
     selectedPartnerId,
     highlightedPartnerIds,
-    zoomInMessage,
     partnerFilter,
     onVisiblePartnersChange,
     onPartnerSelect,
@@ -185,6 +183,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
         partners: nextPartners,
         loading: latest.loading,
         updating: latest.updating,
+        viewportTooWide: latest.viewportTooWide,
         error: latest.error,
       });
     });
@@ -275,6 +274,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
         partners: nextPartners,
         loading,
         updating,
+        viewportTooWide,
         error,
       });
     };
@@ -304,6 +304,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
         partners: nextPartners,
         loading: latest.loading,
         updating: latest.updating,
+        viewportTooWide: latest.viewportTooWide,
         error: latest.error,
       });
     };
@@ -483,11 +484,6 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
 
   return (
     <div className={styles.wrapper}>
-      {showHeatmap && (
-        <div className={styles.zoomMessage}>
-          {zoomInMessage}
-        </div>
-      )}
       <div ref={mapContainerRef} className={className ?? styles.mapContainer} />
     </div>
   );

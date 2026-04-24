@@ -40,5 +40,6 @@ export type VisiblePartnersChangePayload = {
   partners: PartnerFeature[];
   loading: boolean;
   updating: boolean;
+  viewportTooWide: boolean;
   error: string | null;
 };

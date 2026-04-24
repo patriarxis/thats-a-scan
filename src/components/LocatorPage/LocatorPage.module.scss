@@ -18,56 +18,13 @@
   }
 }
 
-.mapLoadingOverlay {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba($neutral-1, 0.5);
-  backdrop-filter: blur(4px);
-}
+.mapToastStack {
+  z-index: 120;
+  bottom: calc($spacing-3xl + env(safe-area-inset-bottom));
 
-.mapLoadingLabel {
-  border-radius: $border-radius-md;
-  padding: $spacing-lg $spacing-xl;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-  color: rgba($white, 0.85);
-}
-
-.mapErrorOverlay {
-  pointer-events: none;
-  position: absolute;
-  bottom: $spacing-md;
-  left: 50%;
-  z-index: 20;
-  transform: translateX(-50%);
-  border-radius: $border-radius-md;
-  border: 1px solid rgba(#ef4444, 0.3);
-  background: rgba(#450a0a, 0.9);
-  padding: 0.625rem $spacing-md;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-  color: #fecaca;
-  box-shadow: $shadow-lg;
-  backdrop-filter: blur(4px);
-}
-
-.mapUpdatingChip {
-  @include p-xs;
-  pointer-events: none;
-  position: absolute;
-  bottom: $spacing-3xl;
-  left: 50%;
-  z-index: 20;
-  transform: translateX(-50%);
-  border-radius: $border-radius-full;
-  background: $neutral-2;
-  padding: $spacing-sm $spacing-md;
-  color: $white-60;
-  box-shadow: $shadow-lg;
+  @include mobile-only {
+    bottom: calc($spacing-4xl + env(safe-area-inset-bottom));
+  }
 }
 
 .searchOverlay {

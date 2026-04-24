@@ -41,7 +41,12 @@ const drawSvgPaths = (
   ctx.restore();
 };
 
-const drawMapPinAsMarkerBody = (ctx: CanvasRenderingContext2D, fillColor: string, canvasSize: number) => {
+const drawMapPinAsMarkerBody = (
+  ctx: CanvasRenderingContext2D,
+  fillColor: string,
+  strokeColor: string,
+  canvasSize: number,
+) => {
   const vector = IconVectorRegistry[ICONS.MAP_PIN];
   if (!vector || !vector.paths[0]) return;
   const { paths, viewBoxWidth, viewBoxHeight } = vector;
@@ -60,6 +65,11 @@ const drawMapPinAsMarkerBody = (ctx: CanvasRenderingContext2D, fillColor: string
   ctx.scale(scale, scale);
   ctx.fillStyle = fillColor;
   ctx.fill(pinPath, "evenodd");
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 2.4 / scale;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.stroke(pinPath);
   ctx.restore();
 };
 
@@ -89,7 +99,12 @@ const ensureMarkerIcon = (
   let dotColumnX = center + circleRadius + DOT_GAP_FROM_CIRCLE_PX + dotRadius;
 
   if (iconKey === ICONS.MAP_PIN) {
-    drawMapPinAsMarkerBody(ctx, selectedPinFill ?? mainColor, size);
+    drawMapPinAsMarkerBody(
+      ctx,
+      selectedPinFill ?? mainColor,
+      "rgba(17,24,39,0.9)",
+      size,
+    );
   } else {
     ctx.beginPath();
     ctx.arc(center, center, circleRadius, 0, Math.PI * 2);

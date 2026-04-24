@@ -82,16 +82,66 @@ export const PartnerDetailContent = ({
       text: address,
       url: window.location.href,
     };
+    const fallbackText = `${shareData.title}\n${shareData.text}\n${shareData.url}`;
+
+    const copyToClipboard = async () => {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(fallbackText);
+        return;
+      }
+
+      const textarea = document.createElement("textarea");
+      textarea.value = fallbackText;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    };
+
     try {
       if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(
-          `${shareData.title}\n${shareData.text}\n${shareData.url}`,
-        );
+        const shareCandidates: ShareData[] = [
+          shareData,
+          {
+            title: shareData.title,
+            text: `${shareData.text}\n${shareData.url}`.trim(),
+          },
+          {
+            text: `${shareData.title}\n${shareData.text}\n${shareData.url}`.trim(),
+          },
+        ];
+
+        const canUseCandidate = (candidate: ShareData) =>
+          typeof navigator.canShare !== "function" || navigator.canShare(candidate);
+
+        let lastShareError: unknown = null;
+        for (const candidate of shareCandidates) {
+          if (!canUseCandidate(candidate)) continue;
+          try {
+            await navigator.share(candidate);
+            return;
+          } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") return;
+            lastShareError = error;
+          }
+        }
+
+        if (lastShareError) {
+          throw lastShareError;
+        }
       }
-    } catch {
-      // Share failed
+      await copyToClipboard();
+    } catch (error) {
+      // AbortError means user closed the native share sheet.
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      try {
+        await copyToClipboard();
+      } catch {
+        // No available sharing fallback.
+      }
     }
   };
 

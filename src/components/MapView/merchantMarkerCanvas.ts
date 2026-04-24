@@ -81,6 +81,7 @@ const ensureMarkerIcon = (
   mainColor: string,
   products: ProductDotKey[],
   selectedPinFill?: string,
+  isDigital = false,
 ) => {
   if (map.hasImage(iconId)) return;
   const displaySize = MARKER_CANVAS_DISPLAY_PX;
@@ -106,13 +107,28 @@ const ensureMarkerIcon = (
       size,
     );
   } else {
-    ctx.beginPath();
-    ctx.arc(center, center, circleRadius, 0, Math.PI * 2);
-    ctx.fillStyle = circleFill;
-    ctx.fill();
-    ctx.strokeStyle = mainColor;
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    if (isDigital) {
+      const sizePx = 48;
+      const left = center - sizePx / 2;
+      const top = center - sizePx / 2;
+      const radius = 11;
+      ctx.beginPath();
+      ctx.roundRect(left, top, sizePx, sizePx, radius);
+      ctx.fillStyle = mainColor;
+      ctx.fill();
+      // Match existing pin outline color for consistent marker borders.
+      ctx.strokeStyle = "rgba(11,18,32,0.95)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(center, center, circleRadius, 0, Math.PI * 2);
+      ctx.fillStyle = circleFill;
+      ctx.fill();
+      ctx.strokeStyle = mainColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
 
     const iconVector = IconVectorRegistry[iconKey];
     if (iconVector) {
@@ -130,7 +146,7 @@ const ensureMarkerIcon = (
 
   const dotGap = 3;
   const dotCount = Math.min(products.length, 6);
-  if (iconKey !== ICONS.MAP_PIN && dotCount > 0) {
+  if (iconKey !== ICONS.MAP_PIN && !isDigital && dotCount > 0) {
     const blockHeight = dotCount * dotRadius * 2 + (dotCount - 1) * dotGap;
     const startY = center - blockHeight / 2 + dotRadius;
     const dotX = Math.min(size - dotRadius - 1, dotColumnX);
@@ -159,7 +175,16 @@ export const ensureMarkerIcons = (map: MapboxMap, partners: PartnerFeature[]) =>
       visual.circleFill,
       visual.products,
     );
-    ensureMarkerIcon(map, iconId, visual.iconKey, visual.circleFill, visual.mainColor, visual.products);
+    ensureMarkerIcon(
+      map,
+      iconId,
+      visual.iconKey,
+      visual.circleFill,
+      visual.mainColor,
+      visual.products,
+      undefined,
+      visual.isDigital,
+    );
     const activeId = buildActiveMarkerIconId(visual.selectedPinFill, visual.products);
     ensureMarkerIcon(
       map,
@@ -169,6 +194,7 @@ export const ensureMarkerIcons = (map: MapboxMap, partners: PartnerFeature[]) =>
       visual.mainColor,
       visual.products,
       visual.selectedPinFill,
+      visual.isDigital,
     );
   }
 };

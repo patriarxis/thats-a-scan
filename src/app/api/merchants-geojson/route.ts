@@ -86,17 +86,25 @@ export async function POST(request: Request) {
     }
 
     // Filter Nyamie venues locally by the requested bounding box
-    const filteredNyamie = nyamieAllFeatures.filter((feature) => {
-      const [lng, lat] = feature.geometry.coordinates;
-      const { north_west, south_east } = bounds;
-      
-      return (
-        lat <= north_west.latitude &&
-        lat >= south_east.latitude &&
-        lng >= north_west.longitude &&
-        lng <= south_east.longitude
-      );
-    });
+    const filteredNyamie = nyamieAllFeatures
+      .filter((feature) => {
+        const [lng, lat] = feature.geometry.coordinates;
+        const { north_west, south_east } = bounds;
+
+        return (
+          lat <= north_west.latitude &&
+          lat >= south_east.latitude &&
+          lng >= north_west.longitude &&
+          lng <= south_east.longitude
+        );
+      })
+      .map((feature) => ({
+        ...feature,
+        properties: {
+          ...feature.properties,
+          __source: "nyamie",
+        },
+      }));
 
     return NextResponse.json({
       type: "FeatureCollection",

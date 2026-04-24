@@ -3,7 +3,12 @@ import {
   resolveMerchantCategoryFromProperties,
   resolveMerchantProductIdsFromProperties,
 } from "@/lib/merchantFilters";
-import { getPartnerId, type CategoryId, type PartnerFeature } from "@/types";
+import {
+  getPartnerId,
+  isPartnerDigitalFromProperties,
+  type CategoryId,
+  type PartnerFeature,
+} from "@/types";
 
 export type MarkerCategoryIconKey =
   | ICONS.BARBELL
@@ -44,6 +49,8 @@ export const PRODUCT_COLORS: Record<ProductDotKey, string> = {
 };
 
 const GYM_PIN_COLOR = PRODUCT_COLORS.fitpass;
+const DIGITAL_UP_HELLAS_COLOR = PRODUCT_COLORS.go_for_eat;
+const DIGITAL_NYAMIE_COLOR = PRODUCT_COLORS.fitpass;
 
 /**
  * Darkest circle fill per main pin color (`*-primary-1` style from `_variables.scss`).
@@ -154,16 +161,26 @@ export type MarkerVisual = {
   circleFill: string;
   selectedPinFill: string;
   products: ProductDotKey[];
+  isDigital: boolean;
 };
 
 export const resolveMarkerVisual = (properties: Record<string, unknown>): MarkerVisual => {
-  const iconKey = getMccMarkerIcon(properties);
+  const isDigital = isPartnerDigitalFromProperties(properties);
+  const iconKey = isDigital ? ICONS.STOREFRONT : getMccMarkerIcon(properties);
   const products = resolveMerchantProducts(properties);
   const category = resolveMerchantCategoryFromProperties(properties);
+  const source = String(properties.__source ?? "").trim().toLowerCase();
   const isGym = category === "gyms";
+  const isFitpassVenue = products.includes("fitpass") || isGym;
 
-  let mainColor = PRODUCT_COLORS.go_for_eat;
-  if (isGym) {
+  let mainColor = DIGITAL_UP_HELLAS_COLOR;
+  if (isDigital) {
+    if (isFitpassVenue) {
+      mainColor = DIGITAL_NYAMIE_COLOR;
+    } else {
+      mainColor = source === "nyamie" ? DIGITAL_NYAMIE_COLOR : DIGITAL_UP_HELLAS_COLOR;
+    }
+  } else if (isGym) {
     mainColor = GYM_PIN_COLOR;
   } else {
     if (products.includes("go_for_eat")) mainColor = PRODUCT_COLORS.go_for_eat;
@@ -182,6 +199,7 @@ export const resolveMarkerVisual = (properties: Record<string, unknown>): Marker
     circleFill,
     selectedPinFill,
     products: products.slice(0, 6),
+    isDigital,
   };
 };
 
@@ -222,6 +240,7 @@ export const withClientIds = (features: PartnerFeature[]): PartnerFeature[] =>
         __marker_icon_key: visual.iconKey,
         __marker_icon_color: visual.mainColor,
         __marker_products: visual.products.join(","),
+        __marker_is_digital: visual.isDigital ? "1" : "0",
       },
     };
   });

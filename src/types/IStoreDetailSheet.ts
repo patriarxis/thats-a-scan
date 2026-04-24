@@ -24,6 +24,7 @@ export type PartnerDetailSheetLabels = {
   upExpense: string;
   upMeal: string;
   upGift: string;
+  digitalOnly: string;
   photos?: string;
 };
 

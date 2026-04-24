@@ -3,6 +3,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import {
   getPartnerAddress,
   getPartnerName,
+  isPartnerDigital,
   type PartnerDetailSheetProps,
 } from "@/types";
 import {
@@ -49,7 +50,9 @@ export const PartnerDetailContent = ({
     dragFree: true,
   });
 
+  const isDigitalPartner = partner ? isPartnerDigital(partner) : false;
   const address = partner ? getPartnerAddress(partner, locale) : "";
+  const subtitle = isDigitalPartner ? labels.digitalOnly : (address || labels.noAddress);
   const [lng, lat] = partner?.geometry.coordinates ?? [0, 0];
 
   useEffect(() => {
@@ -283,7 +286,7 @@ export const PartnerDetailContent = ({
           )}
           <div className={styles.headerInfo}>
             <h2 className={styles.title}>{getPartnerName(partner, locale)}</h2>
-            <p className={styles.subtitle}>{address || labels.noAddress}</p>
+            <p className={styles.subtitle}>{subtitle}</p>
             <div className={styles.badges}>
               {productLogos.length > 0 && (
                 <div className={styles.productStack}>
@@ -323,14 +326,16 @@ export const PartnerDetailContent = ({
       </div>
 
       <div className={styles.actions}>
-        <button
-          type="button"
-          onClick={handleOpenMaps}
-          className={`${styles.actionCard} ${styles.primary} ${styles.maps}`}
-        >
-          <Icon name={ICONS.NAVIGATION_ARROW} width={22} height={22} />
-          <span>{labels.openMaps}</span>
-        </button>
+        {!isDigitalPartner && (
+          <button
+            type="button"
+            onClick={handleOpenMaps}
+            className={`${styles.actionCard} ${styles.primary} ${styles.maps}`}
+          >
+            <Icon name={ICONS.NAVIGATION_ARROW} width={22} height={22} />
+            <span>{labels.openMaps}</span>
+          </button>
+        )}
 
         {phone && (
           <a

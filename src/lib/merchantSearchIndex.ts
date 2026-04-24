@@ -2,6 +2,7 @@ import {
   getMerchantAddress,
   getMerchantId,
   getMerchantName,
+  isPartnerDigital,
   type ILocale,
   type MerchantFeature
 } from "@/types";
@@ -13,6 +14,7 @@ export type MerchantSuggestion = {
   label: string;
   sublabel: string;
   coordinates: [number, number];
+  isDigital?: boolean;
   score?: number;
 };
 
@@ -84,6 +86,7 @@ export function searchMerchantSuggestions(
         label: getMerchantName(entry.feature, locale),
         sublabel: getMerchantAddress(entry.feature, locale),
         coordinates: entry.feature.geometry.coordinates,
+        isDigital: isPartnerDigital(entry.feature),
         score
       });
     }

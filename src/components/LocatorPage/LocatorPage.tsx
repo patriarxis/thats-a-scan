@@ -348,7 +348,7 @@ const LocatorPageContent = () => {
             type: "merchant",
             id: result.id,
             label: result.label,
-            sublabel: result.sublabel || t("noAddress"),
+            sublabel: result.isDigital ? t("digitalOnly") : (result.sublabel || t("noAddress")),
             merchantId: result.merchantId,
             coordinates: result.coordinates,
           }) satisfies SearchSuggestion,
@@ -536,6 +536,7 @@ const LocatorPageContent = () => {
     upExpense: t("upExpense"),
     upMeal: t("upMeal"),
     upGift: t("upGift"),
+    digitalOnly: t("digitalOnly"),
     photos: t("photos")
   };
 

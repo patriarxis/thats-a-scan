@@ -97,6 +97,43 @@ export const getPartnerAddress = (feature: PartnerFeature, locale: ILocale): str
   return [address, town, district, region, zip].filter(Boolean).join(", ");
 };
 
+const DIGITAL_NAME_HINTS = ["betterself", "online", "digital"];
+
+export const isPartnerDigitalFromProperties = (properties: PartnerProperties): boolean => {
+  const explicitDigitalFlag = [
+    properties.IsDigital,
+    properties.isDigital,
+    properties.DigitalOnly,
+    properties.digitalOnly,
+    properties.IsOnline,
+    properties.isOnline,
+  ].some((value) => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    const normalized = String(value ?? "").trim().toLowerCase();
+    return ["1", "true", "yes", "online", "digital"].includes(normalized);
+  });
+  if (explicitDigitalFlag) return true;
+
+  const venueType = String(properties.VenueType ?? properties.venueType ?? "")
+    .trim()
+    .toLowerCase();
+  if (["digital", "online", "virtual"].includes(venueType)) return true;
+
+  const nameBlob = [
+    properties.BrandNameEN,
+    properties.BrandNameGR,
+    properties.VATNameEN,
+    properties.VATNameGR,
+  ]
+    .map((value) => String(value ?? "").toLowerCase())
+    .join(" ");
+  return DIGITAL_NAME_HINTS.some((hint) => nameBlob.includes(hint));
+};
+
+export const isPartnerDigital = (feature: PartnerFeature): boolean =>
+  isPartnerDigitalFromProperties(feature.properties);
+
 // Backward-compatible aliases during migration.
 export type MerchantProperties = PartnerProperties;
 export type MerchantFeature = PartnerFeature;

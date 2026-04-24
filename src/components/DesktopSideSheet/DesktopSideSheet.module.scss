@@ -11,7 +11,7 @@
   margin: 0 auto;
   padding: $spacing-sm;
   position: relative;
-  z-index: 100;
+  z-index: $z-sheet;
   overflow: hidden;
   animation: desktopSlideIn 0.32s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform, opacity;

@@ -227,10 +227,11 @@ $container-xl: 1440px;
 // Z-Index Scale
 // Keep these as the single source of truth for app layering.
 $z-base: 0;
+$z-footer: 10;
 $z-header: 40;
-$z-search-backdrop: 100;
-$z-search-overlay: 140;
-$z-search-elevated: 150;
+$z-search-backdrop: 230;
+$z-search-overlay: 240;
+$z-search-elevated: 250;
 $z-sheet: 200;
 $z-toast: 220;
 $z-modal-backdrop: 300;

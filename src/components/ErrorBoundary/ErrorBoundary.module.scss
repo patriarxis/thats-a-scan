@@ -2,44 +2,54 @@
 
 .errorPage {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
   align-items: center;
   justify-content: center;
-  background-color: $neutral-2;
-  color: rgba($white, 0.9);
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  background: $neutral-2;
+  color: $white-90;
 }
 
-.errorCard {
-  border-radius: $border-radius-lg;
-  border: 1px solid $neutral-3;
-  background: #0f172a;
-  padding: $spacing-xl;
-  text-align: center;
-  box-shadow: $shadow-lg;
+.errorGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: $border-radius-full;
+  border: 1px solid rgba($brand-primary-5, 0.45);
+  background: rgba($brand-primary-5, 0.15);
+  color: $brand-primary-8;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
 }
 
 .errorTitle {
-  font-size: $font-size-lg;
-  font-weight: $font-weight-semibold;
+  margin: 0;
+  line-height: $line-height-tight;
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $white;
 }
 
-.errorMessage {
-  margin-top: $spacing-sm;
-  font-size: $font-size-sm;
-  color: $neutral-5;
-}
-
-.retryBtn {
-  margin-top: $spacing-md;
-  border-radius: $border-radius-md;
-  background: $flexone-primary-4;
-  padding: $spacing-sm $spacing-md;
+.reloadBtn {
+  border-radius: $border-radius-full;
+  padding: $spacing-sm $spacing-lg;
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
+  transition: all $transition-normal;
+  background: $brand-primary-5;
   color: $white;
-  transition: background $transition-normal;
 
   &:hover {
-    background: $flexone-primary-3;
+    background: $brand-primary-6;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    background: $brand-primary-4;
   }
 }

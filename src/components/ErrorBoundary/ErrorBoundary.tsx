@@ -20,24 +20,30 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error("ErrorBoundary caught:", error, info.componentStack);
   }
 
+  componentDidMount() {
+    if (process.env.NODE_ENV === "production") return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("forceErrorBoundary")) return;
+    this.setState({
+      hasError: true,
+      error: new Error("Manually triggered error boundary (development only)."),
+    });
+  }
+
   render() {
     if (this.state.hasError) {
       return (
         this.props.fallback ?? (
           <div className={styles.errorPage}>
-            <div className={styles.errorCard}>
-              <p className={styles.errorTitle}>Something went wrong</p>
-              <p className={styles.errorMessage}>
-                {this.state.error?.message ?? "An unexpected error occurred."}
-              </p>
-              <button
-                type="button"
-                onClick={() => this.setState({ hasError: false, error: null })}
-                className={styles.retryBtn}
-              >
-                Try again
-              </button>
-            </div>
+            <div className={styles.errorGlyph} aria-hidden="true">!</div>
+            <h1 className={styles.errorTitle}>Error</h1>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className={styles.reloadBtn}
+            >
+              Reload page
+            </button>
           </div>
         )
       );

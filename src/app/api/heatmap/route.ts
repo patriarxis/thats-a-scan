@@ -13,9 +13,6 @@ let inFlightHeatmapPromise: Promise<Awaited<ReturnType<typeof getHeatmapData>>> 
 async function getCachedHeatmapFeatures() {
   const now = Date.now();
   if (cachedHeatmap && now - cachedHeatmap.createdAt < HEATMAP_TTL_MS) {
-    console.info(
-      `[heatmap] cache_hit features=${cachedHeatmap.features.length} age_ms=${now - cachedHeatmap.createdAt}`,
-    );
     return cachedHeatmap.features;
   }
 
@@ -23,16 +20,11 @@ async function getCachedHeatmapFeatures() {
     inFlightHeatmapPromise = getHeatmapData()
       .then((features) => {
         cachedHeatmap = { createdAt: Date.now(), features };
-        console.info(
-          `[heatmap] rebuild_complete features=${features.length}`,
-        );
         return features;
       })
       .finally(() => {
         inFlightHeatmapPromise = null;
       });
-  } else {
-    console.info("[heatmap] waiting_for_inflight_rebuild");
   }
 
   return inFlightHeatmapPromise;

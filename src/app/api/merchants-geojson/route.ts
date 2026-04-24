@@ -29,7 +29,6 @@ function isValidLongitude(v: number): boolean {
 }
 
 export async function POST(request: Request) {
-  const startedAt = Date.now();
   let bounds: BBoxPayload = DEFAULT_ATHENS_BBOX;
   try {
     const json = (await request.json()) as Partial<BBoxPayload>;
@@ -55,9 +54,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    const upHellasStartedAt = Date.now();
-    const nyamieStartedAt = Date.now();
-
     // Fetch from both sources in parallel
     const [upHellasRes, nyamieAllFeatures] = await Promise.all([
       fetch(UP_HELLAS_API_URL, {
@@ -68,18 +64,10 @@ export async function POST(request: Request) {
       }).catch((err) => {
         console.error("Failed to fetch from Up Hellas:", err);
         return null;
-      }).finally(() => {
-        console.info(
-          `[merchants-geojson] up_hellas_fetch_done elapsed_ms=${Date.now() - upHellasStartedAt}`,
-        );
       }),
       fetchAllVenues().catch((err) => {
         console.error("Failed to fetch from Nyamie:", err);
         return [];
-      }).finally(() => {
-        console.info(
-          `[merchants-geojson] nyamie_fetch_done elapsed_ms=${Date.now() - nyamieStartedAt}`,
-        );
       })
     ]);
 
@@ -109,11 +97,6 @@ export async function POST(request: Request) {
         lng <= south_east.longitude
       );
     });
-
-    const totalFeatures = upHellasFeatures.length + filteredNyamie.length;
-    console.info(
-      `[merchants-geojson] request_complete total=${totalFeatures} up_hellas=${upHellasFeatures.length} nyamie_filtered=${filteredNyamie.length} nyamie_raw=${nyamieAllFeatures.length} elapsed_ms=${Date.now() - startedAt}`,
-    );
 
     return NextResponse.json({
       type: "FeatureCollection",

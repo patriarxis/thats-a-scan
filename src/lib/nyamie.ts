@@ -152,12 +152,8 @@ async function fetchVenuesPage(
 export async function fetchAllVenues(): Promise<MerchantFeature[]> {
   const now = Date.now();
   if (cachedVenues && now - lastFetchTime < CACHE_TTL) {
-    console.info(
-      `[nyamie] cache_hit features=${cachedVenues.length} age_ms=${now - lastFetchTime}`,
-    );
     return cachedVenues;
   }
-  const fetchStartedAt = Date.now();
 
   const apiKey = process.env.NYAMIE_API_KEY;
   const apiUrl =
@@ -236,8 +232,5 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
 
   cachedVenues = allFeatures;
   lastFetchTime = now;
-  console.info(
-    `[nyamie] fetch_complete features=${allFeatures.length} successful_pages=${successfulPages} failed_pages=${failedPages} empty_pages=${emptyPages} partial_pages=${partialPages} elapsed_ms=${Date.now() - fetchStartedAt}`,
-  );
   return allFeatures;
 }

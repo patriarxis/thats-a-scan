@@ -109,10 +109,7 @@ export async function getHeatmapData(): Promise<MerchantFeature[]> {
       fetchAllVenues(),
     ]);
 
-    const combined = [...upHellas, ...nyamie];
-    console.log(`Heatmap source: ${combined.length} merchants found.`);
-
-    return gridAggregate(combined);
+    return gridAggregate([...upHellas, ...nyamie]);
   } catch (error) {
     console.error("Error generating heatmap data:", error);
     return [];

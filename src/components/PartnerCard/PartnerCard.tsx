@@ -1,4 +1,4 @@
-import { MapPin } from "lucide-react";
+import { MapPin } from "@phosphor-icons/react";
 import {
   getPartnerAddress,
   getPartnerId,
@@ -36,7 +36,11 @@ export const PartnerCard = ({
     >
       <div className={styles.cardInner}>
         <div className={styles.iconWrapper}>
-          <MapPin className={styles.pinIcon} />
+          <MapPin
+            className={styles.pinIcon}
+            weight="fill"
+            aria-hidden
+          />
         </div>
         <div className={styles.textContent}>
           <p className={styles.name}>

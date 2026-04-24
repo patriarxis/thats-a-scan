@@ -359,7 +359,7 @@ export const PartnerDetailContent = ({
             rel="noreferrer"
             className={`${styles.actionCard} ${styles.secondary}`}
           >
-            <Icon name={ICONS.SOCIAL_MEDIA_ICON_2} width={16} height={16} />
+            <Icon name={ICONS.INSTAGRAM} width={16} height={16} />
           </a>
         )}
         {facebook && (
@@ -369,7 +369,7 @@ export const PartnerDetailContent = ({
             rel="noreferrer"
             className={`${styles.actionCard} ${styles.secondary}`}
           >
-            <Icon name={ICONS.SOCIAL_MEDIA_ICON} width={16} height={16} />
+            <Icon name={ICONS.FACEBOOK} width={16} height={16} />
           </a>
         )}
         {linkedin && (
@@ -379,7 +379,7 @@ export const PartnerDetailContent = ({
             rel="noreferrer"
             className={`${styles.actionCard} ${styles.secondary}`}
           >
-            <Icon name={ICONS.SOCIAL_MEDIA_ICON_1} width={16} height={16} />
+            <Icon name={ICONS.LINKEDIN} width={16} height={16} />
           </a>
         )}
         {tiktok && (
@@ -390,7 +390,7 @@ export const PartnerDetailContent = ({
             className={`${styles.actionCard} ${styles.secondary}`}
             aria-label="TikTok"
           >
-            <Icon name={ICONS.SOCIAL_MEDIA_ICON_3} width={16} height={16} />
+            <Icon name={ICONS.TIKTOK} width={16} height={16} />
           </a>
         )}
         <button

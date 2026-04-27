@@ -134,7 +134,6 @@ export const isPartnerDigitalFromProperties = (properties: PartnerProperties): b
 export const isPartnerDigital = (feature: PartnerFeature): boolean =>
   isPartnerDigitalFromProperties(feature.properties);
 
-// Backward-compatible aliases during migration.
 export type MerchantProperties = PartnerProperties;
 export type MerchantFeature = PartnerFeature;
 export type MerchantFeatureCollection = PartnerFeatureCollection;

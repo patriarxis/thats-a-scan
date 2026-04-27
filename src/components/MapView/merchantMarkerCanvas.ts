@@ -116,7 +116,6 @@ const ensureMarkerIcon = (
       ctx.roundRect(left, top, sizePx, sizePx, radius);
       ctx.fillStyle = mainColor;
       ctx.fill();
-      // Match existing pin outline color for consistent marker borders.
       ctx.strokeStyle = "rgba(11,18,32,0.95)";
       ctx.lineWidth = 3;
       ctx.stroke();

@@ -81,7 +81,6 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     mapReady,
   );
 
-  /** Wide viewport normally shows a heatmap; hide it while a store is open so the pin stays visible. */
   const showHeatmap = viewportTooWide && !selectedPartnerId;
 
   useEffect(() => {
@@ -351,7 +350,6 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "visible");
       if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "visible");
     } else {
-      // Wide viewport + store open: no heatmap, no other pins — selected pin only
       if (map.getLayer(HEATMAP_LAYER_ID)) map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", "none");
       if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", "none");
       if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", "none");

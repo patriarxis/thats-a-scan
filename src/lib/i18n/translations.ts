@@ -21,7 +21,6 @@ export function createTranslator(locale: ILocale) {
 
   const t = (key: string): string => {
     const keys = key.split(".");
-    // Default to 'common' namespace if not specified
     let value: any = keys.length > 1 ? translations : translations.common;
 
     for (const k of keys) {

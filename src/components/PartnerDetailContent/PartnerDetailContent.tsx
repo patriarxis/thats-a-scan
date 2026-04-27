@@ -138,12 +138,10 @@ export const PartnerDetailContent = ({
       }
       await copyToClipboard();
     } catch (error) {
-      // AbortError means user closed the native share sheet.
       if (error instanceof DOMException && error.name === "AbortError") return;
       try {
         await copyToClipboard();
       } catch {
-        // No available sharing fallback.
       }
     }
   };

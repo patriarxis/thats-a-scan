@@ -38,7 +38,6 @@ type BoundsPayload = {
   east: number;
 };
 
-/** Same buffer on all viewports so mobile/desktop request comparable store sets at the same map state. */
 const VIEWPORT_BUFFER_FACTOR = 1.9;
 const MIN_FETCH_ZOOM_DELTA = 0.2;
 
@@ -177,7 +176,7 @@ export function useViewportStoreQuery(
   }, [state]);
 
   const sortFeatures = (features: MerchantFeature[]) => {
-    if (!userLocation || features.length > 1000) return features; // Avoid heavy sorting of massive datasets
+    if (!userLocation || features.length > 1000) return features;
     const sorted = [...features].sort((a, b) => {
       const dA = haversineDistanceKm(a.geometry.coordinates, [
         userLocation.lng,
@@ -327,7 +326,6 @@ export function useViewportStoreQuery(
             sortFeatures(wideFeatures),
           );
 
-          // Merge wide features into global store
           let hasNew = false;
           processed.forEach((f) => {
             const id = getCanonicalFeatureKey(f);

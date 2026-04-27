@@ -95,8 +95,8 @@ let cachedVenues: MerchantFeature[] | null = null;
 let lastFetchTime: number = 0;
 let cachedDescriptions: Map<string, string> | null = null;
 let lastDescriptionsFetchTime = 0;
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-const DESCRIPTIONS_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL = 30 * 60 * 1000;
+const DESCRIPTIONS_CACHE_TTL = 30 * 60 * 1000;
 const BATCH_SIZE = 10;
 const MAX_PAGES = 50;
 const PAGE_SIZE = 10;
@@ -184,7 +184,6 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
   let emptyPages = 0;
   let partialPages = 0;
 
-  // Fetch in parallel batches to speed up the process while respecting potential rate limits
   while (currentStartPage <= MAX_PAGES && !exhausted) {
     const batchPages = Array.from({ length: BATCH_SIZE }, (_, i) => currentStartPage + i)
       .filter(p => p <= MAX_PAGES);
@@ -197,7 +196,6 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
       for (let i = 0; i < batchResults.length; i++) {
         const venues = batchResults[i];
 
-        // Do not treat transient fetch failures as end-of-dataset.
         if (!venues) {
           failedPages += 1;
           continue;
@@ -207,14 +205,12 @@ export async function fetchAllVenues(): Promise<MerchantFeature[]> {
         if (venues.length === 0) {
           exhausted = true;
           emptyPages += 1;
-          // We found an empty page, but we should still process the pages before this one in the batch
         }
         const features = venues.map((venue) =>
           mapVenueToMerchantFeature(venue, grDescriptions)
         );
         allFeatures.push(...features);
         
-        // If results are less than expected per page, we've likely hit the end.
         if (venues.length < PAGE_SIZE) {
           partialPages += 1;
           exhausted = true;

@@ -3,7 +3,6 @@ import { fetchAllVenues } from "./nyamie";
 
 const UP_HELLAS_API_URL = "https://merchants-map.uphellas.gr/geojson/search";
 
-// Greece-wide bounds
 const GREECE_BOUNDS = {
   north: 42.16,
   south: 34.24,
@@ -11,13 +10,9 @@ const GREECE_BOUNDS = {
   east: 28.75,
 };
 
-/**
- * Spatial grid aggregation for heatmap performance.
- * Groups points into cells of `gridSize` degrees and returns cell centers with weights.
- */
 export function gridAggregate(
   features: MerchantFeature[],
-  gridSize: number = 0.04 // ~4.5km at this latitude, perfect for zoomed-out heatmap
+  gridSize: number = 0.04
 ): MerchantFeature[] {
   const grid = new Map<string, { lat: number; lng: number; count: number }>();
 
@@ -25,7 +20,6 @@ export function gridAggregate(
     const [lng, lat] = feature.geometry.coordinates;
     if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
 
-    // Snapping to grid
     const cellLng = Math.floor(lng / gridSize) * gridSize + gridSize / 2;
     const cellLat = Math.floor(lat / gridSize) * gridSize + gridSize / 2;
     const key = `${cellLat.toFixed(4)}:${cellLng.toFixed(4)}`;
@@ -50,11 +44,8 @@ export function gridAggregate(
   }));
 }
 
-/**
- * Fetches all merchants from Up Hellas by subdividing the map to bypass API limits.
- */
 async function fetchUpHellasAll(): Promise<MerchantFeature[]> {
-  const subdivisions = 4; // 4x4 grid = 16 requests
+  const subdivisions = 4;
   const latStep = (GREECE_BOUNDS.north - GREECE_BOUNDS.south) / subdivisions;
   const lngStep = (GREECE_BOUNDS.east - GREECE_BOUNDS.west) / subdivisions;
 
@@ -89,7 +80,6 @@ async function fetchUpHellasAll(): Promise<MerchantFeature[]> {
   const results = await Promise.all(requests);
   const allFeatures = results.flat();
   
-  // Deduplicate by MerchantId in case of overlap in subdivisions
   const seen = new Set<string>();
   return allFeatures.filter((f) => {
     const id = f.properties?.ID || f.properties?.MerchantId || `${f.geometry.coordinates}`;
@@ -99,9 +89,6 @@ async function fetchUpHellasAll(): Promise<MerchantFeature[]> {
   });
 }
 
-/**
- * Combines all sources and returns the aggregated heatmap data.
- */
 export async function getHeatmapData(): Promise<MerchantFeature[]> {
   try {
     const [upHellas, nyamie] = await Promise.all([

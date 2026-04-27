@@ -54,7 +54,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Fetch from both sources in parallel
     const [upHellasRes, nyamieAllFeatures] = await Promise.all([
       fetch(UP_HELLAS_API_URL, {
         method: "POST",
@@ -85,7 +84,6 @@ export async function POST(request: Request) {
         : [];
     }
 
-    // Filter Nyamie venues locally by the requested bounding box
     const filteredNyamie = nyamieAllFeatures
       .filter((feature) => {
         const [lng, lat] = feature.geometry.coordinates;

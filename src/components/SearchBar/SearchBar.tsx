@@ -172,7 +172,6 @@ export const SearchBar = ({
       inputRef.current.blur();
     }
     onSelect(item);
-    // On mobile, closeFocusShell may call history.back(), which can undo a just-pushed store URL.
     closeFocusShellDirect(() => setActiveIndex(-1));
   };
 

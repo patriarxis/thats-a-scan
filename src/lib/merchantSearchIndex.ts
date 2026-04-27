@@ -39,7 +39,6 @@ export function buildSearchIndex(features: MerchantFeature[], locale: ILocale): 
   });
 }
 
-// Module-level cache: reuse the index when features array reference and locale are unchanged.
 let cachedIndex: IndexEntry[] | null = null;
 let cachedFeatures: MerchantFeature[] | null = null;
 let cachedILocale: ILocale | null = null;
@@ -92,7 +91,6 @@ export function searchMerchantSuggestions(
     }
   }
 
-  // Sort by score descending
   return matches
     .sort((a, b) => (b.score || 0) - (a.score || 0))
     .slice(0, limit);

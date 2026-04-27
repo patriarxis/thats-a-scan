@@ -10,7 +10,6 @@
     }
   }
 
-  // Headings
   h1,
   h2,
   h3,
@@ -45,7 +44,6 @@
     @include h6;
   }
 
-  // Links
   a {
     color: $brand-primary-4;
     text-decoration: underline;
@@ -58,7 +56,6 @@
     }
   }
 
-  // Lists
   ul,
   ol {
     margin-bottom: $spacing-md;
@@ -88,7 +85,6 @@
       margin-bottom: 0;
     }
 
-    // Handle nested lists
     ul,
     ol {
       margin-top: $spacing-xs;
@@ -96,7 +92,6 @@
     }
   }
 
-  // Text decorations
   strong,
   b {
     color: $white;
@@ -109,7 +104,6 @@
     color: $white-90;
   }
 
-  // Utils
   blockquote {
     border-left: 3px solid $brand-primary-5;
     background: $white-03;

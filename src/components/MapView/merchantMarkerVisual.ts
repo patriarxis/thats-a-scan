@@ -19,7 +19,6 @@ export type MarkerCategoryIconKey =
   | ICONS.ASCLEPIUS
   | ICONS.STOREFRONT;
 
-/** Category glyph or selected-state map pin */
 export type MarkerGlyphKey = MarkerCategoryIconKey | ICONS.MAP_PIN;
 
 export type ProductDotKey =
@@ -52,9 +51,6 @@ const GYM_PIN_COLOR = PRODUCT_COLORS.fitpass;
 const DIGITAL_UP_HELLAS_COLOR = PRODUCT_COLORS.go_for_eat;
 const DIGITAL_NYAMIE_COLOR = PRODUCT_COLORS.fitpass;
 
-/**
- * Darkest circle fill per main pin color (`*-primary-1` style from `_variables.scss`).
- */
 const PIN_CIRCLE_FILL_BY_MAIN_HEX: Record<string, string> = {
   [PRODUCT_COLORS.fitpass.toLowerCase()]: "#2e0d05",
   [PRODUCT_COLORS.flexone.toLowerCase()]: "#201023",

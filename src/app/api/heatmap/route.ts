@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getHeatmapData } from "@/lib/heatmapUtils";
 
-// Cache for 30 days (precomputed-style ISR)
 export const revalidate = 2592000;
 const HEATMAP_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -47,7 +46,6 @@ export async function GET() {
   }
 }
 
-// Allow manual refresh via POST (optional, good for testing)
 export async function POST() {
   return GET();
 }

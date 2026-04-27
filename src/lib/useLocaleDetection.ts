@@ -22,20 +22,16 @@ export function useLocaleDetection() {
     let detectedLocale: string | null = null;
 
     try {
-      // 1. Check URL parameters
       detectedLocale = detectLocaleFromParam(window.location.href);
 
-      // 2. Check URL path
       if (!detectedLocale) {
         detectedLocale = detectLocaleFromPath(window.location.pathname);
       }
 
-      // 3. Check localStorage
       if (!detectedLocale) {
         detectedLocale = localStorage.getItem("locale");
       }
 
-      // 4. Check browser language
       if (!detectedLocale) {
         const browserLang = navigator.languages?.[0] ?? navigator.language;
         if (browserLang) {

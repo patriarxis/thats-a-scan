@@ -114,7 +114,6 @@ export function resolveMerchantProductIdsFromProperties(
   const source = normalizeText(properties.__source);
   const category = resolveMerchantCategoryFromProperties(properties);
 
-  // Main API stores are meal places. Gift/Expense are accepted everywhere there.
   if (source === "up_hellas") {
     return [...MAIN_API_MEAL_PRODUCT_IDS];
   }
@@ -137,7 +136,6 @@ export function resolveMerchantProductIdsFromProperties(
   }
 
   if (category === "meal") {
-    // Non-main meal stores should still expose meal-like products in the UI.
     products.add("go-for-eat");
     products.add("cheque-dejeuner");
     products.add("flexone");
@@ -157,7 +155,6 @@ export function resolveMerchantProductIds(merchant: MerchantFeature): string[] {
 }
 
 export function buildProductFilterOptions(merchants: MerchantFeature[]): ProductFilterOption[] {
-  // Keep a stable product-first filter list. Users expect Fitpass to be visible.
   return PRODUCT_DEFINITIONS.map((product) => ({
     id: product.id,
     label: product.label,

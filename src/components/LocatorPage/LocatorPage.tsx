@@ -196,7 +196,6 @@ const LocatorPageContent = () => {
   const sidebarOpen = !!selectedPartner;
   const desktopDrawerOffsetPx = 340;
   const mobileDrawerOffsetPx = 280;
-  /** Extra bottom inset when a store is open so the map target sits nearer the visual center (mobile). */
   const mobileSelectedMapBottomExtraPx = 48;
   const closeFiltersToResults = useCallback(() => {
     setIsFiltersOpen(false);
@@ -499,7 +498,6 @@ const LocatorPageContent = () => {
       return;
     }
 
-    // Deep-link fallback: center to provided coordinates first while waiting for data.
     if (hasValidCoordinates && urlSelectionAppliedRef.current !== storeId) {
       mapRef.current?.flyTo([lng, lat], 15, focusPadding, { preserveHigherZoom: true });
       urlSelectionAppliedRef.current = storeId;

@@ -64,9 +64,6 @@ const iconShareForZoom = (zoom: number): number => {
   return 0.22 + progress * 0.58;
 };
 
-/**
- * Prefer pins inside the viewport, but never drop an on-screen pin to make room for off-screen ones.
- */
 const pickPrioritizedUpTo = (map: MapboxMap, features: PartnerFeature[], maxCount: number): PartnerFeature[] => {
   if (features.length <= maxCount) return features;
 

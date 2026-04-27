@@ -1,5 +1,5 @@
 const WEBFLOW_API_BASE = "https://api.webflow.com/v2";
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 5 * 60 * 1000;
 const DEFAULT_GYMS_COLLECTION_ID = "69ccd9dd5710adfc9709f1a4";
 
 let cachedDescriptions: Map<string, string> | null = null;

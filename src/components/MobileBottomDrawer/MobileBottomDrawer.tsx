@@ -67,7 +67,6 @@ export const MobileBottomDrawer = ({
     [clearCloseTimer, onClose]
   );
 
-  // Sync internal state with prop
   useEffect(() => {
     if (isOpen) {
       clearCloseTimer();
@@ -216,13 +215,11 @@ export const MobileBottomDrawer = ({
     const startState = dragStartStateRef.current;
     if (startState === "peek") {
       if (dragY < 0) {
-        // Peek -> Full: grow height in place.
         return {
           heightPx: Math.min(vh, peekHeight + Math.abs(dragY)),
           translatePx: 0,
         };
       }
-      // Peek -> Close: keep height, translate down.
       return {
         heightPx: peekHeight,
         translatePx: Math.max(0, dragY),
@@ -233,7 +230,6 @@ export const MobileBottomDrawer = ({
       if (dragY <= 0) {
         return { heightPx: vh, translatePx: 0 };
       }
-      // Full -> Close: reduce height first to peek, then translate down.
       const collapsedHeight = Math.max(peekHeight, vh - dragY);
       const extraDragAfterPeek = Math.max(0, dragY - (vh - peekHeight));
       return {

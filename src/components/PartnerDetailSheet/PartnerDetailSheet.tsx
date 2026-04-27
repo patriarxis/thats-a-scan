@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { type PartnerDetailSheetProps } from "@/types";
+import { type MerchantDetailSheetProps } from "@/types";
 import { MobileBottomDrawer } from "../MobileBottomDrawer/MobileBottomDrawer";
 import { DesktopSideSheet } from "../DesktopSideSheet/DesktopSideSheet";
-import { PartnerDetailContent } from "../PartnerDetailContent/PartnerDetailContent";
+import { MerchantDetailContent } from "../PartnerDetailContent/PartnerDetailContent";
 
-export const PartnerDetailSheet = (props: PartnerDetailSheetProps) => {
+export const MerchantDetailSheet = (props: MerchantDetailSheetProps) => {
   const { partner, isMobile, onClose, closeSignal = 0 } = props;
   const [mobileCloseSignal, setMobileCloseSignal] = useState(0);
   const [desktopCloseSignal, setDesktopCloseSignal] = useState(0);
@@ -20,7 +20,7 @@ export const PartnerDetailSheet = (props: PartnerDetailSheetProps) => {
     setDesktopCloseSignal((value) => value + 1);
   }, [isMobile]);
 
-  const content = <PartnerDetailContent {...props} onClose={handleContentClose} />;
+  const content = <MerchantDetailContent {...props} onClose={handleContentClose} />;
 
   useEffect(() => {
     const isNewCloseSignal = closeSignal !== prevCloseSignalRef.current;

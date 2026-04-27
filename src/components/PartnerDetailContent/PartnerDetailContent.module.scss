@@ -56,21 +56,14 @@
   color: $white-60;
 }
 
-.badges {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  margin-top: $spacing-xs;
-}
-
-.networks {
+.tags {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   row-gap: $spacing-xs;
 }
 
-.network {
+.tag {
   @include p-sm;
   color: $white-60;
   display: flex;
@@ -89,18 +82,6 @@
     margin: 0 $spacing-sm;
   }
 
-  &.meal {
-    color: $brand-primary-5;
-  }
-  &.rewards {
-    color: $flexone-primary-4;
-  }
-  &.expenses {
-    color: $expense-primary-5;
-  }
-  &.gyms {
-    color: $fitpass-primary-5;
-  }
   &.cashback {
     color: $brand-primary-6;
     font-weight: $font-weight-bold;

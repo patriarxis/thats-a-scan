@@ -1,7 +1,7 @@
 import type { ILocale } from "./ILocale";
 import type { PartnerFeature } from "./IMerchant";
 
-export type PartnerDetailSheetLabels = {
+export type MerchantDetailSheetLabels = {
   merchantDetail: string;
   close: string;
   address: string;
@@ -16,10 +16,6 @@ export type PartnerDetailSheetLabels = {
   description: string;
   cashback: string;
   flexone: string;
-  categoryMeal: string;
-  categoryRewards: string;
-  categoryExpenses: string;
-  categoryGyms: string;
   fitpass: string;
   upExpense: string;
   upMeal: string;
@@ -28,11 +24,11 @@ export type PartnerDetailSheetLabels = {
   photos?: string;
 };
 
-export type PartnerDetailSheetProps = {
+export type MerchantDetailSheetProps = {
   partner: PartnerFeature | null;
   isMobile?: boolean;
   locale: ILocale;
-  labels: PartnerDetailSheetLabels;
+  labels: MerchantDetailSheetLabels;
   onClose: () => void;
   closeSignal?: number;
 };

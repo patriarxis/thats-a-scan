@@ -4,7 +4,7 @@ import {
   MERCHANT_CATEGORY_DEFINITIONS,
   getMerchantCategoryHelperText,
   getMerchantCategoryIcon,
-  getMerchantCategoryLabel,
+  getMerchantCategoryPluralLabel,
   merchantCategorizationIncludes,
   resolveMerchantCategorization,
   type MerchantCategoryId,
@@ -25,7 +25,7 @@ export type PopularSearchCategory = {
 export const getPopularSearchCategories = (locale: ILocale): PopularSearchCategory[] =>
   MERCHANT_CATEGORY_DEFINITIONS.map((definition) => ({
     id: definition.id,
-    label: getMerchantCategoryLabel(definition.id, locale),
+    label: getMerchantCategoryPluralLabel(definition.id, locale),
     helperText: getMerchantCategoryHelperText(definition.id, locale),
     keywords: definition.aliases,
     icon: getMerchantCategoryIcon(definition.id),

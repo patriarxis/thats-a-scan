@@ -2,13 +2,13 @@
 
 import { useMemo } from "react";
 import { List, type RowComponentProps } from "react-window";
-import { PartnerCard } from "@/components";
+import { MerchantCard } from "@/components";
 import { getPartnerId, type ILocale, type PartnerFeature } from "@/types";
 import { LOCALE } from "@/lib";
 import { SKELETON_ITEM_COUNT, STORE_LIST_ROW_HEIGHT } from "@/lib/config";
 import styles from "./PartnerResultsPanel.module.scss";
 
-type PartnerResultsPanelProps = {
+type MerchantResultsPanelProps = {
   partners: PartnerFeature[];
   selectedId: string | null;
   loading: boolean;
@@ -42,7 +42,7 @@ const Row = ({
   const selected = selectedId === getPartnerId(partner);
   return (
     <div role="listitem" style={style} className={styles.rowItem}>
-      <PartnerCard
+      <MerchantCard
         partner={partner}
         selected={selected}
         locale={locale}
@@ -53,7 +53,7 @@ const Row = ({
   );
 };
 
-export const PartnerResultsPanel = ({
+export const MerchantResultsPanel = ({
   partners,
   selectedId,
   loading,
@@ -64,7 +64,7 @@ export const PartnerResultsPanel = ({
   noResultsLabel,
   noAddressLabel,
   locale
-}: PartnerResultsPanelProps) => {
+}: MerchantResultsPanelProps) => {
   const itemData = useMemo<RowData>(
     () => ({
       partners,

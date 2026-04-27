@@ -134,7 +134,7 @@ export async function GET(request: Request) {
                 fontWeight: 600,
               }}
             >
-              Partner store
+              Merchant store
             </div>
 
             <div

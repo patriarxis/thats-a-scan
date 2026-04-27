@@ -1,5 +1,5 @@
 import type { MerchantFeature } from "@/types";
-import { resolveMerchantCategorization } from "@/lib/merchantCategorization";
+import { resolveMerchantNetworkCategoryFromProperties } from "@/lib/merchantCategorization";
 
 export type ProductFilterOption = { id: string; label: string };
 export const PRODUCT_DEFINITIONS = [
@@ -29,7 +29,7 @@ function normalizeText(value: unknown): string {
 export function resolveMerchantCategoryFromProperties(
   properties: Record<string, unknown>,
 ): "meal" | "gyms" | "expenses" | "rewards" {
-  return resolveMerchantCategorization(properties).networkCategoryId;
+  return resolveMerchantNetworkCategoryFromProperties(properties);
 }
 
 export function resolveMerchantCategory(merchant: MerchantFeature): "meal" | "gyms" | "expenses" | "rewards" {

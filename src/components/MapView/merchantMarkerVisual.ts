@@ -65,9 +65,12 @@ export const PRODUCT_COLORS: Record<ProductDotKey, string> = {
   cheque_dejeuner: "#79bae3",
 };
 
-const GYM_PIN_COLOR = PRODUCT_COLORS.fitpass;
-const DIGITAL_UP_HELLAS_COLOR = PRODUCT_COLORS.go_for_eat;
-const DIGITAL_NYAMIE_COLOR = PRODUCT_COLORS.fitpass;
+const NETWORK_PIN_COLORS: Record<CategoryId, string> = {
+  meal: PRODUCT_COLORS.go_for_eat,
+  gyms: PRODUCT_COLORS.fitpass,
+  expenses: PRODUCT_COLORS.up_expense,
+  rewards: PRODUCT_COLORS.up_gift,
+};
 
 const PIN_CIRCLE_FILL_BY_MAIN_HEX: Record<string, string> = {
   [PRODUCT_COLORS.fitpass.toLowerCase()]: "#2e0d05",
@@ -79,8 +82,8 @@ const PIN_CIRCLE_FILL_BY_MAIN_HEX: Record<string, string> = {
 };
 
 const CATEGORY_SELECTED_PIN_FILL: Record<CategoryId, string> = {
-  meal: "#ff8500",
-  gyms: "#e6441f",
+  meal: PRODUCT_COLORS.go_for_eat,
+  gyms: PRODUCT_COLORS.fitpass,
   expenses: "#0772f8",
   rewards: "#738c8a",
 };
@@ -121,26 +124,7 @@ export const resolveMarkerVisual = (properties: Record<string, unknown>): Marker
   ) as MarkerCategoryIconKey;
   const products = resolveMerchantProducts(properties);
   const category = categorization.networkCategoryId;
-  const source = String(properties.__source ?? "").trim().toLowerCase();
-  const isGym = category === "gyms";
-  const isFitpassVenue = products.includes("fitpass") || isGym;
-
-  let mainColor = DIGITAL_UP_HELLAS_COLOR;
-  if (isDigital) {
-    if (isFitpassVenue) {
-      mainColor = DIGITAL_NYAMIE_COLOR;
-    } else {
-      mainColor = source === "nyamie" ? DIGITAL_NYAMIE_COLOR : DIGITAL_UP_HELLAS_COLOR;
-    }
-  } else if (isGym) {
-    mainColor = GYM_PIN_COLOR;
-  } else {
-    if (products.includes("go_for_eat")) mainColor = PRODUCT_COLORS.go_for_eat;
-    else if (products.includes("up_gift")) mainColor = PRODUCT_COLORS.up_gift;
-    else if (products.includes("up_expense")) mainColor = PRODUCT_COLORS.up_expense;
-    else if (products.includes("flexone")) mainColor = PRODUCT_COLORS.flexone;
-    else if (products.includes("cheque_dejeuner")) mainColor = PRODUCT_COLORS.cheque_dejeuner;
-  }
+  const mainColor = NETWORK_PIN_COLORS[category];
 
   const circleFill = circleFillForMainColor(mainColor);
   const selectedPinFill = CATEGORY_SELECTED_PIN_FILL[category];

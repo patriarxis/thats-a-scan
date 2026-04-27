@@ -33,7 +33,7 @@ import { useMerchantFilters } from "@/lib/useMerchantFilters";
 import {
   getPartnerId,
   type PartnerFeature,
-  type PartnerDetailSheetLabels,
+  type MerchantDetailSheetLabels,
   type VisiblePartnersChangePayload,
 } from "@/types";
 import {
@@ -47,10 +47,10 @@ const MapView = dynamic(
   () => import("@/components/MapView/MapView").then((module) => module.MapView),
   { ssr: false },
 );
-const PartnerDetailSheet = dynamic(
+const MerchantDetailSheet = dynamic(
   () =>
     import("@/components/PartnerDetailSheet/PartnerDetailSheet").then(
-      (module) => module.PartnerDetailSheet,
+      (module) => module.MerchantDetailSheet,
     ),
   { ssr: false },
 );
@@ -511,7 +511,7 @@ const LocatorPageContent = () => {
     urlSelection,
   ]);
 
-  const partnerDetailLabels: PartnerDetailSheetLabels = {
+  const merchantDetailLabels: MerchantDetailSheetLabels = {
     merchantDetail: t("merchantDetail"),
     close: t("close"),
     address: t("address"),
@@ -526,10 +526,6 @@ const LocatorPageContent = () => {
     description: t("description"),
     cashback: t("cashback"),
     flexone: t("flexone"),
-    categoryMeal: t("categoryMeal"),
-    categoryRewards: t("categoryRewards"),
-    categoryExpenses: t("categoryExpenses"),
-    categoryGyms: t("categoryGyms"),
     fitpass: t("fitpass"),
     upExpense: t("upExpense"),
     upMeal: t("upMeal"),
@@ -697,11 +693,11 @@ const LocatorPageContent = () => {
         aria-hidden={!sidebarOpen}
       >
         {selectedPartner && (
-          <PartnerDetailSheet
+          <MerchantDetailSheet
             partner={selectedPartner}
             isMobile={isMobile}
             locale={locale}
-            labels={partnerDetailLabels}
+            labels={merchantDetailLabels}
             onClose={() => clearSelectedPartner()}
             closeSignal={sheetCloseSignal}
           />

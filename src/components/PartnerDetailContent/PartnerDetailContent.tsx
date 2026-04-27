@@ -4,23 +4,26 @@ import {
   getPartnerAddress,
   getPartnerName,
   isPartnerDigital,
-  type PartnerDetailSheetProps,
+  type MerchantDetailSheetProps,
 } from "@/types";
 import {
-  resolveMerchantCategory,
   resolveMerchantProductIds,
   merchantHasCashback,
 } from "@/lib/merchantFilters";
+import {
+  getMerchantCategoryLabel,
+  resolveMerchantCategorization,
+} from "@/lib/merchantCategorization";
 import { Icon } from "@/components/ui";
 import { RichText } from "../RichText";
 import styles from "./PartnerDetailContent.module.scss";
 import { ICONS, LOCALE } from "@/enums";
 
-interface PartnerDetailContentProps extends PartnerDetailSheetProps {
+interface MerchantDetailContentProps extends MerchantDetailSheetProps {
   className?: string;
 }
 
-type PartnerTag = {
+type MerchantTag = {
   id: string;
   label: string;
   type: "meal" | "rewards" | "expenses" | "gyms" | "cashback";
@@ -33,13 +36,13 @@ type ProductLogo = {
   type: string;
 };
 
-export const PartnerDetailContent = ({
+export const MerchantDetailContent = ({
   partner,
   locale,
   labels,
   onClose,
   className,
-}: PartnerDetailContentProps) => {
+}: MerchantDetailContentProps) => {
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [shouldShowToggle, setShouldShowToggle] = useState(false);
   const descriptionRef = useRef<HTMLDivElement>(null);
@@ -163,7 +166,12 @@ export const PartnerDetailContent = ({
   const tiktok = (props.TikTokUrl || props.TiktokUrl || props.Tiktok) as string;
   const featuredPhoto = props.featured_photo as string;
 
-  const category = resolveMerchantCategory(partner);
+  const categorization = resolveMerchantCategorization(partner.properties);
+  const category = categorization.networkCategoryId;
+  const primaryCategoryLabel = getMerchantCategoryLabel(
+    categorization.primaryCategoryId,
+    locale,
+  );
   const description = useMemo(() => {
     if (category === "gyms") {
       const localeDescription =
@@ -189,39 +197,14 @@ export const PartnerDetailContent = ({
   const hasCashback = merchantHasCashback(partner);
 
   const { tags, productLogos } = useMemo(() => {
-    const tagItems: PartnerTag[] = [];
+    const tagItems: MerchantTag[] = [];
     const logoItems: ProductLogo[] = [];
 
-    switch (category) {
-      case "meal":
-        tagItems.push({
-          id: "category",
-          label: labels.categoryMeal,
-          type: "meal",
-        });
-        break;
-      case "rewards":
-        tagItems.push({
-          id: "category",
-          label: labels.categoryRewards,
-          type: "rewards",
-        });
-        break;
-      case "expenses":
-        tagItems.push({
-          id: "category",
-          label: labels.categoryExpenses,
-          type: "expenses",
-        });
-        break;
-      case "gyms":
-        tagItems.push({
-          id: "category",
-          label: labels.categoryGyms,
-          type: "gyms",
-        });
-        break;
-    }
+    tagItems.push({
+      id: "category",
+      label: primaryCategoryLabel,
+      type: category,
+    });
 
     if (hasCashback) {
       tagItems.push({
@@ -267,7 +250,7 @@ export const PartnerDetailContent = ({
     });
 
     return { tags: tagItems, productLogos: logoItems };
-  }, [category, hasCashback, acceptedProducts, labels]);
+  }, [acceptedProducts, category, hasCashback, labels, primaryCategoryLabel]);
 
   return (
     <div className={`${styles.content} ${className || ""}`}>
@@ -285,35 +268,33 @@ export const PartnerDetailContent = ({
           <div className={styles.headerInfo}>
             <h2 className={styles.title}>{getPartnerName(partner, locale)}</h2>
             <p className={styles.subtitle}>{subtitle}</p>
-            <div className={styles.badges}>
-              {productLogos.length > 0 && (
-                <div className={styles.productStack}>
-                  {productLogos.map((logo) => (
-                    <div
-                      key={logo.id}
-                      className={`${styles.productLogo} ${styles[logo.type]}`}
-                      title={logo.label}
-                    >
-                      <span className={styles.productPlaceholder}>
-                        {logo.initials}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {tags.length > 0 && (
-                <div className={styles.networks}>
-                  {tags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className={`${styles.network} ${styles[tag.type]}`}
-                    >
-                      {tag.label}
+            {tags.length > 0 && (
+              <div className={styles.tags}>
+                {tags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className={`${styles.tag} ${styles[tag.type]}`}
+                  >
+                    {tag.label}
+                  </span>
+                ))}
+              </div>
+            )}
+            {productLogos.length > 0 && (
+              <div className={styles.productStack}>
+                {productLogos.map((logo) => (
+                  <div
+                    key={logo.id}
+                    className={`${styles.productLogo} ${styles[logo.type]}`}
+                    title={logo.label}
+                  >
+                    <span className={styles.productPlaceholder}>
+                      {logo.initials}
                     </span>
-                  ))}
-                </div>
-              )}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div className={styles.controls}>
@@ -411,9 +392,8 @@ export const PartnerDetailContent = ({
           <div className={styles.bioBox}>
             <div
               ref={descriptionRef}
-              className={`${styles.bioBody} ${
-                !isBioExpanded && shouldShowToggle ? styles.truncated : ""
-              }`}
+              className={`${styles.bioBody} ${!isBioExpanded && shouldShowToggle ? styles.truncated : ""
+                }`}
             >
               <RichText content={description} className={styles.description} />
             </div>

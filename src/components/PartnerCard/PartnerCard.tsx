@@ -8,7 +8,7 @@ import {
 } from "@/types";
 import styles from "./PartnerCard.module.scss";
 
-type PartnerCardProps = {
+type MerchantCardProps = {
   partner: PartnerFeature;
   selected: boolean;
   locale: ILocale;
@@ -16,13 +16,13 @@ type PartnerCardProps = {
   onSelect: (partner: PartnerFeature) => void;
 };
 
-export const PartnerCard = ({
+export const MerchantCard = ({
   partner,
   selected,
   locale,
   noAddressLabel,
   onSelect
-}: PartnerCardProps) => {
+}: MerchantCardProps) => {
   const name = getPartnerName(partner, locale);
   const address = getPartnerAddress(partner, locale);
 
@@ -49,7 +49,7 @@ export const PartnerCard = ({
           <p className={styles.address}>
             {address || noAddressLabel}
           </p>
-          <p className={styles.partnerId}>
+          <p className={styles.merchantId}>
             ID: {getPartnerId(partner)}
           </p>
         </div>

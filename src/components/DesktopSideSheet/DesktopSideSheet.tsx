@@ -76,7 +76,7 @@ export const DesktopSideSheet = ({
       className={`${styles.desktopSheet} ${isClosing ? styles.closing : ""}`}
       data-sheet-variant="desktop"
       role="region"
-      aria-label="Partner details panel"
+      aria-label="Merchant details panel"
     >
       <div className={styles.desktopContent} ref={contentRef}>
         {children}

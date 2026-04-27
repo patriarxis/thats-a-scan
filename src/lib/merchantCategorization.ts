@@ -45,86 +45,106 @@ export type MerchantCategoryDefinition = {
 
 const MERCHANT_CATEGORY_TRANSLATION_KEYS: Record<
   MerchantCategoryId,
-  { label: string; helperText: string }
+  { label: string; pluralLabel: string; helperText: string }
 > = {
   supermarket: {
     label: "merchantCategorySupermarket",
+    pluralLabel: "merchantCategorySupermarketPlural",
     helperText: "merchantCategorySupermarketHelper",
   },
   restaurant: {
     label: "merchantCategoryRestaurant",
+    pluralLabel: "merchantCategoryRestaurantPlural",
     helperText: "merchantCategoryRestaurantHelper",
   },
   coffee: {
     label: "merchantCategoryCoffee",
+    pluralLabel: "merchantCategoryCoffeePlural",
     helperText: "merchantCategoryCoffeeHelper",
   },
   pharmacy: {
     label: "merchantCategoryPharmacy",
+    pluralLabel: "merchantCategoryPharmacyPlural",
     helperText: "merchantCategoryPharmacyHelper",
   },
   bakery: {
     label: "merchantCategoryBakery",
+    pluralLabel: "merchantCategoryBakeryPlural",
     helperText: "merchantCategoryBakeryHelper",
   },
   gym: {
     label: "merchantCategoryGym",
+    pluralLabel: "merchantCategoryGymPlural",
     helperText: "merchantCategoryGymHelper",
   },
   wellness: {
     label: "merchantCategoryWellness",
+    pluralLabel: "merchantCategoryWellnessPlural",
     helperText: "merchantCategoryWellnessHelper",
   },
   mobility: {
     label: "merchantCategoryMobility",
+    pluralLabel: "merchantCategoryMobilityPlural",
     helperText: "merchantCategoryMobilityHelper",
   },
   learning: {
     label: "merchantCategoryLearning",
+    pluralLabel: "merchantCategoryLearningPlural",
     helperText: "merchantCategoryLearningHelper",
   },
   childcare: {
     label: "merchantCategoryChildcare",
+    pluralLabel: "merchantCategoryChildcarePlural",
     helperText: "merchantCategoryChildcareHelper",
   },
   fuel: {
     label: "merchantCategoryFuel",
+    pluralLabel: "merchantCategoryFuelPlural",
     helperText: "merchantCategoryFuelHelper",
   },
   entertainment: {
     label: "merchantCategoryEntertainment",
+    pluralLabel: "merchantCategoryEntertainmentPlural",
     helperText: "merchantCategoryEntertainmentHelper",
   },
   office: {
     label: "merchantCategoryOffice",
+    pluralLabel: "merchantCategoryOfficePlural",
     helperText: "merchantCategoryOfficeHelper",
   },
   culture: {
     label: "merchantCategoryCulture",
+    pluralLabel: "merchantCategoryCulturePlural",
     helperText: "merchantCategoryCultureHelper",
   },
   health: {
     label: "merchantCategoryHealth",
+    pluralLabel: "merchantCategoryHealthPlural",
     helperText: "merchantCategoryHealthHelper",
   },
   safety: {
     label: "merchantCategorySafety",
+    pluralLabel: "merchantCategorySafetyPlural",
     helperText: "merchantCategorySafetyHelper",
   },
   shopping: {
     label: "merchantCategoryShopping",
+    pluralLabel: "merchantCategoryShoppingPlural",
     helperText: "merchantCategoryShoppingHelper",
   },
   bars: {
     label: "merchantCategoryBars",
+    pluralLabel: "merchantCategoryBarsPlural",
     helperText: "merchantCategoryBarsHelper",
   },
   hotels: {
     label: "merchantCategoryHotels",
+    pluralLabel: "merchantCategoryHotelsPlural",
     helperText: "merchantCategoryHotelsHelper",
   },
   services: {
     label: "merchantCategoryServices",
+    pluralLabel: "merchantCategoryServicesPlural",
     helperText: "merchantCategoryServicesHelper",
   },
 };
@@ -508,6 +528,27 @@ const getFallbackCategoryId = (fields: ReturnType<typeof buildMerchantCategoryFi
   return "shopping";
 };
 
+export const resolveMerchantNetworkCategoryFromProperties = (
+  properties: Record<string, unknown>,
+): CategoryId => {
+  const source = normalizeValue(properties.__source);
+  if (source === "up_hellas") return "meal";
+  if (source === "nyamie") return "gyms";
+
+  const products = normalizeValue(properties.AcceptedProducts);
+  const productTokens = normalizeTokens(products);
+  if (termMatches(products, productTokens, "fitpass")) return "gyms";
+  if (
+    ["go for eat", "cheque dejeuner", "chèque déjeuner", "meal"].some((term) =>
+      termMatches(products, productTokens, term),
+    )
+  ) {
+    return "meal";
+  }
+  if (termMatches(products, productTokens, "expense")) return "expenses";
+  return "rewards";
+};
+
 const confidenceForScore = (score: number): MerchantCategorization["confidence"] => {
   if (score >= 100) return "high";
   if (score >= DEFAULT_PRIMARY_THRESHOLD) return "medium";
@@ -532,6 +573,7 @@ export const resolveMerchantCategorization = (
 
   const bestEvidence = evidence[0];
   const fallbackCategoryId = getFallbackCategoryId(fields);
+  const networkCategoryId = resolveMerchantNetworkCategoryFromProperties(properties);
   const primaryDefinition = bestEvidence &&
     bestEvidence.score >= (getCategoryDefinition(bestEvidence.categoryId).primaryThreshold ?? DEFAULT_PRIMARY_THRESHOLD)
     ? getCategoryDefinition(bestEvidence.categoryId)
@@ -547,11 +589,10 @@ export const resolveMerchantCategorization = (
     .map((entry) => entry.categoryId);
 
   if (override) {
-    const overrideDefinition = getCategoryDefinition(override.primaryCategoryId);
     const result: MerchantCategorization = {
       primaryCategoryId: override.primaryCategoryId,
       secondaryCategoryIds: override.secondaryCategoryIds ?? secondaryCategoryIds,
-      networkCategoryId: overrideDefinition.networkCategoryId,
+      networkCategoryId,
       confidence: "high",
       evidence: [
         {
@@ -569,7 +610,7 @@ export const resolveMerchantCategorization = (
   const result = {
     primaryCategoryId: primaryDefinition.id,
     secondaryCategoryIds,
-    networkCategoryId: primaryDefinition.networkCategoryId,
+    networkCategoryId,
     confidence: confidenceForScore(bestEvidence?.score ?? 0),
     evidence,
   };
@@ -592,6 +633,12 @@ export const getMerchantCategoryLabel = (categoryId: MerchantCategoryId, locale:
   return translated === translationKey ? categoryId : translated;
 };
 
+export const getMerchantCategoryPluralLabel = (categoryId: MerchantCategoryId, locale: ILocale): string => {
+  const translationKey = MERCHANT_CATEGORY_TRANSLATION_KEYS[categoryId].pluralLabel;
+  const translated = createTranslator(locale).t(translationKey);
+  return translated === translationKey ? getMerchantCategoryLabel(categoryId, locale) : translated;
+};
+
 export const getMerchantCategoryHelperText = (categoryId: MerchantCategoryId, locale: ILocale): string => {
   const translationKey = MERCHANT_CATEGORY_TRANSLATION_KEYS[categoryId].helperText;
   const translated = createTranslator(locale).t(translationKey);
@@ -602,6 +649,7 @@ export const getMerchantCategorySearchTerms = (categoryId: MerchantCategoryId, l
   const definition = getCategoryDefinition(categoryId);
   return [
     getMerchantCategoryLabel(categoryId, locale),
+    getMerchantCategoryPluralLabel(categoryId, locale),
     getMerchantCategoryHelperText(categoryId, locale),
     ...definition.aliases,
   ];

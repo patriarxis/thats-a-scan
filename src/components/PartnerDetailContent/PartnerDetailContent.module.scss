@@ -128,34 +128,6 @@
   border: 1px solid $white-05;
 }
 
-.controls {
-  display: flex;
-}
-
-.controlBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: $spacing-md;
-  border-radius: $border-radius-full;
-  background: transparent;
-  color: $white-60;
-  transition: all $transition-normal;
-
-  @include tablet-up {
-    padding: $spacing-sm;
-  }
-
-  &:hover {
-    background: $white-05;
-    color: $white;
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-}
-
 .actions {
   display: grid;
   width: max-content;

@@ -11,12 +11,13 @@ interface MobileBottomDrawerProps {
 
 const CLOSE_ANIMATION_MS = 320;
 const GESTURE_INTENT_THRESHOLD = 8;
-const PEEK_TO_CLOSE_THRESHOLD = 120;
+const PEEK_TO_CLOSE_THRESHOLD = 96;
 const PEEK_TO_FULL_THRESHOLD = 90;
 const FULL_TO_PEEK_THRESHOLD = 90;
-const FULL_TO_CLOSE_THRESHOLD = 220;
+const FULL_TO_CLOSE_THRESHOLD = 180;
 const PEEK_HEIGHT_RATIO = 0.42;
 const PEEK_HEIGHT_MAX_PX = 30 * 16;
+const FULL_HEIGHT_RATIO = 0.8;
 
 export const MobileBottomDrawer = ({
   children,
@@ -196,9 +197,15 @@ export const MobileBottomDrawer = ({
     return Math.min(height * PEEK_HEIGHT_RATIO, PEEK_HEIGHT_MAX_PX);
   };
 
+  const getFullHeightPx = () => {
+    const height = viewportHeight || 800;
+    return height * FULL_HEIGHT_RATIO;
+  };
+
   const getDrawerMetrics = () => {
     const vh = viewportHeight || 800;
     const peekHeight = getPeekHeightPx();
+    const fullHeight = getFullHeightPx();
     const closedTranslate = vh + 120;
 
     if (drawerState === "closed") {
@@ -207,7 +214,7 @@ export const MobileBottomDrawer = ({
 
     if (!isDragging) {
       return {
-        heightPx: drawerState === "full" ? vh : peekHeight,
+        heightPx: drawerState === "full" ? fullHeight : peekHeight,
         translatePx: 0,
       };
     }
@@ -216,7 +223,7 @@ export const MobileBottomDrawer = ({
     if (startState === "peek") {
       if (dragY < 0) {
         return {
-          heightPx: Math.min(vh, peekHeight + Math.abs(dragY)),
+          heightPx: Math.min(fullHeight, peekHeight + Math.abs(dragY)),
           translatePx: 0,
         };
       }
@@ -228,10 +235,10 @@ export const MobileBottomDrawer = ({
 
     if (startState === "full") {
       if (dragY <= 0) {
-        return { heightPx: vh, translatePx: 0 };
+        return { heightPx: fullHeight, translatePx: 0 };
       }
-      const collapsedHeight = Math.max(peekHeight, vh - dragY);
-      const extraDragAfterPeek = Math.max(0, dragY - (vh - peekHeight));
+      const collapsedHeight = Math.max(peekHeight, fullHeight - dragY);
+      const extraDragAfterPeek = Math.max(0, dragY - (fullHeight - peekHeight));
       return {
         heightPx: collapsedHeight,
         translatePx: extraDragAfterPeek,
@@ -247,9 +254,7 @@ export const MobileBottomDrawer = ({
 
   return (
     <aside
-      className={`${styles.sheet} ${
-        drawerState === "full" ? styles.fullHeight : ""
-      } ${isDragging ? styles.isDragging : ""}`}
+      className={`${styles.sheet} ${isDragging ? styles.isDragging : ""}`}
       data-sheet-variant="mobile"
       data-drawer-state={drawerState}
       style={{

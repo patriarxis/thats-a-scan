@@ -15,13 +15,6 @@
   margin: $spacing-sm;
   box-sizing: border-box;
 
-  &.fullHeight {
-    border-radius: 0;
-    width: 100%;
-    max-width: none;
-    margin: 0;
-  }
-
   &.isDragging {
     transition: none !important;
   }
@@ -85,9 +78,4 @@
     background: $white-10;
     border-radius: $border-radius-full;
   }
-}
-
-.fullHeight .content {
-  border-radius: 0;
-  padding-top: 0;
 }

@@ -69,7 +69,6 @@ export const MerchantDetailContent = ({
   partner,
   locale,
   labels,
-  onClose,
   className,
 }: MerchantDetailContentProps) => {
   const [isBioExpanded, setIsBioExpanded] = useState(false);
@@ -331,11 +330,6 @@ export const MerchantDetailContent = ({
               </div>
             )}
           </div>
-        </div>
-        <div className={styles.controls}>
-          <button type="button" onClick={onClose} className={styles.controlBtn}>
-            <Icon name={ICONS.X} width={18} height={18} />
-          </button>
         </div>
       </div>
 

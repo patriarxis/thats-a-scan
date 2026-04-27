@@ -8,7 +8,21 @@ export type PopularSearchCategoryId =
   | "coffee"
   | "pharmacy"
   | "bakery"
-  | "gym";
+  | "gym"
+  | "wellness"
+  | "mobility"
+  | "learning"
+  | "childcare"
+  | "fuel"
+  | "entertainment"
+  | "office"
+  | "culture"
+  | "health"
+  | "safety"
+  | "shopping"
+  | "bars"
+  | "hotels"
+  | "services";
 
 export type PopularSearchCategory = {
   id: PopularSearchCategoryId;
@@ -68,6 +82,104 @@ const CATEGORY_DEFINITIONS: PopularSearchCategoryDefinition[] = [
     helperText: { en: "Fitness and wellness", el: "Fitness και ευεξία" },
     keywords: ["gym", "fitness", "wellness", "pilates", "crossfit", "γυμναστηριο", "γυμναστηρια"],
     mappedNetworkId: "gyms",
+  },
+  {
+    id: "wellness",
+    labels: { en: "Wellness", el: "Ευεξία" },
+    helperText: { en: "Spa, beauty and wellness", el: "Spa, ομορφιά και ευεξία" },
+    keywords: ["wellness", "spa", "beauty", "salon", "massage", "cosmetic", "ευεξια", "σπα", "ομορφια", "κομμωτηριο"],
+    mappedNetworkId: "rewards",
+  },
+  {
+    id: "mobility",
+    labels: { en: "Mobility", el: "Μετακίνηση" },
+    helperText: { en: "Transport and mobility services", el: "Μεταφορές και μετακίνηση" },
+    keywords: ["mobility", "transport", "taxi", "bus", "scooter", "car rental", "rental", "μετακινηση", "μεταφορα", "ταξι"],
+    mappedNetworkId: "expenses",
+  },
+  {
+    id: "learning",
+    labels: { en: "Learning", el: "Εκπαίδευση" },
+    helperText: { en: "Books, schools and courses", el: "Βιβλία, σχολές και μαθήματα" },
+    keywords: ["learning", "education", "school", "course", "books", "bookstore", "training", "εκπαιδευση", "σχολη", "βιβλια"],
+    mappedNetworkId: "rewards",
+  },
+  {
+    id: "childcare",
+    labels: { en: "Childcare", el: "Φροντίδα παιδιού" },
+    helperText: { en: "Kids, baby and childcare", el: "Παιδική φροντίδα, βρέφος και παιχνίδια" },
+    keywords: ["childcare", "kids", "children", "baby", "nursery", "toys", "παιδι", "παιδικα", "βρεφος", "παιχνιδια"],
+    mappedNetworkId: "rewards",
+  },
+  {
+    id: "fuel",
+    labels: { en: "Fuel", el: "Καύσιμα" },
+    helperText: { en: "Fuel stations and petrol", el: "Πρατήρια και καύσιμα" },
+    keywords: ["fuel", "gas", "petrol", "gas station", "station", "καυσιμα", "βενζινη", "πρατηριο"],
+    mappedNetworkId: "expenses",
+  },
+  {
+    id: "entertainment",
+    labels: { en: "Entertainment", el: "Ψυχαγωγία" },
+    helperText: { en: "Cinema, games and leisure", el: "Σινεμά, παιχνίδια και διασκέδαση" },
+    keywords: ["entertainment", "cinema", "movie", "games", "leisure", "bowling", "ψυχαγωγια", "σινεμα", "παιχνιδια"],
+    mappedNetworkId: "rewards",
+  },
+  {
+    id: "office",
+    labels: { en: "Office", el: "Γραφείο" },
+    helperText: { en: "Office, business and supplies", el: "Γραφείο, επιχειρήσεις και είδη" },
+    keywords: ["office", "business", "supplies", "stationery", "printing", "coworking", "γραφειο", "επιχειρηση", "χαρτικα"],
+    mappedNetworkId: "expenses",
+  },
+  {
+    id: "culture",
+    labels: { en: "Culture", el: "Πολιτισμός" },
+    helperText: { en: "Museums, art and culture", el: "Μουσεία, τέχνη και πολιτισμός" },
+    keywords: ["culture", "museum", "art", "gallery", "theater", "theatre", "music", "πολιτισμος", "μουσειο", "τεχνη", "θεατρο"],
+    mappedNetworkId: "rewards",
+  },
+  {
+    id: "health",
+    labels: { en: "Health", el: "Υγεία" },
+    helperText: { en: "Health and medical services", el: "Υγεία και ιατρικές υπηρεσίες" },
+    keywords: ["health", "medical", "doctor", "clinic", "diagnostic", "dentist", "υγεια", "γιατρος", "ιατρ", "κλινικη"],
+    mappedNetworkId: "rewards",
+  },
+  {
+    id: "safety",
+    labels: { en: "Safety", el: "Ασφάλεια" },
+    helperText: { en: "Safety, insurance and security", el: "Ασφάλεια και προστασία" },
+    keywords: ["safety", "security", "insurance", "protection", "locksmith", "ασφαλεια", "προστασια", "κλειδαρας"],
+    mappedNetworkId: "expenses",
+  },
+  {
+    id: "shopping",
+    labels: { en: "Shopping", el: "Αγορές" },
+    helperText: { en: "Retail stores and gifts", el: "Καταστήματα και δώρα" },
+    keywords: ["shopping", "retail", "store", "shop", "gift", "mall", "αγορες", "καταστημα", "δωρα"],
+    mappedNetworkId: "rewards",
+  },
+  {
+    id: "bars",
+    labels: { en: "Bars", el: "Μπαρ" },
+    helperText: { en: "Bars and drinks", el: "Μπαρ και ποτά" },
+    keywords: ["bar", "beer", "wine", "drink", "cocktail", "μπαρ", "ποτο", "ποτα", "κρασι"],
+    mappedNetworkId: "meal",
+  },
+  {
+    id: "hotels",
+    labels: { en: "Hotels", el: "Ξενοδοχεία" },
+    helperText: { en: "Hotels and accommodation", el: "Ξενοδοχεία και διαμονή" },
+    keywords: ["hotel", "hostel", "accommodation", "lodging", "travel", "ξενοδοχειο", "διαμονη", "ταξιδι"],
+    mappedNetworkId: "expenses",
+  },
+  {
+    id: "services",
+    labels: { en: "Services", el: "Υπηρεσίες" },
+    helperText: { en: "Local and business services", el: "Τοπικές και επαγγελματικές υπηρεσίες" },
+    keywords: ["service", "services", "repair", "cleaning", "local service", "υπηρεσια", "υπηρεσιες", "επισκευη"],
+    mappedNetworkId: "expenses",
   },
 ];
 

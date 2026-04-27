@@ -19,6 +19,7 @@ export type SearchSuggestion = {
   merchantId?: string;
   coordinates?: [number, number];
   categoryId?: string;
+  icon?: ICONS;
 };
 
 type SearchBarProps = {
@@ -313,7 +314,7 @@ export const SearchBar = ({
               <IconButton
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={onOpenLocalePanel}
-                icon={ICONS.GLOBE}
+                icon={ICONS.PLANET}
                 className={styles.localeMenuBtn}
                 aria-label={localeSwitcherAriaLabel}
               />

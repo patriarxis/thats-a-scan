@@ -11,6 +11,20 @@ const CATEGORY_ICON_MAP: Record<string, ICONS> = {
   pharmacy: ICONS.ASCLEPIUS,
   bakery: ICONS.COOKIE,
   gym: ICONS.BARBELL,
+  wellness: ICONS.FLOWER_LOTUS,
+  mobility: ICONS.BUS,
+  learning: ICONS.BOOK_OPEN_TEXT,
+  childcare: ICONS.CHILDCARE,
+  fuel: ICONS.GAS_PUMP,
+  entertainment: ICONS.POPCORN,
+  office: ICONS.BRIEFCASE,
+  culture: ICONS.PALETTE,
+  health: ICONS.FIRST_AID_KIT,
+  safety: ICONS.SHIELD_CHECK,
+  shopping: ICONS.SHOPPING_BAG,
+  bars: ICONS.MARTINI,
+  hotels: ICONS.BED,
+  services: ICONS.BUILDINGS,
 };
 
 type SearchResultsPanelProps = {
@@ -48,9 +62,10 @@ export const SearchResultsPanel = ({
   const renderOption = (item: SearchSuggestion, index: number) => {
     const isActive = index === activeIndex;
     const categoryIcon =
-      item.type === "category" && item.categoryId
+      item.icon ??
+      (item.type === "category" && item.categoryId
         ? (CATEGORY_ICON_MAP[item.categoryId] ?? ICONS.TAG)
-        : ICONS.STOREFRONT;
+        : ICONS.STOREFRONT);
 
     return (
       <li

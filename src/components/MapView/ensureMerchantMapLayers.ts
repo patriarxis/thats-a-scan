@@ -45,7 +45,7 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
       id: HEATMAP_LAYER_ID,
       type: "heatmap",
       source: HEATMAP_SOURCE_ID,
-      maxzoom: 11,
+      maxzoom: 12,
       paint: {
         "heatmap-weight": [
           "interpolate",
@@ -93,6 +93,8 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
           10.5,
           0.3,
           11,
+          0.22,
+          12,
           0,
         ],
         "heatmap-color": [

@@ -11,7 +11,7 @@ import {
 } from "@/types";
 import { useUserLocation, useViewportStoreQuery } from "@/lib/useMap";
 import { ensureMerchantMapLayers } from "./ensureMerchantMapLayers";
-import { loadHeatmapData, warmHeatmapData } from "./heatmapData";
+import { loadHeatmapData } from "./heatmapData";
 import { buildMerchantsFeatureCollection } from "./merchantMapData";
 import {
   ACTIVE_PIN_QUICK_ZOOM,
@@ -43,6 +43,9 @@ type MapViewProps = {
   onPartnerSelect: (partner: PartnerFeature) => void;
   onMapClick?: () => void;
 };
+
+const HEATMAP_VISIBLE_MAX_ZOOM = 12;
+const PIN_PREVIEW_VISIBLE_MIN_ZOOM = 11;
 
 export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   {
@@ -76,6 +79,8 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   const [mapReady, setMapReady] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   const [heatmapReady, setHeatmapReady] = useState(false);
+  const [isHeatmapZoom, setIsHeatmapZoom] = useState(true);
+  const [isPinPreviewZoom, setIsPinPreviewZoom] = useState(false);
   const userLocation = useUserLocation();
   const { merchants: partners, loading, updating, viewportTooWide, error } = useViewportStoreQuery(
     mapRef,
@@ -83,8 +88,9 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     mapReady,
   );
 
-  const showHeatmap = viewportTooWide && !selectedPartnerId;
+  const showHeatmap = isHeatmapZoom && !selectedPartnerId;
   const heatmapVisible = showHeatmap && heatmapReady;
+  const showPinsWithHeatmap = heatmapVisible && isPinPreviewZoom;
 
   useEffect(() => {
     setIsLargeScreen(window.innerWidth > 1024);
@@ -328,6 +334,25 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    const syncHeatmapZoom = () => {
+      const zoom = map.getZoom();
+      setIsHeatmapZoom(zoom < HEATMAP_VISIBLE_MAX_ZOOM);
+      setIsPinPreviewZoom(zoom >= PIN_PREVIEW_VISIBLE_MIN_ZOOM);
+    };
+
+    syncHeatmapZoom();
+    map.on("zoom", syncHeatmapZoom);
+    map.on("zoomend", syncHeatmapZoom);
+    return () => {
+      map.off("zoom", syncHeatmapZoom);
+      map.off("zoomend", syncHeatmapZoom);
+    };
+  }, [mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
     const latest = latestViewportStateRef.current;
     const nextPartners = latest.partners.filter((partner) =>
@@ -342,9 +367,9 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
 
     if (heatmapVisible) {
       if (map.getLayer(HEATMAP_LAYER_ID)) map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", "visible");
-      if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", "none");
-      if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", "none");
-      if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "none");
+      if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", showPinsWithHeatmap ? "visible" : "none");
+      if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", showPinsWithHeatmap ? "visible" : "none");
+      if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", showPinsWithHeatmap ? "visible" : "none");
       if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "none");
     } else if (!viewportTooWide) {
       if (map.getLayer(HEATMAP_LAYER_ID)) map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", "none");
@@ -365,15 +390,13 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "none");
       if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "visible");
     }
-  }, [heatmapVisible, selectedPartnerId, viewportTooWide]);
+  }, [heatmapVisible, selectedPartnerId, showPinsWithHeatmap, viewportTooWide]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
     let cancelled = false;
-    let idleId: number | null = null;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const applyHeatmap = async () => {
       try {
@@ -393,21 +416,16 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       }
     };
 
-    const scheduleHeatmapWarmup = () => {
-      warmHeatmapData();
+    const applyWhenStyleIsReady = () => {
       void applyHeatmap();
     };
 
-    if ("requestIdleCallback" in window) {
-      idleId = window.requestIdleCallback(scheduleHeatmapWarmup, { timeout: 2500 });
-    } else {
-      timeoutId = globalThis.setTimeout(scheduleHeatmapWarmup, 1200);
-    }
+    if (map.isStyleLoaded()) applyWhenStyleIsReady();
+    else map.once("load", applyWhenStyleIsReady);
 
     return () => {
       cancelled = true;
-      if (idleId !== null) window.cancelIdleCallback(idleId);
-      if (timeoutId !== null) globalThis.clearTimeout(timeoutId);
+      map.off("load", applyWhenStyleIsReady);
     };
   }, [mapReady]);
 

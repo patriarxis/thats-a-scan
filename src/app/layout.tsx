@@ -7,7 +7,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
   ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
   : new URL(DEFAULT_SITE_URL);
 
-const homeOgImageUrl = "/og-home.png";
+const defaultMetaImageUrl = "/meta-image.jpg";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -80,13 +80,13 @@ export const metadata: Metadata = {
     description: "Interactive map of all partner merchants by Up Hellas.",
     siteName: "Up Hellas Map",
     locale: "el_GR",
-    images: [{ url: homeOgImageUrl, width: 1200, height: 630, alt: "Up Hellas Map" }],
+    images: [{ url: defaultMetaImageUrl, width: 1200, height: 630, alt: "Up Hellas Map" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Up Hellas | Map",
     description: "Interactive map of all partner merchants by Up Hellas.",
-    images: [homeOgImageUrl],
+    images: [defaultMetaImageUrl],
   },
   icons: {
     icon: [

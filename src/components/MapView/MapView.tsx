@@ -11,6 +11,7 @@ import {
 } from "@/types";
 import { useUserLocation, useViewportStoreQuery } from "@/lib/useMap";
 import { ensureMerchantMapLayers } from "./ensureMerchantMapLayers";
+import { loadHeatmapData, warmHeatmapData } from "./heatmapData";
 import { buildMerchantsFeatureCollection } from "./merchantMapData";
 import {
   ACTIVE_PIN_QUICK_ZOOM,
@@ -64,7 +65,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   const onVisiblePartnersChangeRef = useRef(onVisiblePartnersChange);
   const onPartnerSelectRef = useRef(onPartnerSelect);
   const onMapClickRef = useRef(onMapClick);
-  const heatmapLoadedRef = useRef(false);
+  const heatmapAppliedRef = useRef(false);
   const latestViewportStateRef = useRef({
     partners: [] as PartnerFeature[],
     loading: true,
@@ -74,6 +75,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   });
   const [mapReady, setMapReady] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
+  const [heatmapReady, setHeatmapReady] = useState(false);
   const userLocation = useUserLocation();
   const { merchants: partners, loading, updating, viewportTooWide, error } = useViewportStoreQuery(
     mapRef,
@@ -82,6 +84,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   );
 
   const showHeatmap = viewportTooWide && !selectedPartnerId;
+  const heatmapVisible = showHeatmap && heatmapReady;
 
   useEffect(() => {
     setIsLargeScreen(window.innerWidth > 1024);
@@ -337,7 +340,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     const map = mapRef.current;
     if (!map) return;
 
-    if (showHeatmap) {
+    if (heatmapVisible) {
       if (map.getLayer(HEATMAP_LAYER_ID)) map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", "visible");
       if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", "none");
       if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", "none");
@@ -349,6 +352,12 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", "visible");
       if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "visible");
       if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "visible");
+    } else if (viewportTooWide && !selectedPartnerId) {
+      if (map.getLayer(HEATMAP_LAYER_ID)) map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", "none");
+      if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", "visible");
+      if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", "visible");
+      if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "visible");
+      if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "none");
     } else {
       if (map.getLayer(HEATMAP_LAYER_ID)) map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", "none");
       if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", "none");
@@ -356,63 +365,51 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "none");
       if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "visible");
     }
-  }, [showHeatmap, viewportTooWide]);
+  }, [heatmapVisible, selectedPartnerId, viewportTooWide]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !showHeatmap || heatmapLoadedRef.current) return;
-    const source = map.getSource(HEATMAP_SOURCE_ID) as GeoJSONSource | undefined;
-    if (!source) return;
-    source.setData("/api/heatmap");
-    heatmapLoadedRef.current = true;
-  }, [mapReady, showHeatmap]);
+    if (!map || !mapReady) return;
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady || !showHeatmap) return;
+    let cancelled = false;
+    let idleId: number | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    let rafId: number;
-    const start = Date.now();
-
-    const animate = () => {
-      if (!map.getLayer(HEATMAP_LAYER_ID)) return;
-
-      const elapsed = Date.now() - start;
-      const pulse = 0.82 + Math.sin(elapsed / 700) * 0.18;
-
-      map.setPaintProperty(HEATMAP_LAYER_ID, "heatmap-opacity", [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        5,
-        0.65 * pulse,
-        8,
-        0.55 * pulse,
-        10.5,
-        0.3 * pulse,
-        11,
-        0,
-      ]);
-
-      rafId = requestAnimationFrame(animate);
-    };
-
-    rafId = requestAnimationFrame(animate);
-    return () => {
-      cancelAnimationFrame(rafId);
-      if (map.getLayer(HEATMAP_LAYER_ID)) {
-        map.setPaintProperty(HEATMAP_LAYER_ID, "heatmap-opacity", [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          5, 0.65,
-          8, 0.55,
-          10.5, 0.3,
-          11, 0,
-        ]);
+    const applyHeatmap = async () => {
+      try {
+        const data = await loadHeatmapData();
+        if (cancelled || heatmapAppliedRef.current) return;
+        let source = map.getSource(HEATMAP_SOURCE_ID) as GeoJSONSource | undefined;
+        if (!source && map.isStyleLoaded()) {
+          ensureMerchantMapLayers(map, partnersRef.current);
+          source = map.getSource(HEATMAP_SOURCE_ID) as GeoJSONSource | undefined;
+        }
+        if (!source) return;
+        source.setData(data);
+        heatmapAppliedRef.current = true;
+        setHeatmapReady(true);
+      } catch (error) {
+        console.error("Failed to load heatmap data:", error);
       }
     };
-  }, [mapReady, showHeatmap]);
+
+    const scheduleHeatmapWarmup = () => {
+      warmHeatmapData();
+      void applyHeatmap();
+    };
+
+    if ("requestIdleCallback" in window) {
+      idleId = window.requestIdleCallback(scheduleHeatmapWarmup, { timeout: 2500 });
+    } else {
+      timeoutId = globalThis.setTimeout(scheduleHeatmapWarmup, 1200);
+    }
+
+    return () => {
+      cancelled = true;
+      if (idleId !== null) window.cancelIdleCallback(idleId);
+      if (timeoutId !== null) globalThis.clearTimeout(timeoutId);
+    };
+  }, [mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;

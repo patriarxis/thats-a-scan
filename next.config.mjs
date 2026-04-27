@@ -5,7 +5,6 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   compress: true,
   async headers() {
-    // Avoid applying security headers that might complicate local development.
     if (process.env.NODE_ENV !== "production") return [];
 
     return [

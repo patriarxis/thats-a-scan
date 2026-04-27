@@ -1,8 +1,11 @@
 import { ICONS } from "@/enums";
 import {
-  resolveMerchantCategoryFromProperties,
   resolveMerchantProductIdsFromProperties,
 } from "@/lib/merchantFilters";
+import {
+  getMerchantCategoryIcon,
+  resolveMerchantCategorization,
+} from "@/lib/merchantCategorization";
 import {
   getPartnerId,
   isPartnerDigitalFromProperties,
@@ -101,91 +104,6 @@ const resolveMerchantProducts = (properties: Record<string, unknown>): ProductDo
   return PRODUCT_DOT_ORDER.filter((p) => products.has(p));
 };
 
-const hasAnyNeedle = (haystack: string, needles: string[]): boolean =>
-  needles.some((needle) => haystack.includes(needle));
-
-const getMccMarkerIcon = (properties: Record<string, unknown>): MarkerCategoryIconKey => {
-  const categoryText = String(
-    properties.MCCCategory_EN ??
-    properties.MCCCategoryEN ??
-    properties.MCCCategoryGR ??
-    "",
-  ).toLowerCase();
-  const brandText = String(
-    properties.BrandName_EN ??
-    properties.BrandNameEN ??
-    properties.BrandName_GR ??
-    properties.BrandNameGR ??
-    "",
-  ).toLowerCase();
-  const searchText = `${categoryText} ${brandText}`;
-
-  if (resolveMerchantCategoryFromProperties(properties) === "gyms") {
-    return ICONS.BARBELL;
-  }
-  if (hasAnyNeedle(searchText, ["pharmacy", "φαρμακ", "drugstore"])) {
-    return ICONS.ASCLEPIUS;
-  }
-  if (hasAnyNeedle(searchText, ["doctor", "clinic", "medical", "diagnostic", "dentist", "health", "υγεια", "υγεία", "ιατρ", "γιατρ", "κλινικ"])) {
-    return ICONS.FIRST_AID_KIT;
-  }
-  if (hasAnyNeedle(searchText, ["safety", "security", "insurance", "protection", "locksmith", "ασφαλ", "προστασ", "κλειδαρ"])) {
-    return ICONS.SHIELD_CHECK;
-  }
-  if (hasAnyNeedle(searchText, ["fuel", "petrol", "gas station", "gasoline", "καυσι", "καύσι", "βενζιν", "βενζίν", "πρατηρ"])) {
-    return ICONS.GAS_PUMP;
-  }
-  if (hasAnyNeedle(searchText, ["mobility", "transport", "taxi", "bus", "scooter", "car rental", "rental", "μετακινη", "μεταφορ", "ταξι"])) {
-    return ICONS.BUS;
-  }
-  if (hasAnyNeedle(searchText, ["coffee", "cafe", "café", "καφε"])) {
-    return ICONS.COFFEE;
-  }
-  if (hasAnyNeedle(searchText, ["bar", "beer", "wine", "drink", "cocktail", "μπαρ", "ποτο", "ποτό", "κρασι", "κρασί"])) {
-    return ICONS.MARTINI;
-  }
-  if (hasAnyNeedle(searchText, ["bakery", "pastry", "bread", "φουρ", "αρτοποι"])) {
-    return ICONS.COOKIE;
-  }
-  if (hasAnyNeedle(searchText, ["supermarket", "super market", "grocery", "market", "παντοπωλ", "σουπερ"])) {
-    return ICONS.BASKET;
-  }
-  if (hasAnyNeedle(searchText, ["wellness", "spa", "beauty", "salon", "massage", "cosmetic", "ευεξ", "ομορφ", "κομμωτ"])) {
-    return ICONS.FLOWER_LOTUS;
-  }
-  if (hasAnyNeedle(searchText, ["learning", "education", "school", "course", "bookstore", "books", "training", "εκπαιδ", "σχολ", "βιβλ"])) {
-    return ICONS.BOOK_OPEN_TEXT;
-  }
-  if (hasAnyNeedle(searchText, ["childcare", "kids", "children", "baby", "nursery", "toys", "παιδι", "παιδ", "βρεφ", "παιχνιδ"])) {
-    return ICONS.CHILDCARE;
-  }
-  if (hasAnyNeedle(searchText, ["entertainment", "cinema", "movie", "games", "leisure", "bowling", "ψυχαγωγ", "σινεμα", "σινεμά", "παιχνιδ"])) {
-    return ICONS.POPCORN;
-  }
-  if (hasAnyNeedle(searchText, ["culture", "museum", "art", "gallery", "theater", "theatre", "music", "πολιτισ", "μουσει", "τέχνη", "τεχνη", "θεατρ"])) {
-    return ICONS.PALETTE;
-  }
-  if (hasAnyNeedle(searchText, ["office", "business", "supplies", "stationery", "printing", "coworking", "γραφει", "επιχειρ", "χαρτικ"])) {
-    return ICONS.BRIEFCASE;
-  }
-  if (hasAnyNeedle(searchText, ["hotel", "hostel", "accommodation", "lodging", "travel", "ξενοδοχ", "διαμον"])) {
-    return ICONS.BED;
-  }
-  if (hasAnyNeedle(searchText, ["shopping", "retail", "shop", "store", "gift", "mall", "αγορ", "καταστημα", "κατάστημα", "δωρ"])) {
-    return ICONS.SHOPPING_BAG;
-  }
-  if (hasAnyNeedle(searchText, ["service", "services", "repair", "cleaning", "υπηρεσ", "επισκευ"])) {
-    return ICONS.BUILDINGS;
-  }
-  if (hasAnyNeedle(searchText, ["car", "auto", "parking", "αυτοκιν"])) {
-    return ICONS.CAR;
-  }
-  if (hasAnyNeedle(searchText, ["restaurant", "food", "eat", "φαγη", "εστιατορ", "σουβλα"])) {
-    return ICONS.FORK_KNIFE;
-  }
-  return ICONS.STOREFRONT;
-};
-
 export type MarkerVisual = {
   iconKey: MarkerCategoryIconKey;
   mainColor: string;
@@ -197,9 +115,12 @@ export type MarkerVisual = {
 
 export const resolveMarkerVisual = (properties: Record<string, unknown>): MarkerVisual => {
   const isDigital = isPartnerDigitalFromProperties(properties);
-  const iconKey = isDigital ? ICONS.STOREFRONT : getMccMarkerIcon(properties);
+  const categorization = resolveMerchantCategorization(properties);
+  const iconKey = (
+    isDigital ? ICONS.STOREFRONT : getMerchantCategoryIcon(categorization.primaryCategoryId)
+  ) as MarkerCategoryIconKey;
   const products = resolveMerchantProducts(properties);
-  const category = resolveMerchantCategoryFromProperties(properties);
+  const category = categorization.networkCategoryId;
   const source = String(properties.__source ?? "").trim().toLowerCase();
   const isGym = category === "gyms";
   const isFitpassVenue = products.includes("fitpass") || isGym;

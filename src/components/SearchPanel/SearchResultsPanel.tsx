@@ -3,29 +3,10 @@ import { ICONS } from "@/enums";
 import styles from "./SearchResultsPanel.module.scss";
 import { HighlightedText } from "@/components/ui/HighlightedText/HighlightedText";
 import type { SearchSuggestion } from "@/components/SearchBar/SearchBar";
-
-const CATEGORY_ICON_MAP: Record<string, ICONS> = {
-  supermarket: ICONS.BASKET,
-  restaurant: ICONS.FORK_KNIFE,
-  coffee: ICONS.COFFEE,
-  pharmacy: ICONS.ASCLEPIUS,
-  bakery: ICONS.COOKIE,
-  gym: ICONS.BARBELL,
-  wellness: ICONS.FLOWER_LOTUS,
-  mobility: ICONS.BUS,
-  learning: ICONS.BOOK_OPEN_TEXT,
-  childcare: ICONS.CHILDCARE,
-  fuel: ICONS.GAS_PUMP,
-  entertainment: ICONS.POPCORN,
-  office: ICONS.BRIEFCASE,
-  culture: ICONS.PALETTE,
-  health: ICONS.FIRST_AID_KIT,
-  safety: ICONS.SHIELD_CHECK,
-  shopping: ICONS.SHOPPING_BAG,
-  bars: ICONS.MARTINI,
-  hotels: ICONS.BED,
-  services: ICONS.BUILDINGS,
-};
+import {
+  getMerchantCategoryIcon,
+  type MerchantCategoryId,
+} from "@/lib/merchantCategorization";
 
 type SearchResultsPanelProps = {
   id: string;
@@ -64,7 +45,7 @@ export const SearchResultsPanel = ({
     const categoryIcon =
       item.icon ??
       (item.type === "category" && item.categoryId
-        ? (CATEGORY_ICON_MAP[item.categoryId] ?? ICONS.TAG)
+        ? getMerchantCategoryIcon(item.categoryId as MerchantCategoryId)
         : ICONS.STOREFRONT);
 
     return (

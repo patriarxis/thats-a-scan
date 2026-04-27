@@ -5,7 +5,7 @@ import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { LocaleProvider } from "@/lib/LocaleContext";
 import { useLocale } from "@/lib";
 import { useIsMobileUx } from "@/lib/useIsMobileUx";
-import { ICONS, LOCALE } from "@/enums";
+import { LOCALE } from "@/enums";
 import {
   type SearchSuggestion
 } from "@/components/SearchBar/SearchBar";
@@ -70,29 +70,6 @@ type UrlSearchState = {
 const PRODUCT_FILTER_ID_SET: ReadonlySet<string> = new Set(
   PRODUCT_DEFINITIONS.map((item) => item.id),
 );
-
-const QUICK_CATEGORY_ICON_MAP: Record<PopularSearchCategoryId, ICONS> = {
-  supermarket: ICONS.BASKET,
-  restaurant: ICONS.FORK_KNIFE,
-  coffee: ICONS.COFFEE,
-  pharmacy: ICONS.ASCLEPIUS,
-  bakery: ICONS.COOKIE,
-  gym: ICONS.BARBELL,
-  wellness: ICONS.FLOWER_LOTUS,
-  mobility: ICONS.BUS,
-  learning: ICONS.BOOK_OPEN_TEXT,
-  childcare: ICONS.CHILDCARE,
-  fuel: ICONS.GAS_PUMP,
-  entertainment: ICONS.POPCORN,
-  office: ICONS.BRIEFCASE,
-  culture: ICONS.PALETTE,
-  health: ICONS.FIRST_AID_KIT,
-  safety: ICONS.SHIELD_CHECK,
-  shopping: ICONS.SHOPPING_BAG,
-  bars: ICONS.MARTINI,
-  hotels: ICONS.BED,
-  services: ICONS.BUILDINGS,
-};
 
 const parseSelectionFromLocation = (): UrlSelectionState => {
   if (typeof window === "undefined") {
@@ -168,7 +145,7 @@ const LocatorPageContent = () => {
       popularCategories.map((category) => ({
         id: category.id,
         label: category.label,
-        icon: QUICK_CATEGORY_ICON_MAP[category.id],
+        icon: category.icon,
       })),
     [popularCategories],
   );
@@ -182,6 +159,7 @@ const LocatorPageContent = () => {
             label: category.label,
             sublabel: category.helperText,
             categoryId: category.id,
+            icon: category.icon,
           }) satisfies SearchSuggestion,
       ),
     [popularCategories],
@@ -381,7 +359,7 @@ const LocatorPageContent = () => {
             label: category.label,
             sublabel: category.helperText,
             categoryId: category.id,
-            icon: QUICK_CATEGORY_ICON_MAP[category.id],
+            icon: category.icon,
           }) satisfies SearchSuggestion,
       );
 

@@ -7,6 +7,10 @@ import {
   type MerchantFeature
 } from "@/types";
 import { normalizeStr } from "./stringUtils";
+import {
+  getMerchantCategorySearchTerms,
+  resolveMerchantCategorization,
+} from "@/lib/merchantCategorization";
 
 export type MerchantSuggestion = {
   id: string;
@@ -23,6 +27,7 @@ type IndexEntry = {
   feature: MerchantFeature;
   normalizedLabel: string;
   normalizedSublabel: string;
+  normalizedCategoryText: string;
 };
 
 export function buildSearchIndex(features: MerchantFeature[], locale: ILocale): IndexEntry[] {
@@ -30,11 +35,17 @@ export function buildSearchIndex(features: MerchantFeature[], locale: ILocale): 
     const merchantId = getMerchantId(feature);
     const name = getMerchantName(feature, locale);
     const address = getMerchantAddress(feature, locale);
+    const categorization = resolveMerchantCategorization(feature.properties);
+    const categoryTerms = [
+      categorization.primaryCategoryId,
+      ...categorization.secondaryCategoryIds,
+    ].flatMap((categoryId) => getMerchantCategorySearchTerms(categoryId, locale));
     return {
       merchantId,
       feature,
       normalizedLabel: normalizeStr(name),
-      normalizedSublabel: normalizeStr(address)
+      normalizedSublabel: normalizeStr(address),
+      normalizedCategoryText: normalizeStr(categoryTerms.join(" ")),
     };
   });
 }
@@ -76,6 +87,8 @@ export function searchMerchantSuggestions(
       score = 50;
     } else if (entry.normalizedSublabel.includes(normalizedQuery)) {
       score = 25;
+    } else if (entry.normalizedCategoryText.includes(normalizedQuery)) {
+      score = 20;
     }
 
     if (score > 0) {
@@ -105,8 +118,18 @@ export function merchantMatchesSearchQuery(
   if (!normalizedQuery) return true;
   const normalizedName = normalizeStr(getMerchantName(merchant, locale));
   const normalizedAddress = normalizeStr(getMerchantAddress(merchant, locale));
+  const categorization = resolveMerchantCategorization(merchant.properties);
+  const normalizedCategoryText = normalizeStr(
+    [
+      categorization.primaryCategoryId,
+      ...categorization.secondaryCategoryIds,
+    ]
+      .flatMap((categoryId) => getMerchantCategorySearchTerms(categoryId, locale))
+      .join(" "),
+  );
   return (
     normalizedName.includes(normalizedQuery) ||
-    normalizedAddress.includes(normalizedQuery)
+    normalizedAddress.includes(normalizedQuery) ||
+    normalizedCategoryText.includes(normalizedQuery)
   );
 }

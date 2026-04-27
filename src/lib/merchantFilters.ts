@@ -1,4 +1,5 @@
 import type { MerchantFeature } from "@/types";
+import { resolveMerchantCategorization } from "@/lib/merchantCategorization";
 
 export type ProductFilterOption = { id: string; label: string };
 export const PRODUCT_DEFINITIONS = [
@@ -25,72 +26,10 @@ function normalizeText(value: unknown): string {
   return "";
 }
 
-function hasAnyNeedle(haystack: string, needles: string[]): boolean {
-  return needles.some((needle) => haystack.includes(needle));
-}
-
 export function resolveMerchantCategoryFromProperties(
   properties: Record<string, unknown>,
 ): "meal" | "gyms" | "expenses" | "rewards" {
-  const source = normalizeText(properties.__source);
-  if (source === "up_hellas") {
-    return "meal";
-  }
-
-  const valuesBlob = Object.values(properties)
-    .map((value) => normalizeText(value))
-    .join(" ");
-  const mccLabel = normalizeText(
-    properties.MCCCategory_EN ?? properties.MCCCategoryGR,
-  );
-  const acceptedProducts = normalizeText(properties.AcceptedProducts);
-  const searchText = `${valuesBlob} ${mccLabel} ${acceptedProducts}`;
-
-  if (
-    hasAnyNeedle(searchText, [
-      "gym",
-      "fitness",
-      "pilates",
-      "crossfit",
-      "workout",
-      "dumbbell",
-      "athletic",
-      "fitpass",
-    ])
-  ) {
-    return "gyms";
-  }
-  if (
-    hasAnyNeedle(searchText, [
-      "eat",
-      "meal",
-      "restaurant",
-      "cafe",
-      "coffee",
-      "bakery",
-      "bar",
-      "food",
-      "pizza",
-      "souvlaki",
-      "snack",
-    ])
-  ) {
-    return "meal";
-  }
-  if (
-    hasAnyNeedle(searchText, [
-      "expense",
-      "fuel",
-      "transport",
-      "taxi",
-      "hotel",
-      "travel",
-      "business",
-    ])
-  ) {
-    return "expenses";
-  }
-  return "rewards";
+  return resolveMerchantCategorization(properties).networkCategoryId;
 }
 
 export function resolveMerchantCategory(merchant: MerchantFeature): "meal" | "gyms" | "expenses" | "rewards" {

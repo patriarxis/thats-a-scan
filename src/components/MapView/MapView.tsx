@@ -132,12 +132,11 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
       const previewSource = map.getSource(PREVIEW_SOURCE_ID) as GeoJSONSource | undefined;
       const alwaysKeep = new Set<string>(highlightedPartnerIds);
-      if (selectedPartnerId) alwaysKeep.add(selectedPartnerId);
       const nextData = buildMerchantsFeatureCollection(map, items, alwaysKeep);
       source?.setData(nextData);
       previewSource?.setData(nextData);
     },
-    [highlightedPartnerIds, selectedPartnerId],
+    [highlightedPartnerIds],
   );
 
   useImperativeHandle(ref, () => ({

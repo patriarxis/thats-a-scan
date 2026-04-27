@@ -1,5 +1,6 @@
 export interface ITranslations {
   common: {
+    [key: string]: string;
     searchPlaceholder: string;
     searchAria: string;
     results: string;

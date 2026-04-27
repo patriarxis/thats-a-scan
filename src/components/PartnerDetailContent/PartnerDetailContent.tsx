@@ -18,6 +18,10 @@ import { Icon } from "@/components/ui";
 import { RichText } from "../RichText";
 import styles from "./PartnerDetailContent.module.scss";
 import { ICONS, LOCALE } from "@/enums";
+import flexoneLogo from "@/assets/products/flexone-logo.webp";
+import fitpassLogo from "@/assets/products/fitpass-logo.svg";
+import upExpenseLogo from "@/assets/products/up-expense-logo.svg";
+import upGiftLogo from "@/assets/products/up-gift-logo.svg";
 
 interface MerchantDetailContentProps extends MerchantDetailSheetProps {
   className?: string;
@@ -32,9 +36,34 @@ type MerchantTag = {
 type ProductLogo = {
   id: string;
   label: string;
-  initials: string;
+  src: string;
   type: string;
 };
+
+type ProductLogoAsset = string | { src: string };
+
+const getProductLogoSrc = (asset: ProductLogoAsset) =>
+  typeof asset === "string" ? asset : asset.src;
+
+const PRODUCT_LOGO_SOURCES: Partial<Record<string, string>> = {
+  flexone: getProductLogoSrc(flexoneLogo),
+  fitpass: getProductLogoSrc(fitpassLogo),
+  "up-expense": getProductLogoSrc(upExpenseLogo),
+  "up-gift": getProductLogoSrc(upGiftLogo),
+};
+
+const PRODUCT_LOGO_PRIORITY = [
+  "flexone",
+  "go-for-eat",
+  "up-gift",
+  "fitpass",
+  "up-expense",
+  "cheque-dejeuner",
+] as const;
+
+const PRODUCT_LOGO_PRIORITY_INDEX: ReadonlyMap<string, number> = new Map(
+  PRODUCT_LOGO_PRIORITY.map((productId, index) => [productId, index]),
+);
 
 export const MerchantDetailContent = ({
   partner,
@@ -214,37 +243,37 @@ export const MerchantDetailContent = ({
       });
     }
 
-    acceptedProducts.forEach((productId) => {
+    [...acceptedProducts].sort((a, b) => {
+      const aPriority = PRODUCT_LOGO_PRIORITY_INDEX.get(a) ?? Number.MAX_SAFE_INTEGER;
+      const bPriority = PRODUCT_LOGO_PRIORITY_INDEX.get(b) ?? Number.MAX_SAFE_INTEGER;
+
+      return aPriority - bPriority;
+    }).forEach((productId) => {
+      const src = PRODUCT_LOGO_SOURCES[productId];
+      if (!src) return;
+
       let label = productId;
-      let initials = productId.substring(0, 1).toUpperCase();
 
       if (productId === "flexone") {
         label = labels.flexone;
-        initials = "F1";
       } else if (productId === "fitpass") {
         label = labels.fitpass;
-        initials = "FP";
       } else if (productId === "up-expense") {
         label = labels.upExpense;
-        initials = "EX";
       } else if (productId === "go-for-eat") {
         label = "go for EAT";
-        initials = "EAT";
       } else if (productId === "cheque-dejeuner") {
         label = "Chèque Déjeuner";
-        initials = "CD";
       } else if (productId === "up-meal") {
         label = labels.upMeal;
-        initials = "M";
       } else if (productId === "up-gift") {
         label = labels.upGift;
-        initials = "G";
       }
 
       logoItems.push({
         id: productId,
         label,
-        initials,
+        src,
         type: productId.replace(/\s+/g, "-"),
       });
     });
@@ -282,15 +311,21 @@ export const MerchantDetailContent = ({
             )}
             {productLogos.length > 0 && (
               <div className={styles.productStack}>
-                {productLogos.map((logo) => (
+                {productLogos.map((logo, index) => (
                   <div
                     key={logo.id}
                     className={`${styles.productLogo} ${styles[logo.type]}`}
                     title={logo.label}
+                    style={{
+                      "--product-logo-z-index": productLogos.length - index,
+                    } as React.CSSProperties}
                   >
-                    <span className={styles.productPlaceholder}>
-                      {logo.initials}
-                    </span>
+                    <img
+                      src={logo.src}
+                      alt=""
+                      aria-hidden="true"
+                      className={styles.productLogoImg}
+                    />
                   </div>
                 ))}
               </div>

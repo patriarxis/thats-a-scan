@@ -94,19 +94,19 @@
 }
 
 .productLogo {
-  width: 20px;
-  height: 20px;
+  width: 1.5rem;
+  height: 1.5rem;
   border-radius: $border-radius-full;
   background: $neutral-4;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid $neutral-2;
-  margin-left: -6px;
+  border: 1px solid $neutral-2;
+  margin-left: -0.4rem;
   transition: all $transition-normal;
-  cursor: help;
   position: relative;
-  z-index: 1;
+  z-index: var(--product-logo-z-index, 1);
+  overflow: hidden;
 
   &:first-child {
     margin-left: 0;
@@ -119,11 +119,13 @@
   }
 }
 
-.productPlaceholder {
-  font-size: 8px;
-  font-weight: $font-weight-bold;
-  color: $white;
-  letter-spacing: -0.5px;
+.productLogoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: $border-radius-full;
+  border: 1px solid $white-05;
 }
 
 .controls {

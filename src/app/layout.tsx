@@ -62,20 +62,9 @@ export const metadata: Metadata = {
   metadataBase: siteUrl,
   title: "Up Hellas | Map",
   description: "Interactive map of all partner merchants by Up Hellas.",
-  alternates: { canonical: "/" },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-snippet": -1,
-      "max-image-preview": "large",
-      "max-video-preview": -1,
-    },
-  },
   openGraph: {
     type: "website",
+    url: "/",
     title: "Up Hellas | Map",
     description: "Interactive map of all partner merchants by Up Hellas.",
     siteName: "Up Hellas Map",

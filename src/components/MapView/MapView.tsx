@@ -11,7 +11,6 @@ import {
 } from "@/types";
 import { useUserLocation, useViewportStoreQuery } from "@/lib/useMap";
 import { ensureMerchantMapLayers } from "./ensureMerchantMapLayers";
-import { loadHeatmapData } from "./heatmapData";
 import { buildMerchantsFeatureCollection } from "./merchantMapData";
 import {
   ACTIVE_PIN_QUICK_ZOOM,
@@ -19,8 +18,6 @@ import {
   ATHENS_INITIAL_ZOOM,
   DOT_LAYER_ID,
   GREECE_MAX_BOUNDS,
-  HEATMAP_LAYER_ID,
-  HEATMAP_SOURCE_ID,
   HIGHLIGHT_LAYER_ID,
   LAYER_ID,
   PREVIEW_SOURCE_ID,
@@ -44,9 +41,6 @@ type MapViewProps = {
   onMapClick?: () => void;
 };
 
-const HEATMAP_VISIBLE_MAX_ZOOM = 12;
-const PIN_PREVIEW_VISIBLE_MIN_ZOOM = 11;
-
 export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   {
     className,
@@ -68,7 +62,6 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   const onVisiblePartnersChangeRef = useRef(onVisiblePartnersChange);
   const onPartnerSelectRef = useRef(onPartnerSelect);
   const onMapClickRef = useRef(onMapClick);
-  const heatmapAppliedRef = useRef(false);
   const latestViewportStateRef = useRef({
     partners: [] as PartnerFeature[],
     loading: true,
@@ -78,19 +71,12 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   });
   const [mapReady, setMapReady] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
-  const [heatmapReady, setHeatmapReady] = useState(false);
-  const [isHeatmapZoom, setIsHeatmapZoom] = useState(true);
-  const [isPinPreviewZoom, setIsPinPreviewZoom] = useState(false);
   const userLocation = useUserLocation();
   const { merchants: partners, loading, updating, viewportTooWide, error } = useViewportStoreQuery(
     mapRef,
     userLocation,
     mapReady,
   );
-
-  const showHeatmap = isHeatmapZoom && !selectedPartnerId;
-  const heatmapVisible = showHeatmap && heatmapReady;
-  const showPinsWithHeatmap = heatmapVisible && isPinPreviewZoom;
 
   useEffect(() => {
     setIsLargeScreen(window.innerWidth > 1024);
@@ -333,25 +319,6 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return;
-
-    const syncHeatmapZoom = () => {
-      const zoom = map.getZoom();
-      setIsHeatmapZoom(zoom < HEATMAP_VISIBLE_MAX_ZOOM);
-      setIsPinPreviewZoom(zoom >= PIN_PREVIEW_VISIBLE_MIN_ZOOM);
-    };
-
-    syncHeatmapZoom();
-    map.on("zoom", syncHeatmapZoom);
-    map.on("zoomend", syncHeatmapZoom);
-    return () => {
-      map.off("zoom", syncHeatmapZoom);
-      map.off("zoomend", syncHeatmapZoom);
-    };
-  }, [mapReady]);
-
-  useEffect(() => {
-    const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
     const latest = latestViewportStateRef.current;
     const nextPartners = latest.partners.filter((partner) =>
@@ -364,88 +331,18 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     const map = mapRef.current;
     if (!map) return;
 
-    if (heatmapVisible) {
-      if (map.getLayer(HEATMAP_LAYER_ID)) map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", "visible");
-      if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", showPinsWithHeatmap ? "visible" : "none");
-      if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", showPinsWithHeatmap ? "visible" : "none");
-      if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", showPinsWithHeatmap ? "visible" : "none");
-      if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "none");
-    } else if (!viewportTooWide) {
-      if (map.getLayer(HEATMAP_LAYER_ID)) map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", "none");
-      if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", "visible");
-      if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", "visible");
-      if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "visible");
-      if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "visible");
-    } else if (viewportTooWide && !selectedPartnerId) {
-      if (map.getLayer(HEATMAP_LAYER_ID)) map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", "none");
+    if (!selectedPartnerId) {
       if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", "visible");
       if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", "visible");
       if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "visible");
       if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "none");
     } else {
-      if (map.getLayer(HEATMAP_LAYER_ID)) map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", "none");
       if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", "none");
       if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", "none");
       if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "none");
       if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "visible");
     }
-  }, [heatmapVisible, selectedPartnerId, showPinsWithHeatmap, viewportTooWide]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-
-    let cancelled = false;
-
-    const applyHeatmap = async () => {
-      try {
-        const data = await loadHeatmapData();
-        if (cancelled || heatmapAppliedRef.current) return;
-        let source = map.getSource(HEATMAP_SOURCE_ID) as GeoJSONSource | undefined;
-        if (!source && map.isStyleLoaded()) {
-          ensureMerchantMapLayers(map, partnersRef.current);
-          source = map.getSource(HEATMAP_SOURCE_ID) as GeoJSONSource | undefined;
-        }
-        if (!source) return;
-        source.setData(data);
-        heatmapAppliedRef.current = true;
-        setHeatmapReady(true);
-      } catch (error) {
-        console.error("Failed to load heatmap data:", error);
-      }
-    };
-
-    const applyWhenStyleIsReady = () => {
-      void applyHeatmap();
-    };
-
-    if (map.isStyleLoaded()) applyWhenStyleIsReady();
-    else map.once("load", applyWhenStyleIsReady);
-
-    return () => {
-      cancelled = true;
-      map.off("load", applyWhenStyleIsReady);
-    };
-  }, [mapReady]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-
-    if (map.getLayer(HEATMAP_LAYER_ID)) {
-      map.setPaintProperty(HEATMAP_LAYER_ID, "heatmap-radius", [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        4,
-        isLargeScreen ? 25 : 15,
-        8,
-        isLargeScreen ? 40 : 25,
-        12,
-        isLargeScreen ? 60 : 40,
-      ]);
-    }
-  }, [isLargeScreen, mapReady]);
+  }, [selectedPartnerId, viewportTooWide]);
 
   useEffect(() => {
     const map = mapRef.current;

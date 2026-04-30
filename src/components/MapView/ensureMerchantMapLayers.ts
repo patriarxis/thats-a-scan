@@ -3,8 +3,6 @@ import type { PartnerFeature } from "@/types";
 import {
   DETAILED_MARKER_MIN_ZOOM,
   DOT_LAYER_ID,
-  HEATMAP_LAYER_ID,
-  HEATMAP_SOURCE_ID,
   HIGHLIGHT_LAYER_ID,
   LAYER_ID,
   MARKER_ICON_DEFAULT_ID,
@@ -30,91 +28,7 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
     });
   }
 
-  if (!map.getSource(HEATMAP_SOURCE_ID)) {
-    map.addSource(HEATMAP_SOURCE_ID, {
-      type: "geojson",
-      data: { type: "FeatureCollection", features: [] },
-      buffer: 0,
-    });
-  }
-
   ensureMarkerIcons(map, partnersForIcons);
-
-  if (!map.getLayer(HEATMAP_LAYER_ID)) {
-    map.addLayer({
-      id: HEATMAP_LAYER_ID,
-      type: "heatmap",
-      source: HEATMAP_SOURCE_ID,
-      maxzoom: 12,
-      paint: {
-        "heatmap-weight": [
-          "interpolate",
-          ["linear"],
-          ["get", "count"],
-          0,
-          0,
-          1,
-          0.1,
-          10,
-          0.5,
-          50,
-          1,
-        ],
-        "heatmap-intensity": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          5,
-          0.7,
-          8,
-          1.1,
-          10,
-          1.4,
-        ],
-        "heatmap-radius": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          4,
-          window.innerWidth > 1024 ? 25 : 15,
-          8,
-          window.innerWidth > 1024 ? 40 : 25,
-          12,
-          window.innerWidth > 1024 ? 60 : 40,
-        ],
-        "heatmap-opacity": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          5,
-          0.65,
-          8,
-          0.55,
-          10.5,
-          0.3,
-          11,
-          0.22,
-          12,
-          0,
-        ],
-        "heatmap-color": [
-          "interpolate",
-          ["linear"],
-          ["heatmap-density"],
-          0,
-          "rgba(0,0,0,0)",
-          0.1,
-          "rgba(253, 186, 116, 0.15)",
-          0.35,
-          "rgba(251, 146, 60, 0.35)",
-          0.7,
-          "rgba(249, 115, 22, 0.6)",
-          1,
-          "rgba(255, 255, 255, 0.8)",
-        ],
-      },
-    });
-  }
 
   if (!map.getLayer(HIGHLIGHT_LAYER_ID)) {
     map.addLayer({

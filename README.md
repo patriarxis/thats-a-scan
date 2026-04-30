@@ -35,13 +35,6 @@ npm install
 NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_public_token_here
 ```
 
-For the scheduled heatmap precompute flow in production, also configure:
-
-```bash
-BLOB_READ_WRITE_TOKEN=your_vercel_blob_read_write_token
-CRON_SECRET=your_private_cron_secret
-```
-
 3. Start the dev server:
 
 ```bash
@@ -62,10 +55,6 @@ POST https://merchants-map.uphellas.gr/geojson/search
 ```
 
 The request body contains a bounding box (`north_west` / `south_east`), so the backend only returns stores inside the current viewport.
-
-### Heatmap precompute
-
-The public `/api/heatmap` route serves a precomputed GeoJSON heatmap from Vercel Blob when available. Vercel Cron calls `/api/cron/heatmap` monthly, protected by `CRON_SECRET`, to regenerate the aggregated heatmap and upload `heatmap.geojson` to Blob. If Blob is not configured or empty, `/api/heatmap` can still generate the heatmap on demand as a fallback.
 
 ### Customization
 

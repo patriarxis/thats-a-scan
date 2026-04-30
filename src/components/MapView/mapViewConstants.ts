@@ -9,12 +9,10 @@ export const GREECE_MAX_BOUNDS: [[number, number], [number, number]] = [
 
 export const SOURCE_ID = "merchants-source";
 export const PREVIEW_SOURCE_ID = "merchants-preview-source";
-export const HEATMAP_SOURCE_ID = "merchants-heatmap-source";
 export const LAYER_ID = "merchants-markers";
 export const DOT_LAYER_ID = "merchants-markers-dots";
 export const SELECTED_LAYER_ID = "merchants-markers-selected";
 export const HIGHLIGHT_LAYER_ID = "merchants-highlight";
-export const HEATMAP_LAYER_ID = "merchants-heatmap";
 
 export const MARKER_ICON_MEAL_ID = "merchant-marker-meal";
 export const MARKER_ICON_REWARDS_ID = "merchant-marker-rewards";

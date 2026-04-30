@@ -20,8 +20,10 @@ import styles from "./PartnerDetailContent.module.scss";
 import { ICONS, LOCALE } from "@/enums";
 import flexoneLogo from "@/assets/products/flexone-logo.webp";
 import fitpassLogo from "@/assets/products/fitpass-logo.svg";
+import goForEatLogo from "@/assets/products/go-for-eat-logo.svg";
 import upExpenseLogo from "@/assets/products/up-expense-logo.svg";
 import upGiftLogo from "@/assets/products/up-gift-logo.svg";
+import chequeDejeunerLogo from "@/assets/products/cheque-dejeuner-logo.svg";
 
 interface MerchantDetailContentProps extends MerchantDetailSheetProps {
   className?: string;
@@ -48,8 +50,10 @@ const getProductLogoSrc = (asset: ProductLogoAsset) =>
 const PRODUCT_LOGO_SOURCES: Partial<Record<string, string>> = {
   flexone: getProductLogoSrc(flexoneLogo),
   fitpass: getProductLogoSrc(fitpassLogo),
+  "go-for-eat": getProductLogoSrc(goForEatLogo),
   "up-expense": getProductLogoSrc(upExpenseLogo),
   "up-gift": getProductLogoSrc(upGiftLogo),
+  "cheque-dejeuner": getProductLogoSrc(chequeDejeunerLogo),
 };
 
 const PRODUCT_LOGO_PRIORITY = [

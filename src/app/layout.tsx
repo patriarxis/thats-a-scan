@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { headers } from "next/headers";
 import "./globals.scss";
 
 const DEFAULT_SITE_URL = "https://map.uphellas.gr";
@@ -89,13 +90,16 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
+  const requestHeaders = await headers();
+  const locale = requestHeaders.get("x-locale") === "en" ? "en" : "el";
+
   return (
-    <html lang="el" className={linotte.variable}>
+    <html lang={locale} className={linotte.variable}>
       <body>{children}</body>
     </html>
   );

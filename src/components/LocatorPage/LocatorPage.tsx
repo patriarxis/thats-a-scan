@@ -23,6 +23,11 @@ import {
   searchMerchantSuggestions,
 } from "@/lib/merchantSearchIndex";
 import {
+  applyLocalePrefix,
+  detectLocaleFromPath,
+  stripLocalePrefix,
+} from "@/lib/i18n/config";
+import {
   findPopularCategoriesForQuery,
   getPopularSearchCategories,
   merchantMatchesPopularCategory,
@@ -76,7 +81,8 @@ const parseSelectionFromLocation = (): UrlSelectionState => {
     return { storeId: null, lat: Number.NaN, lng: Number.NaN };
   }
   const url = new URL(window.location.href);
-  const pathMatch = url.pathname.match(/^\/store\/([^/]+)$/);
+  const localizedPath = stripLocalePrefix(url.pathname);
+  const pathMatch = localizedPath.match(/^\/store\/([^/]+)$/);
   const storeIdFromPath = pathMatch?.[1] ? decodeURIComponent(pathMatch[1]) : null;
   const storeId = storeIdFromPath ?? url.searchParams.get("store");
   const lat = Number(url.searchParams.get("lat"));
@@ -232,8 +238,11 @@ const LocatorPageContent = () => {
   const syncSelectionInUrl = useCallback(
     (partner: PartnerFeature | null, historyMode: "push" | "replace" = "replace") => {
       const currentUrl = new URL(window.location.href);
+      const localeFromPath = detectLocaleFromPath(currentUrl.pathname);
+      const activeLocale = localeFromPath ?? locale;
       const nextParams = new URLSearchParams(currentUrl.searchParams.toString());
-      let nextPathname = "/";
+      const localeAwareRootPath = applyLocalePrefix("/", activeLocale);
+      let nextPathname = localeAwareRootPath;
       if (!partner) {
         nextParams.delete("store");
         nextParams.delete("lat");
@@ -244,7 +253,10 @@ const LocatorPageContent = () => {
         nextParams.set("lat", String(lat));
         nextParams.set("lng", String(lng));
         nextParams.delete("store");
-        nextPathname = `/store/${encodeURIComponent(partnerId)}`;
+        nextPathname = applyLocalePrefix(
+          `/store/${encodeURIComponent(partnerId)}`,
+          activeLocale,
+        );
       }
 
       const nextQuery = nextParams.toString();
@@ -256,7 +268,7 @@ const LocatorPageContent = () => {
       }
       setUrlSelection(parseSelectionFromLocation());
     },
-    [],
+    [locale],
   );
 
   useEffect(() => {

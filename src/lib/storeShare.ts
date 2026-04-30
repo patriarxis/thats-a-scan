@@ -14,12 +14,19 @@ export const parseCoordinate = (value?: string): number | null => {
   return Number.isFinite(num) ? num : null;
 };
 
-export const buildStoreUrl = (storeId: string, lat?: string, lng?: string): string => {
+export const buildStoreUrl = (
+  storeId: string,
+  lat?: string,
+  lng?: string,
+  locale: LOCALE = LOCALE.EL,
+): string => {
   const params = new URLSearchParams();
   if (lat) params.set("lat", lat);
   if (lng) params.set("lng", lng);
   const query = params.toString();
-  return query ? `/store/${encodeURIComponent(storeId)}?${query}` : `/store/${encodeURIComponent(storeId)}`;
+  const localePrefix = locale === LOCALE.EN ? "/en" : "";
+  const pathname = `${localePrefix}/store/${encodeURIComponent(storeId)}`;
+  return query ? `${pathname}?${query}` : pathname;
 };
 
 export const buildStoreOgImageUrl = (

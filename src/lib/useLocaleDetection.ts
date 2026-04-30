@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   detectLocaleFromPath,
   detectLocaleFromParam,
+  applyLocalePrefix,
   getValidLocale,
   DEFAULT_LOCALE
 } from "./i18n/config";
@@ -14,33 +15,30 @@ export function useLocaleDetection() {
   const [isReady, setIsReady] = useState(false);
 
   const setLocale = (newLocale: ILocale) => {
-    setLocaleState(newLocale);
-    localStorage.setItem("locale", newLocale);
+    const nextLocale = getValidLocale(newLocale);
+    setLocaleState(nextLocale);
+    localStorage.setItem("locale", nextLocale);
+    document.cookie = `locale=${nextLocale}; Path=/; Max-Age=31536000; SameSite=Lax`;
+
+    if (typeof window !== "undefined") {
+      const currentUrl = new URL(window.location.href);
+      const nextPathname = applyLocalePrefix(currentUrl.pathname, nextLocale);
+      const nextUrl = `${nextPathname}${currentUrl.search}${currentUrl.hash}`;
+      const currentPathWithQueryAndHash = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+      if (nextUrl !== currentPathWithQueryAndHash) {
+        window.history.replaceState(null, "", nextUrl);
+      }
+    }
   };
 
   useEffect(() => {
-    let detectedLocale: string | null = null;
-
     try {
-      detectedLocale = detectLocaleFromParam(window.location.href);
-
-      if (!detectedLocale) {
-        detectedLocale = detectLocaleFromPath(window.location.pathname);
-      }
-
-      if (!detectedLocale) {
-        detectedLocale = localStorage.getItem("locale");
-      }
-
-      if (!detectedLocale) {
-        const browserLang = navigator.languages?.[0] ?? navigator.language;
-        if (browserLang) {
-          detectedLocale = browserLang.toLowerCase().startsWith("el") ? "el" : "en";
-        }
-      }
-
-      const finalLocale = getValidLocale(detectedLocale);
+      const localeFromPath = detectLocaleFromPath(window.location.pathname);
+      const localeFromParam = detectLocaleFromParam(window.location.href);
+      const finalLocale = getValidLocale(localeFromPath ?? localeFromParam ?? DEFAULT_LOCALE);
       setLocaleState(finalLocale);
+      localStorage.setItem("locale", finalLocale);
+      document.cookie = `locale=${finalLocale}; Path=/; Max-Age=31536000; SameSite=Lax`;
     } catch {
       setLocaleState(DEFAULT_LOCALE);
     }

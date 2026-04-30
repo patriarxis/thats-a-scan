@@ -21,12 +21,30 @@ export function getValidLocale(locale: string | null | undefined): ILocale {
 }
 
 export function detectLocaleFromPath(path: string): ILocale | null {
-  const match = path.match(/\/([a-z]{2})(?:\/|$)/i);
+  const match = path.match(/^\/([a-z]{2})(?:\/|$)/i);
   if (match) {
     const locale = match[1].toLowerCase();
     return isValidLocale(locale) ? locale : null;
   }
   return null;
+}
+
+export function stripLocalePrefix(path: string): string {
+  const locale = detectLocaleFromPath(path);
+  if (!locale) return path || "/";
+  const withoutPrefix = path.replace(new RegExp(`^/${locale}(?=/|$)`, "i"), "");
+  return withoutPrefix || "/";
+}
+
+export function applyLocalePrefix(path: string, locale: ILocale): string {
+  const normalizedPath = stripLocalePrefix(path || "/");
+  if (locale === DEFAULT_LOCALE) {
+    return normalizedPath || "/";
+  }
+  if (normalizedPath === "/") {
+    return `/${locale}`;
+  }
+  return `/${locale}${normalizedPath}`;
 }
 
 export function detectLocaleFromParam(url: string): ILocale | null {

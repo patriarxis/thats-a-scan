@@ -18,7 +18,6 @@ import {
   ATHENS_INITIAL_ZOOM,
   DOT_LAYER_ID,
   GREECE_MAX_BOUNDS,
-  HIGHLIGHT_LAYER_ID,
   LAYER_ID,
   PREVIEW_SOURCE_ID,
   SELECTED_LAYER_ID,
@@ -331,16 +330,14 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     const map = mapRef.current;
     if (!map) return;
 
-    if (!selectedPartnerId) {
-      if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", "visible");
-      if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", "visible");
-      if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "visible");
-      if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "none");
-    } else {
-      if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", "none");
-      if (map.getLayer(HIGHLIGHT_LAYER_ID)) map.setLayoutProperty(HIGHLIGHT_LAYER_ID, "visibility", "none");
-      if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "none");
-      if (map.getLayer(SELECTED_LAYER_ID)) map.setLayoutProperty(SELECTED_LAYER_ID, "visibility", "visible");
+    if (map.getLayer(DOT_LAYER_ID)) map.setLayoutProperty(DOT_LAYER_ID, "visibility", "visible");
+    if (map.getLayer(LAYER_ID)) map.setLayoutProperty(LAYER_ID, "visibility", "visible");
+    if (map.getLayer(SELECTED_LAYER_ID)) {
+      map.setLayoutProperty(
+        SELECTED_LAYER_ID,
+        "visibility",
+        selectedPartnerId ? "visible" : "none",
+      );
     }
   }, [selectedPartnerId, viewportTooWide]);
 
@@ -377,15 +374,8 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.getLayer(HIGHLIGHT_LAYER_ID) || !map.getLayer(SELECTED_LAYER_ID) || !map.getLayer(LAYER_ID)) return;
+    if (!map || !map.getLayer(SELECTED_LAYER_ID) || !map.getLayer(LAYER_ID)) return;
     const selectedId = selectedPartnerId ?? null;
-    const ringIds = Array.from(new Set(highlightedPartnerIds));
-    map.setFilter(
-      HIGHLIGHT_LAYER_ID,
-      ringIds.length > 0
-        ? ["in", ["get", "__merchant_id"], ["literal", ringIds]]
-        : ["==", "__merchant_id", "__none__"],
-    );
     map.setFilter(
       SELECTED_LAYER_ID,
       selectedId

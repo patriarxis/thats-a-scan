@@ -3,7 +3,6 @@ import type { PartnerFeature } from "@/types";
 import {
   DETAILED_MARKER_MIN_ZOOM,
   DOT_LAYER_ID,
-  HIGHLIGHT_LAYER_ID,
   LAYER_ID,
   MARKER_ICON_DEFAULT_ID,
   PREVIEW_SOURCE_ID,
@@ -29,21 +28,6 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
   }
 
   ensureMarkerIcons(map, partnersForIcons);
-
-  if (!map.getLayer(HIGHLIGHT_LAYER_ID)) {
-    map.addLayer({
-      id: HIGHLIGHT_LAYER_ID,
-      type: "circle",
-      source: SOURCE_ID,
-      filter: ["==", "__merchant_id", "__none__"],
-      paint: {
-        "circle-radius": 24,
-        "circle-color": "rgba(15,23,42,0.24)",
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "rgba(226,232,240,0.65)",
-      },
-    });
-  }
 
   if (!map.getLayer(LAYER_ID)) {
     map.addLayer({
@@ -95,7 +79,4 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
     });
   }
 
-  if (map.getLayer(HIGHLIGHT_LAYER_ID) && map.getLayer(SELECTED_LAYER_ID)) {
-    map.moveLayer(HIGHLIGHT_LAYER_ID, SELECTED_LAYER_ID);
-  }
 };

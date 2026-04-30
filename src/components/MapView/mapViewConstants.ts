@@ -12,7 +12,6 @@ export const PREVIEW_SOURCE_ID = "merchants-preview-source";
 export const LAYER_ID = "merchants-markers";
 export const DOT_LAYER_ID = "merchants-markers-dots";
 export const SELECTED_LAYER_ID = "merchants-markers-selected";
-export const HIGHLIGHT_LAYER_ID = "merchants-highlight";
 
 export const MARKER_ICON_MEAL_ID = "merchant-marker-meal";
 export const MARKER_ICON_REWARDS_ID = "merchant-marker-rewards";

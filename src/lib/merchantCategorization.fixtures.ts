@@ -13,14 +13,14 @@ type MerchantCategorizationFixture = {
 
 export const MERCHANT_CATEGORIZATION_FIXTURES: MerchantCategorizationFixture[] = [
   {
-    name: "Pharmacy MCC stays pharmacy, not broad health",
+    name: "Pharmacy MCC falls back to shopping",
     properties: {
       ID: "fixture-pharmacy",
       BrandNameEN: "Central Pharmacy",
       MCCCategoryEN: "Pharmacy",
       AcceptedProducts: "FlexOne",
     },
-    expectedPrimaryCategoryId: "pharmacy",
+    expectedPrimaryCategoryId: "shopping",
     expectedNetworkCategoryId: "rewards",
   },
   {
@@ -35,14 +35,14 @@ export const MERCHANT_CATEGORIZATION_FIXTURES: MerchantCategorizationFixture[] =
     expectedNetworkCategoryId: "gyms",
   },
   {
-    name: "Fuel station maps to expenses",
+    name: "Fuel station falls back to shopping",
     properties: {
       ID: "fixture-fuel",
       BrandNameEN: "Fuel Station",
       MCCCategoryEN: "Petrol and gas station",
       AcceptedProducts: "Up Expense",
     },
-    expectedPrimaryCategoryId: "fuel",
+    expectedPrimaryCategoryId: "shopping",
     expectedNetworkCategoryId: "expenses",
   },
   {

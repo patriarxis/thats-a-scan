@@ -8,23 +8,11 @@ export type MerchantCategoryId =
   | "supermarket"
   | "restaurant"
   | "coffee"
-  | "pharmacy"
   | "bakery"
   | "gym"
-  | "wellness"
-  | "mobility"
-  | "learning"
-  | "childcare"
-  | "fuel"
-  | "entertainment"
-  | "office"
-  | "culture"
-  | "health"
-  | "safety"
   | "shopping"
   | "bars"
-  | "hotels"
-  | "services";
+  | "hotels";
 
 type WeightedTerms = {
   mcc?: string[];
@@ -62,11 +50,6 @@ const MERCHANT_CATEGORY_TRANSLATION_KEYS: Record<
     pluralLabel: "merchantCategoryCoffeePlural",
     helperText: "merchantCategoryCoffeeHelper",
   },
-  pharmacy: {
-    label: "merchantCategoryPharmacy",
-    pluralLabel: "merchantCategoryPharmacyPlural",
-    helperText: "merchantCategoryPharmacyHelper",
-  },
   bakery: {
     label: "merchantCategoryBakery",
     pluralLabel: "merchantCategoryBakeryPlural",
@@ -76,56 +59,6 @@ const MERCHANT_CATEGORY_TRANSLATION_KEYS: Record<
     label: "merchantCategoryGym",
     pluralLabel: "merchantCategoryGymPlural",
     helperText: "merchantCategoryGymHelper",
-  },
-  wellness: {
-    label: "merchantCategoryWellness",
-    pluralLabel: "merchantCategoryWellnessPlural",
-    helperText: "merchantCategoryWellnessHelper",
-  },
-  mobility: {
-    label: "merchantCategoryMobility",
-    pluralLabel: "merchantCategoryMobilityPlural",
-    helperText: "merchantCategoryMobilityHelper",
-  },
-  learning: {
-    label: "merchantCategoryLearning",
-    pluralLabel: "merchantCategoryLearningPlural",
-    helperText: "merchantCategoryLearningHelper",
-  },
-  childcare: {
-    label: "merchantCategoryChildcare",
-    pluralLabel: "merchantCategoryChildcarePlural",
-    helperText: "merchantCategoryChildcareHelper",
-  },
-  fuel: {
-    label: "merchantCategoryFuel",
-    pluralLabel: "merchantCategoryFuelPlural",
-    helperText: "merchantCategoryFuelHelper",
-  },
-  entertainment: {
-    label: "merchantCategoryEntertainment",
-    pluralLabel: "merchantCategoryEntertainmentPlural",
-    helperText: "merchantCategoryEntertainmentHelper",
-  },
-  office: {
-    label: "merchantCategoryOffice",
-    pluralLabel: "merchantCategoryOfficePlural",
-    helperText: "merchantCategoryOfficeHelper",
-  },
-  culture: {
-    label: "merchantCategoryCulture",
-    pluralLabel: "merchantCategoryCulturePlural",
-    helperText: "merchantCategoryCultureHelper",
-  },
-  health: {
-    label: "merchantCategoryHealth",
-    pluralLabel: "merchantCategoryHealthPlural",
-    helperText: "merchantCategoryHealthHelper",
-  },
-  safety: {
-    label: "merchantCategorySafety",
-    pluralLabel: "merchantCategorySafetyPlural",
-    helperText: "merchantCategorySafetyHelper",
   },
   shopping: {
     label: "merchantCategoryShopping",
@@ -141,11 +74,6 @@ const MERCHANT_CATEGORY_TRANSLATION_KEYS: Record<
     label: "merchantCategoryHotels",
     pluralLabel: "merchantCategoryHotelsPlural",
     helperText: "merchantCategoryHotelsHelper",
-  },
-  services: {
-    label: "merchantCategoryServices",
-    pluralLabel: "merchantCategoryServicesPlural",
-    helperText: "merchantCategoryServicesHelper",
   },
 };
 
@@ -205,16 +133,6 @@ export const MERCHANT_CATEGORY_DEFINITIONS: MerchantCategoryDefinition[] = [
     },
   },
   {
-    id: "pharmacy",
-    icon: ICONS.ASCLEPIUS,
-    networkCategoryId: "rewards",
-    aliases: ["pharmacy", "pharmacies", "drugstore", "health", "φαρμακειο", "φαρμακεια"],
-    terms: {
-      mcc: ["pharmacy", "pharmacies", "drugstore", "φαρμακ*"],
-      name: ["pharmacy", "drugstore", "φαρμακ*"],
-    },
-  },
-  {
     id: "bakery",
     icon: ICONS.COOKIE,
     networkCategoryId: "meal",
@@ -235,108 +153,6 @@ export const MERCHANT_CATEGORY_DEFINITIONS: MerchantCategoryDefinition[] = [
       product: ["fitpass"],
     },
     secondaryThreshold: 90,
-  },
-  {
-    id: "wellness",
-    icon: ICONS.FLOWER_LOTUS,
-    networkCategoryId: "rewards",
-    aliases: ["wellness", "spa", "beauty", "salon", "massage", "cosmetic", "ευεξια", "σπα", "ομορφια", "κομμωτηριο"],
-    terms: {
-      mcc: ["wellness", "spa", "beauty", "salon", "massage", "cosmetic", "ευεξ*", "ομορφ*", "κομμωτ*"],
-      name: ["wellness", "spa", "beauty", "salon", "massage", "cosmetic", "ευεξ*", "ομορφ*", "κομμωτ*"],
-      exclude: ["gym", "fitness"],
-    },
-  },
-  {
-    id: "mobility",
-    icon: ICONS.BUS,
-    networkCategoryId: "expenses",
-    aliases: ["mobility", "transport", "taxi", "bus", "scooter", "car rental", "rental", "μετακινηση", "μεταφορα", "ταξι"],
-    terms: {
-      mcc: ["mobility", "transport", "taxi", "bus", "scooter", "car rental", "rental", "μετακινη*", "μεταφορ*", "ταξι"],
-      name: ["taxi", "bus", "scooter", "car rental", "rental", "μετακινη*", "μεταφορ*", "ταξι"],
-    },
-  },
-  {
-    id: "learning",
-    icon: ICONS.BOOK_OPEN_TEXT,
-    networkCategoryId: "rewards",
-    aliases: ["learning", "education", "school", "course", "books", "bookstore", "εκπαιδευση", "σχολη", "βιβλια"],
-    terms: {
-      mcc: ["learning", "education", "school", "course", "bookstore", "books", "εκπαιδ*", "σχολ*", "βιβλ*"],
-      name: ["school", "course", "bookstore", "books", "εκπαιδ*", "σχολ*", "βιβλ*"],
-    },
-  },
-  {
-    id: "childcare",
-    icon: ICONS.CHILDCARE,
-    networkCategoryId: "rewards",
-    aliases: ["childcare", "kids", "children", "baby", "nursery", "toys", "παιδι", "παιδικα", "βρεφος", "παιχνιδια"],
-    terms: {
-      mcc: ["childcare", "kids", "children", "baby", "nursery", "toys", "παιδ*", "βρεφ*", "παιχνιδ*"],
-      name: ["kids", "children", "baby", "nursery", "toys", "παιδ*", "βρεφ*", "παιχνιδ*"],
-    },
-  },
-  {
-    id: "fuel",
-    icon: ICONS.GAS_PUMP,
-    networkCategoryId: "expenses",
-    aliases: ["fuel", "gas", "petrol", "gas station", "station", "καυσιμα", "βενζινη", "πρατηριο"],
-    terms: {
-      mcc: ["fuel", "petrol", "gas station", "gasoline", "καυσι*", "βενζιν*", "πρατηρ*"],
-      name: ["fuel", "petrol", "gas station", "gasoline", "καυσι*", "βενζιν*", "πρατηρ*"],
-    },
-  },
-  {
-    id: "entertainment",
-    icon: ICONS.POPCORN,
-    networkCategoryId: "rewards",
-    aliases: ["entertainment", "cinema", "movie", "games", "leisure", "bowling", "ψυχαγωγια", "σινεμα", "παιχνιδια"],
-    terms: {
-      mcc: ["entertainment", "cinema", "movie", "games", "leisure", "bowling", "ψυχαγωγ*", "σινεμα", "παιχνιδ*"],
-      name: ["cinema", "movie", "games", "bowling", "ψυχαγωγ*", "σινεμα", "παιχνιδ*"],
-    },
-  },
-  {
-    id: "office",
-    icon: ICONS.BRIEFCASE,
-    networkCategoryId: "expenses",
-    aliases: ["office", "business", "supplies", "stationery", "printing", "coworking", "γραφειο", "επιχειρηση", "χαρτικα"],
-    terms: {
-      mcc: ["office", "business", "supplies", "stationery", "printing", "coworking", "γραφει*", "επιχειρ*", "χαρτικ*"],
-      name: ["office", "supplies", "stationery", "printing", "coworking", "γραφει*", "χαρτικ*"],
-    },
-  },
-  {
-    id: "culture",
-    icon: ICONS.PALETTE,
-    networkCategoryId: "rewards",
-    aliases: ["culture", "museum", "art", "gallery", "theater", "theatre", "music", "πολιτισμος", "μουσειο", "τεχνη", "θεατρο"],
-    terms: {
-      mcc: ["culture", "museum", "art", "gallery", "theater", "theatre", "music", "πολιτισ*", "μουσει*", "τεχνη", "θεατρ*"],
-      name: ["museum", "gallery", "theater", "theatre", "music", "μουσει*", "τεχνη", "θεατρ*"],
-    },
-  },
-  {
-    id: "health",
-    icon: ICONS.FIRST_AID_KIT,
-    networkCategoryId: "rewards",
-    aliases: ["health", "medical", "doctor", "clinic", "diagnostic", "dentist", "υγεια", "γιατρος", "ιατρ", "κλινικη"],
-    terms: {
-      mcc: ["health", "medical", "doctor", "clinic", "diagnostic", "dentist", "υγεια", "ιατρ*", "γιατρ*", "κλινικ*"],
-      name: ["medical", "doctor", "clinic", "diagnostic", "dentist", "ιατρ*", "γιατρ*", "κλινικ*"],
-      exclude: ["pharmacy", "φαρμακ*"],
-    },
-  },
-  {
-    id: "safety",
-    icon: ICONS.SHIELD_CHECK,
-    networkCategoryId: "expenses",
-    aliases: ["safety", "security", "insurance", "protection", "locksmith", "ασφαλεια", "προστασια", "κλειδαρας"],
-    terms: {
-      mcc: ["safety", "security", "insurance", "protection", "locksmith", "ασφαλ*", "προστασ*", "κλειδαρ*"],
-      name: ["security", "insurance", "locksmith", "ασφαλ*", "προστασ*", "κλειδαρ*"],
-    },
   },
   {
     id: "shopping",
@@ -368,17 +184,6 @@ export const MERCHANT_CATEGORY_DEFINITIONS: MerchantCategoryDefinition[] = [
       mcc: ["hotel", "hostel", "accommodation", "lodging", "travel", "ξενοδοχ*", "διαμον*", "ταξιδ*"],
       name: ["hotel", "hostel", "ξενοδοχ*"],
     },
-  },
-  {
-    id: "services",
-    icon: ICONS.BUILDINGS,
-    networkCategoryId: "expenses",
-    aliases: ["service", "services", "repair", "cleaning", "local service", "υπηρεσια", "υπηρεσιες", "επισκευη"],
-    terms: {
-      mcc: ["service", "services", "repair", "cleaning", "local service", "υπηρεσ*", "επισκευ*"],
-      name: ["repair", "cleaning", "service", "υπηρεσ*", "επισκευ*"],
-    },
-    primaryThreshold: 75,
   },
 ];
 
@@ -523,7 +328,7 @@ const getFallbackCategoryId = (fields: ReturnType<typeof buildMerchantCategoryFi
   if (collectMatches(fields.products, ["go for eat", "cheque dejeuner", "chèque déjeuner"]).length > 0) {
     return "restaurant";
   }
-  if (collectMatches(fields.products, ["expense"]).length > 0) return "services";
+  if (collectMatches(fields.products, ["expense"]).length > 0) return "shopping";
   if (collectMatches(fields.products, ["gift", "flexone"]).length > 0) return "shopping";
   return "shopping";
 };

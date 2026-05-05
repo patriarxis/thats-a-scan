@@ -33,7 +33,7 @@ import {
   merchantMatchesPopularCategory,
   type PopularSearchCategoryId,
 } from "@/lib/searchCategories";
-import { PRODUCT_DEFINITIONS } from "@/lib/merchantFilters";
+import { NETWORK_FILTER_DEFINITIONS } from "@/lib/merchantFilters";
 import { useMerchantFilters } from "@/lib/useMerchantFilters";
 import {
   getPartnerId,
@@ -68,12 +68,12 @@ type UrlSelectionState = {
 
 type UrlSearchState = {
   query: string;
-  selectedProductIds: string[];
+  selectedNetworkIds: string[];
   cashbackOnly: boolean;
 };
 
-const PRODUCT_FILTER_ID_SET: ReadonlySet<string> = new Set(
-  PRODUCT_DEFINITIONS.map((item) => item.id),
+const NETWORK_FILTER_ID_SET: ReadonlySet<string> = new Set(
+  NETWORK_FILTER_DEFINITIONS.map((item) => item.id),
 );
 
 const parseSelectionFromLocation = (): UrlSelectionState => {
@@ -92,18 +92,18 @@ const parseSelectionFromLocation = (): UrlSelectionState => {
 
 const parseSearchStateFromLocation = (): UrlSearchState => {
   if (typeof window === "undefined") {
-    return { query: "", selectedProductIds: [], cashbackOnly: false };
+    return { query: "", selectedNetworkIds: [], cashbackOnly: false };
   }
   const url = new URL(window.location.href);
   const query = url.searchParams.get("q") ?? "";
-  const selectedProductIds = (url.searchParams.get("products") ?? "")
+  const selectedNetworkIds = (url.searchParams.get("products") ?? "")
     .split(",")
     .map((item) => item.trim())
-    .filter((item): item is string => Boolean(item) && PRODUCT_FILTER_ID_SET.has(item));
+    .filter((item): item is string => Boolean(item) && NETWORK_FILTER_ID_SET.has(item));
   const cashbackOnly = url.searchParams.get("cashback") === "1";
   return {
     query,
-    selectedProductIds: Array.from(new Set(selectedProductIds)),
+    selectedNetworkIds: Array.from(new Set(selectedNetworkIds)),
     cashbackOnly,
   };
 };
@@ -179,16 +179,16 @@ const LocatorPageContent = () => {
     [popularCategories],
   );
   const {
-    selectedProductIds,
-    setSelectedProductIds,
+    selectedNetworkIds,
+    setSelectedNetworkIds,
     cashbackOnly,
     isFiltersOpen,
     setIsFiltersOpen,
     setCashbackOnly,
-    productFilterOptions,
+    networkFilterOptions,
     merchantMatchesFilters,
     activeFilterCount,
-    toggleProduct,
+    toggleNetwork,
     clearAllFilters,
   } = useMerchantFilters(allKnownMerchants);
 
@@ -225,7 +225,7 @@ const LocatorPageContent = () => {
     const syncFromBrowserLocation = () => {
       const nextSearchState = parseSearchStateFromLocation();
       setQuery(nextSearchState.query);
-      setSelectedProductIds(nextSearchState.selectedProductIds);
+      setSelectedNetworkIds(nextSearchState.selectedNetworkIds);
       setCashbackOnly(nextSearchState.cashbackOnly);
       setActiveQuickCategoryId(null);
       setUrlSelection(parseSelectionFromLocation());
@@ -233,7 +233,7 @@ const LocatorPageContent = () => {
     syncFromBrowserLocation();
     window.addEventListener("popstate", syncFromBrowserLocation);
     return () => window.removeEventListener("popstate", syncFromBrowserLocation);
-  }, [setCashbackOnly, setSelectedProductIds]);
+  }, [setCashbackOnly, setSelectedNetworkIds]);
 
   const syncSelectionInUrl = useCallback(
     (partner: PartnerFeature | null, historyMode: "push" | "replace" = "replace") => {
@@ -282,8 +282,8 @@ const LocatorPageContent = () => {
       nextParams.delete("q");
     }
 
-    if (selectedProductIds.length > 0) {
-      nextParams.set("products", selectedProductIds.join(","));
+    if (selectedNetworkIds.length > 0) {
+      nextParams.set("products", selectedNetworkIds.join(","));
     } else {
       nextParams.delete("products");
     }
@@ -300,7 +300,7 @@ const LocatorPageContent = () => {
     if (nextUrl !== currentHref) {
       window.history.replaceState(null, "", nextUrl);
     }
-  }, [cashbackOnly, query, selectedProductIds]);
+  }, [cashbackOnly, query, selectedNetworkIds]);
 
   const focusPadding = useMemo(() => {
     if (!sidebarOpen) {
@@ -538,6 +538,7 @@ const LocatorPageContent = () => {
     description: t("description"),
     cashback: t("cashback"),
     flexone: t("flexone"),
+    goForEat: t("goForEat"),
     fitpass: t("fitpass"),
     upExpense: t("upExpense"),
     upMeal: t("upMeal"),
@@ -554,11 +555,11 @@ const LocatorPageContent = () => {
     cashbackOnlyLabel: t("cashbackOnly"),
     clearAllFiltersLabel: t("clearAllFilters"),
     noAvailableProductsLabel: t("noAvailableProducts"),
-    selectedProductIds,
-    productOptions: productFilterOptions,
+    selectedNetworkIds,
+    networkOptions: networkFilterOptions,
     cashbackOnly,
     onClose: closeFiltersToResults,
-    onToggleProduct: toggleProduct,
+    onToggleNetwork: toggleNetwork,
     onToggleCashback: () => setCashbackOnly((prev) => !prev),
     onClearAll: clearAllFilters,
   };

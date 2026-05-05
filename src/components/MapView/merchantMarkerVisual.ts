@@ -1,6 +1,6 @@
 import { ICONS } from "@/enums";
 import {
-  resolveMerchantProductIdsFromProperties,
+  resolveMerchantAcceptedProductIdsFromProperties,
 } from "@/lib/merchantFilters";
 import {
   getMerchantCategoryIcon,
@@ -95,12 +95,11 @@ const circleFillForMainColor = (mainHex: string): string => {
 
 const resolveMerchantProducts = (properties: Record<string, unknown>): ProductDotKey[] => {
   const products = new Set<ProductDotKey>();
-  for (const id of resolveMerchantProductIdsFromProperties(properties)) {
+  for (const id of resolveMerchantAcceptedProductIdsFromProperties(properties)) {
     if (id === "fitpass") products.add("fitpass");
     if (id === "flexone") products.add("flexone");
     if (id === "go-for-eat") products.add("go_for_eat");
     if (id === "up-gift") products.add("up_gift");
-    if (id === "up-expense") products.add("up_expense");
     if (id === "cheque-dejeuner") products.add("cheque_dejeuner");
   }
 

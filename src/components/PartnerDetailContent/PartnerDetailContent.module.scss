@@ -91,32 +91,22 @@
 .productStack {
   display: flex;
   align-items: center;
+  gap: $spacing-xs;
 }
 
 .productLogo {
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: $border-radius-full;
+  width: 3rem;
+  height: 3rem;
+  border-radius: $border-radius-sm;
   background: $neutral-4;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid $neutral-2;
-  margin-left: -0.4rem;
+  border: 1px solid $white-05;
   transition: all $transition-normal;
   position: relative;
   z-index: var(--product-logo-z-index, 1);
   overflow: hidden;
-
-  &:first-child {
-    margin-left: 0;
-  }
-
-  &:hover {
-    transform: translateY(-2px);
-    z-index: 999;
-    background: $neutral-5;
-  }
 }
 
 .productLogoImg {
@@ -124,8 +114,6 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: $border-radius-full;
-  border: 1px solid $white-05;
 }
 
 .actions {

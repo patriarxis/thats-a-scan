@@ -16,6 +16,7 @@ export type MerchantDetailSheetLabels = {
   description: string;
   cashback: string;
   flexone: string;
+  goForEat: string;
   fitpass: string;
   upExpense: string;
   upMeal: string;

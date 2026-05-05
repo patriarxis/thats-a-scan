@@ -1,23 +1,35 @@
 import type { MerchantFeature } from "@/types";
-import { resolveMerchantNetworkCategoryFromProperties } from "@/lib/merchantCategorization";
+import {
+  resolveMerchantNetworkCategoryFromProperties,
+} from "@/lib/merchantCategorization";
 
-export type ProductFilterOption = { id: string; label: string };
-export const PRODUCT_DEFINITIONS = [
-  { id: "flexone", label: "FlexOne" },
+export type MerchantFilterOption = { id: string; label: string };
+export type NetworkFilterOption = MerchantFilterOption;
+
+export const MERCHANT_FILTER_DEFINITIONS = [
+  { id: "meal", label: "FlexOne - Meal" },
+  { id: "mealPlus", label: "FlexOne - Meal+ / go for EAT" },
   { id: "up-gift", label: "Up Gift" },
-  { id: "fitpass", label: "Fitpass" },
-  { id: "up-expense", label: "Up Expense" },
   { id: "cheque-dejeuner", label: "Chèque Déjeuner" },
-  { id: "go-for-eat", label: "go for EAT" },
+  { id: "fitpass", label: "Fitpass" },
 ] as const;
+export const NETWORK_FILTER_DEFINITIONS = MERCHANT_FILTER_DEFINITIONS;
 
-const MAIN_API_MEAL_PRODUCT_IDS = [
+type AcceptedProductId =
+  | "flexone"
+  | "go-for-eat"
+  | "up-gift"
+  | "fitpass"
+  | "cheque-dejeuner";
+
+type MerchantFilterId = (typeof MERCHANT_FILTER_DEFINITIONS)[number]["id"];
+
+const MAIN_API_MEAL_PRODUCT_IDS: AcceptedProductId[] = [
   "flexone",
-  "up-gift",
-  "up-expense",
-  "cheque-dejeuner",
   "go-for-eat",
-] as const;
+  "up-gift",
+  "cheque-dejeuner",
+];
 
 function normalizeText(value: unknown): string {
   if (typeof value === "string") return value.toLowerCase();
@@ -50,22 +62,29 @@ export function parseAcceptedProducts(value: unknown): string[] {
 export function resolveMerchantProductIdsFromProperties(
   properties: Record<string, unknown>,
 ): string[] {
+  return resolveMerchantAcceptedProductIdsFromProperties(properties);
+}
+
+export function resolveMerchantAcceptedProductIdsFromProperties(
+  properties: Record<string, unknown>,
+): AcceptedProductId[] {
   const source = normalizeText(properties.__source);
   const category = resolveMerchantCategoryFromProperties(properties);
+  const products = new Set<AcceptedProductId>();
 
   if (source === "up_hellas") {
-    return [...MAIN_API_MEAL_PRODUCT_IDS];
+    for (const productId of MAIN_API_MEAL_PRODUCT_IDS) {
+      products.add(productId);
+    }
   }
 
   const acceptedProducts = parseAcceptedProducts(properties.AcceptedProducts)
     .map((product) => normalizeText(product));
-  const products = new Set<string>();
 
   for (const product of acceptedProducts) {
     if (product.includes("fitpass")) products.add("fitpass");
     if (product.includes("flexone")) products.add("flexone");
     if (product.includes("gift")) products.add("up-gift");
-    if (product.includes("expense")) products.add("up-expense");
     if (product.includes("chèque") || product.includes("cheque")) {
       products.add("cheque-dejeuner");
     }
@@ -75,29 +94,73 @@ export function resolveMerchantProductIdsFromProperties(
   }
 
   if (category === "meal") {
+    products.add("flexone");
     products.add("go-for-eat");
     products.add("cheque-dejeuner");
-    products.add("flexone");
     products.add("up-gift");
-    products.add("up-expense");
   }
 
   if (category === "gyms") {
     products.add("fitpass");
   }
 
-  return [...products];
+  return Array.from(products);
+}
+
+export function resolveMerchantNetworkIdsFromProperties(
+  properties: Record<string, unknown>,
+): MerchantFilterId[] {
+  const source = normalizeText(properties.__source);
+  const category = resolveMerchantCategoryFromProperties(properties);
+  const networks = new Set<MerchantFilterId>();
+
+  if (source === "up_hellas") {
+    // Temporary: until API exposes Tier-1 subset, meal and mealPlus share network coverage.
+    networks.add("meal");
+    networks.add("mealPlus");
+  }
+
+  const acceptedProducts = parseAcceptedProducts(properties.AcceptedProducts)
+    .map((product) => normalizeText(product));
+
+  for (const product of acceptedProducts) {
+    if (
+      product.includes("go for eat") ||
+      product.includes("eat") ||
+      product.includes("cheque") ||
+      product.includes("chèque") ||
+      product.includes("flexone")
+    ) {
+      networks.add("mealPlus");
+      networks.add("meal");
+    }
+  }
+
+  if (category === "meal") {
+    networks.add("mealPlus");
+    networks.add("meal");
+  }
+
+  return Array.from(networks);
 }
 
 export function resolveMerchantProductIds(merchant: MerchantFeature): string[] {
-  return resolveMerchantProductIdsFromProperties(merchant.properties);
+  return resolveMerchantAcceptedProductIdsFromProperties(merchant.properties);
 }
 
-export function buildProductFilterOptions(merchants: MerchantFeature[]): ProductFilterOption[] {
-  return PRODUCT_DEFINITIONS.map((product) => ({
-    id: product.id,
-    label: product.label,
+export function resolveMerchantAcceptedProductIds(merchant: MerchantFeature): AcceptedProductId[] {
+  return resolveMerchantAcceptedProductIdsFromProperties(merchant.properties);
+}
+
+export function buildMerchantFilterOptions(_merchants: MerchantFeature[]): MerchantFilterOption[] {
+  return MERCHANT_FILTER_DEFINITIONS.map((network) => ({
+    id: network.id,
+    label: network.label,
   }));
+}
+
+export function buildNetworkFilterOptions(_merchants: MerchantFeature[]): NetworkFilterOption[] {
+  return buildMerchantFilterOptions(_merchants);
 }
 
 export function merchantHasCashback(merchant: MerchantFeature): boolean {
@@ -115,13 +178,22 @@ export function merchantHasCashback(merchant: MerchantFeature): boolean {
 
 export function merchantMatchesFilters(
   merchant: MerchantFeature,
-  selectedProductIds: string[],
+  selectedFilterIds: string[],
   cashbackOnly: boolean,
 ): boolean {
-  const merchantProducts = resolveMerchantProductIds(merchant);
+  const merchantNetworks = resolveMerchantNetworkIdsFromProperties(merchant.properties);
+  const merchantProducts = resolveMerchantAcceptedProductIds(merchant);
+  const selectedFilters = new Set(selectedFilterIds);
 
-  if (selectedProductIds.length > 0) {
-    if (!selectedProductIds.some((selectedProduct) => merchantProducts.includes(selectedProduct))) {
+  if (selectedFilters.size > 0) {
+    const matchesAnyFilter =
+      (selectedFilters.has("meal") && merchantNetworks.includes("meal")) ||
+      (selectedFilters.has("mealPlus") && merchantNetworks.includes("mealPlus")) ||
+      (selectedFilters.has("up-gift") && merchantProducts.includes("up-gift")) ||
+      (selectedFilters.has("cheque-dejeuner") && merchantProducts.includes("cheque-dejeuner")) ||
+      (selectedFilters.has("fitpass") && merchantProducts.includes("fitpass"));
+
+    if (!matchesAnyFilter) {
       return false;
     }
   }

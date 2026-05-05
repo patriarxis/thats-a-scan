@@ -1,4 +1,4 @@
-import type { ProductFilterOption } from "@/lib/merchantFilters";
+import type { NetworkFilterOption } from "@/lib/merchantFilters";
 import { IconButton } from "@/components/ui/IconButton/IconButton";
 import { ICONS } from "@/enums";
 import styles from "./FiltersModal.module.scss";
@@ -14,11 +14,11 @@ export type FiltersModalProps = {
   cashbackOnlyLabel: string;
   clearAllFiltersLabel: string;
   noAvailableProductsLabel: string;
-  selectedProductIds: string[];
-  productOptions: ProductFilterOption[];
+  selectedNetworkIds: string[];
+  networkOptions: NetworkFilterOption[];
   cashbackOnly: boolean;
   onClose: () => void;
-  onToggleProduct: (id: string) => void;
+  onToggleNetwork: (id: string) => void;
   onToggleCashback: () => void;
   onClearAll: () => void;
 };
@@ -32,11 +32,11 @@ export const FiltersModal = ({
   cashbackOnlyLabel,
   clearAllFiltersLabel,
   noAvailableProductsLabel,
-  selectedProductIds,
-  productOptions,
+  selectedNetworkIds,
+  networkOptions,
   cashbackOnly,
   onClose,
-  onToggleProduct,
+  onToggleNetwork,
   onToggleCashback,
   onClearAll,
 }: FiltersModalProps) => {
@@ -72,13 +72,13 @@ export const FiltersModal = ({
       </div>
 
       <FilterSection title={productLabel}>
-        {productOptions.length > 0 ? (
-          productOptions.map((product) => (
+        {networkOptions.length > 0 ? (
+          networkOptions.map((network) => (
             <FilterOption
-              key={product.id}
-              label={product.label}
-              isSelected={selectedProductIds.includes(product.id)}
-              onClick={() => onToggleProduct(product.id)}
+              key={network.id}
+              label={network.label}
+              isSelected={selectedNetworkIds.includes(network.id)}
+              onClick={() => onToggleNetwork(network.id)}
             />
           ))
         ) : (

@@ -7,7 +7,7 @@ import {
   type MerchantDetailSheetProps,
 } from "@/types";
 import {
-  resolveMerchantProductIds,
+  resolveMerchantAcceptedProductIds,
   merchantHasCashback,
 } from "@/lib/merchantFilters";
 import {
@@ -21,7 +21,6 @@ import { ICONS, LOCALE } from "@/enums";
 import flexoneLogo from "@/assets/products/flexone-logo.webp";
 import fitpassLogo from "@/assets/products/fitpass-logo.svg";
 import goForEatLogo from "@/assets/products/go-for-eat-logo.svg";
-import upExpenseLogo from "@/assets/products/up-expense-logo.svg";
 import upGiftLogo from "@/assets/products/up-gift-logo.svg";
 import chequeDejeunerLogo from "@/assets/products/cheque-dejeuner-logo.svg";
 
@@ -51,7 +50,6 @@ const PRODUCT_LOGO_SOURCES: Partial<Record<string, string>> = {
   flexone: getProductLogoSrc(flexoneLogo),
   fitpass: getProductLogoSrc(fitpassLogo),
   "go-for-eat": getProductLogoSrc(goForEatLogo),
-  "up-expense": getProductLogoSrc(upExpenseLogo),
   "up-gift": getProductLogoSrc(upGiftLogo),
   "cheque-dejeuner": getProductLogoSrc(chequeDejeunerLogo),
 };
@@ -61,7 +59,6 @@ const PRODUCT_LOGO_PRIORITY = [
   "go-for-eat",
   "up-gift",
   "fitpass",
-  "up-expense",
   "cheque-dejeuner",
 ] as const;
 
@@ -224,7 +221,7 @@ export const MerchantDetailContent = ({
     props.DescriptionGR,
   ]);
 
-  const acceptedProducts = useMemo(() => resolveMerchantProductIds(partner), [partner]);
+  const acceptedProducts = useMemo(() => resolveMerchantAcceptedProductIds(partner), [partner]);
 
   const hasCashback = merchantHasCashback(partner);
 
@@ -255,20 +252,16 @@ export const MerchantDetailContent = ({
       const src = PRODUCT_LOGO_SOURCES[productId];
       if (!src) return;
 
-      let label = productId;
+      let label: string = productId;
 
       if (productId === "flexone") {
         label = labels.flexone;
       } else if (productId === "fitpass") {
         label = labels.fitpass;
-      } else if (productId === "up-expense") {
-        label = labels.upExpense;
       } else if (productId === "go-for-eat") {
-        label = "go for EAT";
+        label = labels.goForEat;
       } else if (productId === "cheque-dejeuner") {
         label = "Chèque Déjeuner";
-      } else if (productId === "up-meal") {
-        label = labels.upMeal;
       } else if (productId === "up-gift") {
         label = labels.upGift;
       }

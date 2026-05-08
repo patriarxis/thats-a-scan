@@ -586,6 +586,9 @@ const LocatorPageContent = () => {
             filterActiveCount={activeFilterCount}
             categorySectionLabel={t("searchSectionCategories")}
             placeSectionLabel={t("searchSectionPlaces")}
+            keyboardHintNavigate={t("searchHintNavigate")}
+            keyboardHintSelect={t("searchHintSelect")}
+            keyboardHintClose={t("searchHintClose")}
             closeActiveSignal={closeActiveSignal}
             onCloseSearch={closeFiltersToDefault}
             isFiltersOpen={isFiltersOpen}

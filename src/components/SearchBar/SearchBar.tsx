@@ -33,6 +33,9 @@ type SearchBarProps = {
   filterActiveCount?: number;
   categorySectionLabel: string;
   placeSectionLabel: string;
+  keyboardHintNavigate: string;
+  keyboardHintSelect: string;
+  keyboardHintClose: string;
   onChange: (value: string) => void;
   onSelect: (suggestion: SearchSuggestion) => void;
   onClear: () => void;
@@ -59,6 +62,9 @@ export const SearchBar = ({
   filterActiveCount = 0,
   categorySectionLabel,
   placeSectionLabel,
+  keyboardHintNavigate,
+  keyboardHintSelect,
+  keyboardHintClose,
   onChange,
   onSelect,
   onClear,
@@ -79,6 +85,7 @@ export const SearchBar = ({
   const [activeIndex, setActiveIndex] = useState(-1);
   const prevFocusInputSignalRef = useRef<number | undefined>(focusInputSignal);
   const prevCloseActiveSignalRef = useRef<number | undefined>(closeActiveSignal);
+  const resultsListRef = useRef<HTMLUListElement | null>(null);
   const skipBlurCloseRef = useRef(false);
   const closeSearchToDefaultRef = useRef<() => void>(() => {});
   const closeFiltersToSearchRef = useRef<() => boolean>(() => false);
@@ -139,6 +146,23 @@ export const SearchBar = ({
   useEffect(() => {
     if (!isOpen) setActiveIndex(-1);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || activeIndex < 0) return;
+    const listElement = resultsListRef.current;
+    if (!listElement) return;
+    const activeOption = listElement.querySelector<HTMLElement>(`#search-opt-${activeIndex}`);
+    if (!activeOption) return;
+
+    const listRect = listElement.getBoundingClientRect();
+    const optionRect = activeOption.getBoundingClientRect();
+    const isVisible =
+      optionRect.top >= listRect.top &&
+      optionRect.bottom <= listRect.bottom;
+    if (!isVisible) {
+      activeOption.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+  }, [activeIndex, isOpen]);
 
   useEffect(() => {
     if (typeof focusInputSignal !== "number") return;
@@ -249,6 +273,10 @@ export const SearchBar = ({
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
+              if (selectedSuggestion) {
+                handleSelect(selectedSuggestion);
+                return;
+              }
               if (inputRef.current && document.activeElement === inputRef.current) {
                 inputRef.current.blur();
               }
@@ -256,6 +284,9 @@ export const SearchBar = ({
               return;
             }
             if (e.key === "Escape") {
+              if (inputRef.current && document.activeElement === inputRef.current) {
+                inputRef.current.blur();
+              }
               closeFocusShellDirect(() => setActiveIndex(-1));
               return;
             }
@@ -324,11 +355,15 @@ export const SearchBar = ({
           showSuggestionsPanel && (
             <SearchResultsPanel
               id={listboxId}
+              listRef={resultsListRef}
               suggestions={suggestions}
               activeIndex={activeIndex}
               query={value}
               categorySectionLabel={categorySectionLabel}
               placeSectionLabel={placeSectionLabel}
+              keyboardHintNavigate={keyboardHintNavigate}
+              keyboardHintSelect={keyboardHintSelect}
+              keyboardHintClose={keyboardHintClose}
               mobileFullscreen={isSearchUiActive}
               mobileClosing={isClosing || isSuggestionsPanelClosing}
               onSelect={handleSelect}

@@ -2,7 +2,10 @@ import { ICONS } from "@/enums";
 import { IIconProps } from "@/types";
 import { ComponentType, createElement } from "react";
 import {
+  ArrowElbowDownLeftIcon,
+  ArrowDownIcon,
   ArrowLeftIcon,
+  ArrowUpIcon,
   AsclepiusIcon,
   BabyIcon,
   BarbellIcon,
@@ -54,6 +57,9 @@ const withPhosphorFill = (
 
 export const phosphorIconRegistry: Partial<Record<ICONS, AppIconComponent>> = {
   [ICONS.ARROW_LEFT]: withPhosphorFill(ArrowLeftIcon),
+  [ICONS.ARROW_UP]: withPhosphorFill(ArrowUpIcon),
+  [ICONS.ARROW_DOWN]: withPhosphorFill(ArrowDownIcon),
+  [ICONS.ARROW_ELBOW_DOWN_LEFT]: withPhosphorFill(ArrowElbowDownLeftIcon),
   [ICONS.ASCLEPIUS]: withPhosphorFill(AsclepiusIcon),
   [ICONS.BARBELL]: withPhosphorFill(BarbellIcon),
   [ICONS.BASKET]: withPhosphorFill(BasketIcon),

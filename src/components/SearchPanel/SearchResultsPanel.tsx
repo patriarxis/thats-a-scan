@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import { Icon } from "@/components/ui";
 import { ICONS } from "@/enums";
 import styles from "./SearchResultsPanel.module.scss";
@@ -10,11 +11,15 @@ import {
 
 type SearchResultsPanelProps = {
   id: string;
+  listRef?: Ref<HTMLUListElement>;
   suggestions: SearchSuggestion[];
   activeIndex: number;
   query: string;
   categorySectionLabel: string;
   placeSectionLabel: string;
+  keyboardHintNavigate: string;
+  keyboardHintSelect: string;
+  keyboardHintClose: string;
   mobileFullscreen?: boolean;
   mobileClosing?: boolean;
   onSelect: (item: SearchSuggestion) => void;
@@ -23,11 +28,15 @@ type SearchResultsPanelProps = {
 
 export const SearchResultsPanel = ({
   id,
+  listRef,
   suggestions,
   activeIndex,
   query,
   categorySectionLabel,
   placeSectionLabel,
+  keyboardHintNavigate,
+  keyboardHintSelect,
+  keyboardHintClose,
   mobileFullscreen = false,
   mobileClosing = false,
   onSelect,
@@ -77,28 +86,50 @@ export const SearchResultsPanel = ({
   };
 
   return (
-    <ul
-      id={id}
-      role="listbox"
+    <div
       className={`${styles.dropdown} ${mobileFullscreen ? styles.dropdownFullscreenMobile : ""} ${mobileClosing ? styles.dropdownClosingMobile : ""}`}
     >
-      {categoryEntries.length > 0 && (
-        <li className={styles.sectionLabel} aria-hidden>
-          <Icon name={ICONS.TAG} className={styles.sectionLabelIcon} />
-          <span>{categorySectionLabel}</span>
-        </li>
-      )}
-      {categoryEntries.map(({ item, index }) => renderOption(item, index))}
-      {categoryEntries.length > 0 && merchantEntries.length > 0 && (
-        <li className={styles.sectionDivider} aria-hidden />
-      )}
-      {merchantEntries.length > 0 && (
-        <li className={styles.sectionLabel} aria-hidden>
-          <Icon name={ICONS.STOREFRONT} className={styles.sectionLabelIcon} />
-          <span>{placeSectionLabel}</span>
-        </li>
-      )}
-      {merchantEntries.map(({ item, index }) => renderOption(item, index))}
-    </ul>
+      <ul id={id} ref={listRef} role="listbox" className={styles.optionsList}>
+        {categoryEntries.length > 0 && (
+          <li className={styles.sectionLabel} aria-hidden>
+            <Icon name={ICONS.TAG} className={styles.sectionLabelIcon} />
+            <span>{categorySectionLabel}</span>
+          </li>
+        )}
+        {categoryEntries.map(({ item, index }) => renderOption(item, index))}
+        {categoryEntries.length > 0 && merchantEntries.length > 0 && (
+          <li className={styles.sectionDivider} aria-hidden />
+        )}
+        {merchantEntries.length > 0 && (
+          <li className={styles.sectionLabel} aria-hidden>
+            <Icon name={ICONS.STOREFRONT} className={styles.sectionLabelIcon} />
+            <span>{placeSectionLabel}</span>
+          </li>
+        )}
+        {merchantEntries.map(({ item, index }) => renderOption(item, index))}
+      </ul>
+
+      <div className={styles.keyboardHints} aria-hidden>
+        <span className={styles.keyboardHintItem}>
+          <span className={styles.keyIconPair}>
+            <span className={styles.keyIcon}>
+              <Icon name={ICONS.ARROW_UP} />
+            </span>
+            <span className={styles.keyIcon}>
+              <Icon name={ICONS.ARROW_DOWN} />
+            </span>
+          </span>
+          <span>{keyboardHintNavigate}</span>
+        </span>
+        <span className={styles.keyboardHintItem}>
+          <span className={styles.keyText}>Enter</span>
+          <span>{keyboardHintSelect}</span>
+        </span>
+        <span className={styles.keyboardHintItem}>
+          <span className={styles.keyText}>Esc</span>
+          <span>{keyboardHintClose}</span>
+        </span>
+      </div>
+    </div>
   );
 };

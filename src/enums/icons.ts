@@ -1,5 +1,8 @@
 export enum ICONS {
   ARROW_LEFT = "arrow-left",
+  ARROW_UP = "arrow-up",
+  ARROW_DOWN = "arrow-down",
+  ARROW_ELBOW_DOWN_LEFT = "arrow-elbow-down-left",
   ASCLEPIUS = "asclepius",
   BARBELL = "barbell",
   BASKET = "basket",

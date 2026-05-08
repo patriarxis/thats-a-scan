@@ -1,50 +1,45 @@
 import { ImageResponse } from "next/og";
-import {
-  fetchStoreDetails,
-  getStoreShareText,
-  parseCoordinate,
-} from "@/lib/storeShare";
+import { parseCoordinate } from "@/lib/storeShare";
+import { ICONS } from "@/enums";
+import { IconVectorRegistry } from "@/components/ui/Icons/iconVectors";
 
 const imageSize = {
   width: 1200,
   height: 630,
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  meal: "#f59e0b",
-  rewards: "#8f499c",
-  expenses: "#3b82f6",
-  gyms: "#ef4444",
-};
-
-const truncate = (value: string, max: number): string =>
-  value.length > max ? `${value.slice(0, max - 1)}...` : value;
+const PIN_ORANGE = "#f59100";
+const MAP_PIN_VECTOR = IconVectorRegistry[ICONS.MAP_PIN];
 
 const buildStaticMapUrl = (lat: number, lng: number): string | null => {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   if (!token) return null;
-  const marker = `pin-s+8f499c(${lng},${lat})`;
-  const center = `${lng},${lat},14,0`;
-  return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${marker}/${center}/760x630?access_token=${token}`;
+  const center = `${lng},${lat},15.5,0`;
+  return `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/${center}/1200x630?access_token=${token}`;
+};
+
+const resolveRenderableMapImageUrl = async (candidate: string | null): Promise<string | null> => {
+  if (!candidate) return null;
+  try {
+    const response = await fetch(candidate, { cache: "no-store" });
+    return response.ok ? candidate : null;
+  } catch {
+    return null;
+  }
 };
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const storeId = searchParams.get("storeId") ?? searchParams.get("store") ?? "";
   const latRaw = searchParams.get("lat") ?? undefined;
   const lngRaw = searchParams.get("lng") ?? undefined;
   const lat = parseCoordinate(latRaw);
   const lng = parseCoordinate(lngRaw);
 
-  let store = null;
-  if (storeId && lat !== null && lng !== null) {
-    store = await fetchStoreDetails(storeId, lat, lng);
-  }
-
-  const share = getStoreShareText(storeId || "unknown", store);
-  const accent = CATEGORY_COLORS[share.category] ?? CATEGORY_COLORS.rewards;
-  const mapImageUrl =
+  const mapImageUrlCandidate =
     lat !== null && lng !== null ? buildStaticMapUrl(lat, lng) : null;
+  const mapImageUrl = await resolveRenderableMapImageUrl(mapImageUrlCandidate);
+  const logoUrl = new URL("/up-hellas-logo.svg", request.url).toString();
+  const mapPinPath = MAP_PIN_VECTOR?.paths[0] ?? "";
 
   return new ImageResponse(
     (
@@ -53,125 +48,66 @@ export async function GET(request: Request) {
           display: "flex",
           width: "1200px",
           height: "630px",
-          backgroundColor: "#0b1020",
-          color: "#f8fafc",
-          fontFamily: "Inter, Arial, sans-serif",
+          position: "relative",
+          overflow: "hidden",
+          backgroundColor: "#020617",
         }}
       >
+        {mapImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={mapImageUrl}
+            alt=""
+            width={1200}
+            height={630}
+            style={{ objectFit: "cover", width: "1200px", height: "630px" }}
+          />
+        ) : null}
+
         <div
           style={{
-            position: "relative",
-            width: "760px",
-            height: "630px",
+            position: "absolute",
+            inset: 0,
             display: "flex",
-            overflow: "hidden",
             background:
-              "linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(2,6,23,1) 100%)",
+              "radial-gradient(circle at center, rgba(2,6,23,0.15) 0%, rgba(2,6,23,0.55) 100%)",
+          }}
+        />
+
+        <div
+          style={{
+            display: "flex",
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -100%)",
+            width: "56px",
+            height: "56px",
+            filter: "drop-shadow(0 12px 18px rgba(0,0,0,0.35))",
           }}
         >
-          {mapImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={mapImageUrl}
-              alt=""
-              width={760}
-              height={630}
-              style={{ objectFit: "cover", width: "760px", height: "630px" }}
-            />
-          ) : null}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                mapImageUrl
-                  ? "linear-gradient(180deg, rgba(2,6,23,0.2) 0%, rgba(2,6,23,0.75) 100%)"
-                  : "linear-gradient(180deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,1) 100%)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              top: "30px",
-              left: "30px",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "10px 14px",
-              borderRadius: "999px",
-              backgroundColor: "rgba(2,6,23,0.7)",
-              border: `1px solid ${accent}`,
-              fontSize: "24px",
-              fontWeight: 700,
-            }}
-          >
-            <span>Up Hellas</span>
-          </div>
+          <svg viewBox="0 0 256 256" width="56" height="56" fill="none">
+            <path d={mapPinPath} fill={PIN_ORANGE} />
+            <circle cx="128" cy="104" r="22" fill="#1f2937" />
+          </svg>
         </div>
 
         <div
           style={{
-            width: "440px",
-            height: "630px",
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            padding: "44px 38px",
-            backgroundColor: "#020617",
-            borderLeft: `4px solid ${accent}`,
+            position: "absolute",
+            left: "24px",
+            top: "24px",
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-            <div
-              style={{
-                display: "flex",
-                alignSelf: "flex-start",
-                padding: "8px 12px",
-                borderRadius: "999px",
-                backgroundColor: "rgba(148,163,184,0.2)",
-                color: "#cbd5e1",
-                fontSize: "20px",
-                fontWeight: 600,
-              }}
-            >
-              Merchant store
-            </div>
-
-            <div
-              style={{
-                fontSize: "48px",
-                lineHeight: 1.1,
-                fontWeight: 800,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {truncate(share.title.replace(" | Up Hellas Map", ""), 52)}
-            </div>
-
-            <div
-              style={{
-                color: "#cbd5e1",
-                fontSize: "26px",
-                lineHeight: 1.35,
-                minHeight: "140px",
-              }}
-            >
-              {truncate(share.address || "Open this location on the Up Hellas map.", 120)}
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              fontSize: "22px",
-              color: "#94a3b8",
-            }}
-          >
-            <span>uphellas.gr/map</span>
-            <span style={{ color: accent, fontWeight: 700 }}>View on map</span>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={logoUrl}
+            alt="Up Hellas"
+            width={130}
+            height={52}
+            style={{ width: "130px", height: "52px", objectFit: "contain" }}
+          />
         </div>
       </div>
     ),

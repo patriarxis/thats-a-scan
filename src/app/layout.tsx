@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { headers } from "next/headers";
+import { LOCALE } from "@/enums";
+import { getSeoDefaults } from "@/lib/seo";
 import "./globals.scss";
 
 const DEFAULT_SITE_URL = "https://map.uphellas.gr";
@@ -9,6 +11,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
   : new URL(DEFAULT_SITE_URL);
 
 const defaultMetaImageUrl = "/meta-image.jpg";
+const defaultSeo = getSeoDefaults(LOCALE.EL);
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -61,21 +64,30 @@ const linotte = localFont({
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
-  title: "Up Hellas | Map",
-  description: "Interactive map of all partner merchants by Up Hellas.",
+  title: {
+    default: defaultSeo.title,
+    template: "%s | Up Hellas Map",
+  },
+  description: defaultSeo.description,
+  keywords: defaultSeo.keywords,
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     type: "website",
     url: "/",
-    title: "Up Hellas | Map",
-    description: "Interactive map of all partner merchants by Up Hellas.",
+    title: defaultSeo.title,
+    description: defaultSeo.description,
     siteName: "Up Hellas Map",
     locale: "el_GR",
+    alternateLocale: "en_US",
     images: [{ url: defaultMetaImageUrl, width: 1200, height: 630, alt: "Up Hellas Map" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Up Hellas | Map",
-    description: "Interactive map of all partner merchants by Up Hellas.",
+    title: defaultSeo.title,
+    description: defaultSeo.description,
     images: [defaultMetaImageUrl],
   },
   icons: {

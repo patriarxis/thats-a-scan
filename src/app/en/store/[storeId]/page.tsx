@@ -29,19 +29,28 @@ export async function generateMetadata({
   if (lat !== null && lng !== null) {
     store = await fetchStoreDetails(storeId, lat, lng);
   }
-  const { title, description } = getStoreShareText(storeId, store);
-  const ogImageUrl = buildStoreOgImageUrl(storeId, latRaw, lngRaw);
+  const { title, description } = getStoreShareText(storeId, store, LOCALE.EN);
+  const ogImageUrl = buildStoreOgImageUrl(storeId, latRaw, lngRaw, LOCALE.EN);
+  const greekUrl = buildStoreUrl(storeId, latRaw, lngRaw, LOCALE.EL);
 
   return {
     title,
     description,
-    alternates: { canonical: metadataUrl },
+    alternates: {
+      canonical: metadataUrl,
+      languages: {
+        en: metadataUrl,
+        el: greekUrl,
+      },
+    },
     openGraph: {
       type: "website",
       title,
       description,
       url: metadataUrl,
       siteName: "Up Hellas Map",
+      locale: "en_US",
+      alternateLocale: "el_GR",
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
     },
     twitter: {

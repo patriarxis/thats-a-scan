@@ -92,5 +92,15 @@
   "merchantCategoryHotelsHelper": "Hotels and accommodation",
   "language": "Language",
   "termsOfUse": "Terms of Use",
-  "privacyPolicy": "Privacy Policy"
+  "privacyPolicy": "Privacy Policy",
+  "seoDefaultTitle": "Up Hellas Map | Partner Store Locator",
+  "seoDefaultDescription": "Discover Up Hellas partner stores across Greece with the interactive map.",
+  "seoDefaultKeywords": "Up Hellas map,partner stores,store locator,employee benefits,go for EAT,Up Gift,Chèque Déjeuner,Fitpass",
+  "seoHomeTitle": "Partner Store Locator",
+  "seoHomeDescription": "Find Up Hellas partner stores on the interactive map.",
+  "seoStoreTitleSuffix": "Up Hellas Map",
+  "seoStoreFallbackTitlePrefix": "Store",
+  "seoStoreFallbackDescription": "Interactive map of all partner merchants by Up Hellas.",
+  "seoStoreDescriptionWithAddress": "{{address}}. View this store on the Up Hellas map.",
+  "seoStoreDescriptionWithoutAddress": "View {{name}} on the Up Hellas map."
 }

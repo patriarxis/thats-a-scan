@@ -6,6 +6,7 @@ import {
 } from "@/types";
 import { LOCALE } from "@/enums";
 import { resolveMerchantCategoryFromProperties } from "@/lib/merchantFilters";
+import { getStoreSeoText } from "@/lib/seo";
 
 const STORE_LOOKUP_API_URL = "https://merchants-map.uphellas.gr/geojson/search";
 
@@ -33,10 +34,12 @@ export const buildStoreOgImageUrl = (
   storeId: string,
   lat?: string,
   lng?: string,
+  locale: LOCALE = LOCALE.EL,
 ): string => {
   const params = new URLSearchParams({ storeId });
   if (lat) params.set("lat", lat);
   if (lng) params.set("lng", lng);
+  params.set("locale", locale);
   return `/api/og/store?${params.toString()}`;
 };
 
@@ -67,21 +70,24 @@ export const fetchStoreDetails = async (
   }
 };
 
-export const getStoreShareText = (storeId: string, store: PartnerFeature | null) => {
+export const getStoreShareText = (
+  storeId: string,
+  store: PartnerFeature | null,
+  locale: LOCALE = LOCALE.EL,
+) => {
   if (!store) {
+    const seoText = getStoreSeoText(locale, storeId, "", "");
     return {
-      title: `Store ${storeId} | Up Hellas Map`,
-      description: "Interactive map of all partner merchants by Up Hellas.",
+      title: `${seoText.fallbackTitlePrefix} ${storeId} | ${seoText.titleSuffix}`,
+      description: seoText.fallbackDescription,
       address: "",
       category: "rewards" as const,
     };
   }
 
-  const title = `${getPartnerName(store, LOCALE.EN)} | Up Hellas Map`;
-  const address = getPartnerAddress(store, LOCALE.EN);
-  const description = address
-    ? `${address}. View this store on the Up Hellas map.`
-    : `View ${getPartnerName(store, LOCALE.EN)} on the Up Hellas map.`;
+  const name = getPartnerName(store, locale);
+  const address = getPartnerAddress(store, locale);
+  const { title, description } = getStoreSeoText(locale, storeId, name, address);
   const category = resolveMerchantCategoryFromProperties(store.properties);
 
   return { title, description, address, category };

@@ -92,5 +92,15 @@
   "merchantCategoryHotelsHelper": "Ξενοδοχεία και διαμονή",
   "language": "Γλώσσα",
   "termsOfUse": "Όροι Χρήσης",
-  "privacyPolicy": "Πολιτική Απορρήτου"
+  "privacyPolicy": "Πολιτική Απορρήτου",
+  "seoDefaultTitle": "Up Hellas Map | Χάρτης Συνεργαζόμενων Καταστημάτων",
+  "seoDefaultDescription": "Ανακάλυψε συνεργαζόμενα καταστήματα της Up Hellas σε όλη την Ελλάδα μέσα από τον διαδραστικό χάρτη.",
+  "seoDefaultKeywords": "χάρτης Up Hellas,συνεργαζόμενα καταστήματα,εύρεση καταστήματος,employee benefits,go for EAT,Up Gift,Chèque Déjeuner,Fitpass",
+  "seoHomeTitle": "Χάρτης Συνεργαζόμενων Καταστημάτων",
+  "seoHomeDescription": "Βρες συνεργαζόμενα καταστήματα της Up Hellas στον διαδραστικό χάρτη.",
+  "seoStoreTitleSuffix": "Up Hellas Map",
+  "seoStoreFallbackTitlePrefix": "Κατάστημα",
+  "seoStoreFallbackDescription": "Διαδραστικός χάρτης με όλα τα συνεργαζόμενα καταστήματα της Up Hellas.",
+  "seoStoreDescriptionWithAddress": "{{address}}. Δες αυτό το κατάστημα στον χάρτη της Up Hellas.",
+  "seoStoreDescriptionWithoutAddress": "Δες το {{name}} στον χάρτη της Up Hellas."
 }

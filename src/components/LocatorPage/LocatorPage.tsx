@@ -127,7 +127,6 @@ const LocatorPageContent = () => {
   const [selectedPartner, setSelectedPartner] = useState<PartnerFeature | null>(null);
   const [sheetCloseSignal, setSheetCloseSignal] = useState(0);
   const [query, setQuery] = useState("");
-  const [focusInputSignal, setFocusInputSignal] = useState(0);
   const [closeActiveSignal, setCloseActiveSignal] = useState(0);
   const [activeQuickCategoryId, setActiveQuickCategoryId] = useState<PopularSearchCategoryId | null>(null);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
@@ -197,7 +196,6 @@ const LocatorPageContent = () => {
     setSuggestions((prev) =>
       prev.length > 0 ? prev : recommendedCategorySuggestions,
     );
-    setFocusInputSignal((value) => value + 1);
   }, [recommendedCategorySuggestions, setIsFiltersOpen]);
   const closeFiltersToDefault = useCallback(() => {
     setIsFiltersOpen(false);
@@ -588,7 +586,6 @@ const LocatorPageContent = () => {
             filterActiveCount={activeFilterCount}
             categorySectionLabel={t("searchSectionCategories")}
             placeSectionLabel={t("searchSectionPlaces")}
-            focusInputSignal={focusInputSignal}
             closeActiveSignal={closeActiveSignal}
             onCloseSearch={closeFiltersToDefault}
             isFiltersOpen={isFiltersOpen}

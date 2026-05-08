@@ -117,13 +117,8 @@ export const SearchBar = ({
   const closeFiltersToSearch = useCallback(() => {
     if (!filtersPanelProps?.onClose) return false;
     filtersPanelProps.onClose();
-    window.setTimeout(() => {
-      if (!inputRef.current) return;
-      inputRef.current.focus();
-      handleInputFocus();
-    }, 0);
     return true;
-  }, [filtersPanelProps, handleInputFocus, inputRef]);
+  }, [filtersPanelProps]);
 
   useEffect(() => {
     closeSearchToDefaultRef.current = closeSearchToDefault;
@@ -293,7 +288,7 @@ export const SearchBar = ({
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
               skipBlurCloseRef.current = true;
-              handleInputFocus(onFocusInput);
+              closeFocusShellDirect(() => setActiveIndex(-1));
               if (inputRef.current && document.activeElement === inputRef.current) {
                 inputRef.current.blur();
               }

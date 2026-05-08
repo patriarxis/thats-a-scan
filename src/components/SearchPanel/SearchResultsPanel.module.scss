@@ -16,7 +16,7 @@
   padding: $spacing-sm;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   transform-origin: top center;
-  animation: dropdownPanelIn 0.2s ease-out forwards;
+  animation: dropdownPanelIn $transition-normal forwards;
 }
 
 .dropdownFullscreenMobile {
@@ -33,12 +33,12 @@
     -webkit-overflow-scrolling: touch;
     border-radius: $border-radius-lg;
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
-    animation: dropdownContainerIn 0.2s ease-out;
+    animation: dropdownContainerIn $transition-normal;
   }
 }
 
 .dropdownClosingMobile {
-  animation: dropdownPanelOut 0.16s ease-in forwards;
+  animation: dropdownPanelOut $transition-normal forwards;
 }
 
 .option {

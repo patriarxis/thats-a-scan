@@ -14,7 +14,7 @@
   padding: $spacing-sm;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
   transform-origin: top center;
-  animation: dropdownPanelIn 0.2s ease-out forwards;
+  animation: dropdownPanelIn $transition-normal forwards;
 
   @media (min-width: $breakpoint-sm) {
     position: absolute;
@@ -28,7 +28,7 @@
   }
 
   @include mobile-only {
-    animation: dropdownContainerIn 0.2s ease-out;
+    animation: dropdownContainerIn $transition-normal;
   }
 }
 

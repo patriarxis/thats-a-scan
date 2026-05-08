@@ -73,7 +73,7 @@ export const SearchBar = ({
   localeSwitcherAriaLabel = "Change language",
   onOpenLocalePanel,
 }: SearchBarProps) => {
-  const MOBILE_SEARCH_CLOSE_ANIMATION_MS = 100;
+  const MOBILE_SEARCH_CLOSE_ANIMATION_MS = 200;
   const MOBILE_ONLY_MEDIA_QUERY = "(max-width: 639px)";
   const MAX_SEARCH_INPUT_CHARS = 120;
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -128,7 +128,7 @@ export const SearchBar = ({
   const isOpen =
     isSearchUiActive && !isFiltersOpen && !suppressSuggestions && suggestions.length > 0;
   const { isMounted: showSuggestionsPanel, isClosing: isSuggestionsPanelClosing } =
-    useAnimatedPresence(isOpen, 180);
+    useAnimatedPresence(isOpen, MOBILE_SEARCH_CLOSE_ANIMATION_MS);
   const activeId = useMemo(
     () => (activeIndex >= 0 ? `search-opt-${activeIndex}` : undefined),
     [activeIndex],

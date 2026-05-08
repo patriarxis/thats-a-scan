@@ -12,7 +12,7 @@
   background: rgba($neutral-1, 0.35);
   backdrop-filter: blur(0.125rem);
   -webkit-backdrop-filter: blur(0.125rem);
-  transition: opacity 0.1s ease-out;
+  transition: opacity $transition-normal;
 }
 
 .open {

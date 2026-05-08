@@ -63,10 +63,16 @@
   align-self: center;
   position: relative;
   z-index: $z-search-elevated;
+  transition: max-width $transition-normal;
 
   @include desktop-up {
-    &:focus-within,
+    &:focus-within {
+      max-width: $max-width-md;
+      z-index: $z-search-elevated;
+    }
+
     &[data-filters-open="true"] {
+      max-width: $max-width-md;
       z-index: $z-search-elevated;
     }
   }

@@ -7,7 +7,6 @@ export type MerchantFilterOption = { id: string; label: string };
 export type NetworkFilterOption = MerchantFilterOption;
 
 export const MERCHANT_FILTER_DEFINITIONS = [
-  { id: "meal", label: "FlexOne - Meal" },
   { id: "mealPlus", label: "FlexOne - Meal+ / go for EAT" },
   { id: "up-gift", label: "Up Gift" },
   { id: "cheque-dejeuner", label: "Chèque Déjeuner" },
@@ -24,19 +23,16 @@ type AcceptedProductId =
 
 type MerchantFilterId = (typeof MERCHANT_FILTER_DEFINITIONS)[number]["id"];
 
-const MAIN_API_MEAL_PRODUCT_IDS: AcceptedProductId[] = [
-  "flexone",
-  "go-for-eat",
-  "up-gift",
-  "cheque-dejeuner",
+const ACCEPTED_PRODUCT_PATTERNS: ReadonlyArray<{
+  id: AcceptedProductId;
+  pattern: RegExp;
+}> = [
+  { id: "fitpass", pattern: /\bfitpass\b/i },
+  { id: "flexone", pattern: /\bflexone\b/i },
+  { id: "up-gift", pattern: /\bup[\s-]*gift\b/i },
+  { id: "cheque-dejeuner", pattern: /\bch[eè]que[\s-]*d[eé]jeuner\b/i },
+  { id: "go-for-eat", pattern: /\bgo[\s-]*for[\s-]*eat\b/i },
 ];
-
-function normalizeText(value: unknown): string {
-  if (typeof value === "string") return value.toLowerCase();
-  if (typeof value === "number") return String(value);
-  if (Array.isArray(value)) return value.map((item) => normalizeText(item)).join(" ");
-  return "";
-}
 
 export function resolveMerchantCategoryFromProperties(
   properties: Record<string, unknown>,
@@ -59,6 +55,21 @@ export function parseAcceptedProducts(value: unknown): string[] {
   return raw;
 }
 
+const resolveAcceptedProducts = (properties: Record<string, unknown>): AcceptedProductId[] => {
+  const acceptedProducts = parseAcceptedProducts(properties.AcceptedProducts);
+  const products = new Set<AcceptedProductId>();
+
+  for (const product of acceptedProducts) {
+    for (const { id, pattern } of ACCEPTED_PRODUCT_PATTERNS) {
+      if (pattern.test(product)) {
+        products.add(id);
+      }
+    }
+  }
+
+  return Array.from(products);
+};
+
 export function resolveMerchantProductIdsFromProperties(
   properties: Record<string, unknown>,
 ): string[] {
@@ -68,77 +79,23 @@ export function resolveMerchantProductIdsFromProperties(
 export function resolveMerchantAcceptedProductIdsFromProperties(
   properties: Record<string, unknown>,
 ): AcceptedProductId[] {
-  const source = normalizeText(properties.__source);
-  const category = resolveMerchantCategoryFromProperties(properties);
-  const products = new Set<AcceptedProductId>();
-
-  if (source === "up_hellas") {
-    for (const productId of MAIN_API_MEAL_PRODUCT_IDS) {
-      products.add(productId);
-    }
-  }
-
-  const acceptedProducts = parseAcceptedProducts(properties.AcceptedProducts)
-    .map((product) => normalizeText(product));
-
-  for (const product of acceptedProducts) {
-    if (product.includes("fitpass")) products.add("fitpass");
-    if (product.includes("flexone")) products.add("flexone");
-    if (product.includes("gift")) products.add("up-gift");
-    if (product.includes("chèque") || product.includes("cheque")) {
-      products.add("cheque-dejeuner");
-    }
-    if (product.includes("go for eat") || product.includes("eat")) {
-      products.add("go-for-eat");
-    }
-  }
-
-  if (category === "meal") {
-    products.add("flexone");
-    products.add("go-for-eat");
-    products.add("cheque-dejeuner");
-    products.add("up-gift");
-  }
-
-  if (category === "gyms") {
-    products.add("fitpass");
-  }
-
-  return Array.from(products);
+  return resolveAcceptedProducts(properties);
 }
 
 export function resolveMerchantNetworkIdsFromProperties(
   properties: Record<string, unknown>,
 ): MerchantFilterId[] {
-  const source = normalizeText(properties.__source);
   const category = resolveMerchantCategoryFromProperties(properties);
+  const acceptedProducts = resolveAcceptedProducts(properties);
   const networks = new Set<MerchantFilterId>();
 
-  if (source === "up_hellas") {
-    // Temporary: until API exposes Tier-1 subset, meal and mealPlus share network coverage.
-    networks.add("meal");
+  if (acceptedProducts.includes("go-for-eat")) {
     networks.add("mealPlus");
   }
 
-  const acceptedProducts = parseAcceptedProducts(properties.AcceptedProducts)
-    .map((product) => normalizeText(product));
-
-  for (const product of acceptedProducts) {
-    if (
-      product.includes("go for eat") ||
-      product.includes("eat") ||
-      product.includes("cheque") ||
-      product.includes("chèque") ||
-      product.includes("flexone")
-    ) {
-      networks.add("mealPlus");
-      networks.add("meal");
-    }
-  }
-
-  if (category === "meal") {
+  if (category === "meal" && acceptedProducts.length === 0) {
+    // Keep meal partners discoverable when upstream omits AcceptedProducts.
     networks.add("mealPlus");
-    networks.add("meal");
   }
 
   return Array.from(networks);
@@ -179,7 +136,6 @@ export function merchantHasCashback(merchant: MerchantFeature): boolean {
 export function merchantMatchesFilters(
   merchant: MerchantFeature,
   selectedFilterIds: string[],
-  cashbackOnly: boolean,
 ): boolean {
   const merchantNetworks = resolveMerchantNetworkIdsFromProperties(merchant.properties);
   const merchantProducts = resolveMerchantAcceptedProductIds(merchant);
@@ -187,7 +143,6 @@ export function merchantMatchesFilters(
 
   if (selectedFilters.size > 0) {
     const matchesAnyFilter =
-      (selectedFilters.has("meal") && merchantNetworks.includes("meal")) ||
       (selectedFilters.has("mealPlus") && merchantNetworks.includes("mealPlus")) ||
       (selectedFilters.has("up-gift") && merchantProducts.includes("up-gift")) ||
       (selectedFilters.has("cheque-dejeuner") && merchantProducts.includes("cheque-dejeuner")) ||
@@ -197,8 +152,6 @@ export function merchantMatchesFilters(
       return false;
     }
   }
-
-  if (cashbackOnly && !merchantHasCashback(merchant)) return false;
 
   return true;
 }

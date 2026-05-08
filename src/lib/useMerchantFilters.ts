@@ -7,7 +7,6 @@ import {
 
 export function useMerchantFilters(allKnownMerchants: MerchantFeature[]) {
   const [selectedNetworkIds, setSelectedNetworkIds] = useState<string[]>([]);
-  const [cashbackOnly, setCashbackOnly] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const networkFilterOptions = useMemo(
@@ -17,17 +16,11 @@ export function useMerchantFilters(allKnownMerchants: MerchantFeature[]) {
 
   const merchantMatchesFilters = useCallback(
     (merchant: MerchantFeature) =>
-      merchantPassesFilters(
-        merchant,
-        selectedNetworkIds,
-        cashbackOnly,
-      ),
-    [cashbackOnly, selectedNetworkIds],
+      merchantPassesFilters(merchant, selectedNetworkIds),
+    [selectedNetworkIds],
   );
 
-  const activeFilterCount =
-    selectedNetworkIds.length +
-    (cashbackOnly ? 1 : 0);
+  const activeFilterCount = selectedNetworkIds.length;
 
   const toggleNetwork = useCallback((id: string) => {
     setSelectedNetworkIds((prev) =>
@@ -37,16 +30,13 @@ export function useMerchantFilters(allKnownMerchants: MerchantFeature[]) {
 
   const clearAllFilters = useCallback(() => {
     setSelectedNetworkIds([]);
-    setCashbackOnly(false);
   }, []);
 
   return {
     selectedNetworkIds,
     setSelectedNetworkIds,
-    cashbackOnly,
     isFiltersOpen,
     setIsFiltersOpen,
-    setCashbackOnly,
     networkFilterOptions,
     merchantMatchesFilters,
     activeFilterCount,

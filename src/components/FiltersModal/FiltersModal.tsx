@@ -10,16 +10,12 @@ export type FiltersModalProps = {
   title: string;
   closeLabel: string;
   productLabel: string;
-  cashbackLabel: string;
-  cashbackOnlyLabel: string;
   clearAllFiltersLabel: string;
   noAvailableProductsLabel: string;
   selectedNetworkIds: string[];
   networkOptions: NetworkFilterOption[];
-  cashbackOnly: boolean;
   onClose: () => void;
   onToggleNetwork: (id: string) => void;
-  onToggleCashback: () => void;
   onClearAll: () => void;
 };
 
@@ -28,16 +24,12 @@ export const FiltersModal = ({
   title,
   closeLabel,
   productLabel,
-  cashbackLabel,
-  cashbackOnlyLabel,
   clearAllFiltersLabel,
   noAvailableProductsLabel,
   selectedNetworkIds,
   networkOptions,
-  cashbackOnly,
   onClose,
   onToggleNetwork,
-  onToggleCashback,
   onClearAll,
 }: FiltersModalProps) => {
   if (!isOpen) return null;
@@ -84,14 +76,6 @@ export const FiltersModal = ({
         ) : (
           <p className={styles.empty}>{noAvailableProductsLabel}</p>
         )}
-      </FilterSection>
-
-      <FilterSection title={cashbackLabel}>
-        <FilterOption
-          label={cashbackOnlyLabel}
-          isSelected={cashbackOnly}
-          onClick={onToggleCashback}
-        />
       </FilterSection>
     </section>
   );

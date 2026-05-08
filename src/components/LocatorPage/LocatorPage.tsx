@@ -69,7 +69,6 @@ type UrlSelectionState = {
 type UrlSearchState = {
   query: string;
   selectedNetworkIds: string[];
-  cashbackOnly: boolean;
 };
 
 const NETWORK_FILTER_ID_SET: ReadonlySet<string> = new Set(
@@ -92,7 +91,7 @@ const parseSelectionFromLocation = (): UrlSelectionState => {
 
 const parseSearchStateFromLocation = (): UrlSearchState => {
   if (typeof window === "undefined") {
-    return { query: "", selectedNetworkIds: [], cashbackOnly: false };
+    return { query: "", selectedNetworkIds: [] };
   }
   const url = new URL(window.location.href);
   const query = url.searchParams.get("q") ?? "";
@@ -100,11 +99,9 @@ const parseSearchStateFromLocation = (): UrlSearchState => {
     .split(",")
     .map((item) => item.trim())
     .filter((item): item is string => Boolean(item) && NETWORK_FILTER_ID_SET.has(item));
-  const cashbackOnly = url.searchParams.get("cashback") === "1";
   return {
     query,
     selectedNetworkIds: Array.from(new Set(selectedNetworkIds)),
-    cashbackOnly,
   };
 };
 
@@ -181,10 +178,8 @@ const LocatorPageContent = () => {
   const {
     selectedNetworkIds,
     setSelectedNetworkIds,
-    cashbackOnly,
     isFiltersOpen,
     setIsFiltersOpen,
-    setCashbackOnly,
     networkFilterOptions,
     merchantMatchesFilters,
     activeFilterCount,
@@ -226,14 +221,13 @@ const LocatorPageContent = () => {
       const nextSearchState = parseSearchStateFromLocation();
       setQuery(nextSearchState.query);
       setSelectedNetworkIds(nextSearchState.selectedNetworkIds);
-      setCashbackOnly(nextSearchState.cashbackOnly);
       setActiveQuickCategoryId(null);
       setUrlSelection(parseSelectionFromLocation());
     };
     syncFromBrowserLocation();
     window.addEventListener("popstate", syncFromBrowserLocation);
     return () => window.removeEventListener("popstate", syncFromBrowserLocation);
-  }, [setCashbackOnly, setSelectedNetworkIds]);
+  }, [setSelectedNetworkIds]);
 
   const syncSelectionInUrl = useCallback(
     (partner: PartnerFeature | null, historyMode: "push" | "replace" = "replace") => {
@@ -288,11 +282,7 @@ const LocatorPageContent = () => {
       nextParams.delete("products");
     }
 
-    if (cashbackOnly) {
-      nextParams.set("cashback", "1");
-    } else {
-      nextParams.delete("cashback");
-    }
+    nextParams.delete("cashback");
 
     const nextQuery = nextParams.toString();
     const nextUrl = nextQuery ? `${currentUrl.pathname}?${nextQuery}` : currentUrl.pathname;
@@ -300,7 +290,7 @@ const LocatorPageContent = () => {
     if (nextUrl !== currentHref) {
       window.history.replaceState(null, "", nextUrl);
     }
-  }, [cashbackOnly, query, selectedNetworkIds]);
+  }, [query, selectedNetworkIds]);
 
   const focusPadding = useMemo(() => {
     if (!sidebarOpen) {
@@ -551,16 +541,12 @@ const LocatorPageContent = () => {
     title: t("filters"),
     closeLabel: t("close"),
     productLabel: t("product"),
-    cashbackLabel: t("cashback"),
-    cashbackOnlyLabel: t("cashbackOnly"),
     clearAllFiltersLabel: t("clearAllFilters"),
     noAvailableProductsLabel: t("noAvailableProducts"),
     selectedNetworkIds,
     networkOptions: networkFilterOptions,
-    cashbackOnly,
     onClose: closeFiltersToResults,
     onToggleNetwork: toggleNetwork,
-    onToggleCashback: () => setCashbackOnly((prev) => !prev),
     onClearAll: clearAllFilters,
   };
 

@@ -71,9 +71,15 @@ type UrlSearchState = {
   selectedNetworkIds: string[];
 };
 
+type MerchantSearchApiResponse = {
+  suggestions?: SearchSuggestion[];
+};
+
 const NETWORK_FILTER_ID_SET: ReadonlySet<string> = new Set(
   NETWORK_FILTER_DEFINITIONS.map((item) => item.id),
 );
+
+const REMOTE_MERCHANT_SEARCH_MIN_QUERY_LENGTH = 3;
 
 const parseSelectionFromLocation = (): UrlSelectionState => {
   if (typeof window === "undefined") {
@@ -313,6 +319,8 @@ const LocatorPageContent = () => {
     const timer = setTimeout(async () => {
       const requestId = ++searchRequestRef.current;
       geocodeAbortRef.current?.abort();
+      const controller = new AbortController();
+      geocodeAbortRef.current = controller;
       setSearchLoading(true);
 
       const localMerchantResults = searchMerchantSuggestions(
@@ -365,6 +373,44 @@ const LocatorPageContent = () => {
 
       if (requestId === searchRequestRef.current) {
         setSuggestions([...categoryResults, ...merchantResults].slice(0, SEARCH_SUGGESTION_LIMIT));
+      }
+
+      let remoteMerchantResults: SearchSuggestion[] = [];
+      if (query.trim().length >= REMOTE_MERCHANT_SEARCH_MIN_QUERY_LENGTH) {
+        try {
+          const params = new URLSearchParams({
+            q: query.trim(),
+            locale,
+            limit: String(SEARCH_SUGGESTION_LIMIT),
+          });
+          const response = await fetch(`/api/merchant-search?${params.toString()}`, {
+            signal: controller.signal,
+          });
+          if (response.ok) {
+            const data = (await response.json()) as MerchantSearchApiResponse;
+            remoteMerchantResults = Array.isArray(data.suggestions)
+              ? data.suggestions.filter((item) => item.type === "merchant")
+              : [];
+          }
+        } catch (error) {
+          if (!(error instanceof DOMException && error.name === "AbortError")) {
+            console.error("Failed to search nationwide merchants:", error);
+          }
+        }
+      }
+
+      if (requestId === searchRequestRef.current && !controller.signal.aborted) {
+        const seenMerchantIds = new Set(merchantResults.map((item) => item.merchantId));
+        const mergedMerchantResults = [
+          ...merchantResults,
+          ...remoteMerchantResults.filter((item) => {
+            if (!item.merchantId || seenMerchantIds.has(item.merchantId)) return false;
+            seenMerchantIds.add(item.merchantId);
+            return true;
+          }),
+        ].slice(0, MERCHANT_SUGGESTION_LIMIT);
+
+        setSuggestions([...categoryResults, ...mergedMerchantResults].slice(0, SEARCH_SUGGESTION_LIMIT));
         setSearchLoading(false);
       }
     }, SEARCH_DEBOUNCE_MS);

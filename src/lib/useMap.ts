@@ -31,6 +31,24 @@ type ViewportCacheEntry = {
   features: MerchantFeature[];
 };
 
+type ViewportFetchResult = {
+  features: MerchantFeature[];
+  complete: boolean;
+  meta: MerchantApiResponse["meta"];
+};
+
+type MerchantApiResponse = {
+  features?: MerchantFeature[];
+  meta?: {
+    upHellas?: {
+      requestCount?: number;
+      saturatedBoundsCount?: number;
+      stoppedByRequestLimit?: boolean;
+      complete?: boolean;
+    };
+  };
+};
+
 type BoundsPayload = {
   north: number;
   south: number;
@@ -89,6 +107,30 @@ function haversineDistanceKm(
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return 6371 * c;
+}
+
+function logMerchantFetchDebug(
+  source: "initial" | "move" | "wide-preview",
+  bounds: BoundsPayload,
+  zoom: number,
+  result: ViewportFetchResult,
+) {
+  if (process.env.NODE_ENV !== "development") return;
+
+  const upHellas = result.meta?.upHellas;
+  console.info("[merchant-fetch]", {
+    source,
+    zoom: Number(zoom.toFixed(2)),
+    bounds,
+    featureCount: result.features.length,
+    upHellas: {
+      requestCount: upHellas?.requestCount,
+      saturatedBoundsCount: upHellas?.saturatedBoundsCount,
+      stoppedByRequestLimit: upHellas?.stoppedByRequestLimit,
+      complete: upHellas?.complete,
+      split: (upHellas?.requestCount ?? 0) > 1,
+    },
+  });
 }
 
 export function useUserLocation() {
@@ -194,7 +236,7 @@ export function useViewportStoreQuery(
   const fetchFeaturesForBounds = async (
     bounds: BoundsPayload,
     signal: AbortSignal,
-  ): Promise<MerchantFeature[]> => {
+  ): Promise<ViewportFetchResult> => {
     const res = await fetch(STORES_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -214,13 +256,17 @@ export function useViewportStoreQuery(
       console.error("Merchant API returned status:", res.status);
       throw new Error("Failed to load stores");
     }
-    const json = (await res.json()) as { features?: MerchantFeature[] };
+    const json = (await res.json()) as MerchantApiResponse;
     const features = Array.isArray(json.features) ? json.features : [];
-    return features.filter((feature) => {
-      const lng = Number(feature.geometry.coordinates[0]);
-      const lat = Number(feature.geometry.coordinates[1]);
-      return Number.isFinite(lng) && Number.isFinite(lat);
-    });
+    return {
+      features: features.filter((feature) => {
+        const lng = Number(feature.geometry.coordinates[0]);
+        const lat = Number(feature.geometry.coordinates[1]);
+        return Number.isFinite(lng) && Number.isFinite(lat);
+      }),
+      complete: json.meta?.upHellas?.complete !== false,
+      meta: json.meta,
+    };
   };
 
   const downsampleForWidePreview = (
@@ -317,13 +363,14 @@ export function useViewportStoreQuery(
           error: null,
         }));
         try {
-          const wideFeatures = await fetchFeaturesForBounds(
+          const wideResult = await fetchFeaturesForBounds(
             currentViewport,
             controller.signal,
           );
           if (controller.signal.aborted) return;
+          logMerchantFetchDebug("wide-preview", currentViewport, currentZoom, wideResult);
           const processed = downsampleForWidePreview(
-            sortFeatures(wideFeatures),
+            sortFeatures(wideResult.features),
           );
 
           let hasNew = false;
@@ -344,7 +391,9 @@ export function useViewportStoreQuery(
             }
           });
 
-          lastWidePreviewBoundsRef.current = currentViewport;
+          if (wideResult.complete) {
+            lastWidePreviewBoundsRef.current = currentViewport;
+          }
 
           if (hasNew || latestStateRef.current.viewportTooWide !== true || latestStateRef.current.loading || latestStateRef.current.updating) {
             setState({
@@ -417,13 +466,14 @@ export function useViewportStoreQuery(
       abortRef.current = controller;
 
       try {
-        const validFeatures = await fetchFeaturesForBounds(
+        const viewportResult = await fetchFeaturesForBounds(
           bufferedBounds,
           controller.signal,
         );
         if (controller.signal.aborted) return;
+        logMerchantFetchDebug(source, bufferedBounds, currentZoom, viewportResult);
 
-        validFeatures.forEach((f) => {
+        viewportResult.features.forEach((f) => {
           const id = getCanonicalFeatureKey(f);
           const prev = globalStoreRef.current.get(id);
           if (!prev) {
@@ -438,7 +488,9 @@ export function useViewportStoreQuery(
           }
         });
 
-        lastFetchedBufferedBoundsRef.current = bufferedBounds;
+        if (viewportResult.complete) {
+          lastFetchedBufferedBoundsRef.current = bufferedBounds;
+        }
         lastFetchedZoomRef.current = currentZoom;
         hasLoadedRef.current = true;
 

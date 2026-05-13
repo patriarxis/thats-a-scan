@@ -11,11 +11,15 @@ import {
 } from "@/types";
 import { useUserLocation, useViewportStoreQuery } from "@/lib/useMap";
 import { ensureMerchantMapLayers } from "./ensureMerchantMapLayers";
-import { buildMerchantsFeatureCollection } from "./merchantMapData";
+import {
+  buildMerchantsFeatureCollection,
+  type MerchantDeclutterStickyState,
+} from "./merchantMapData";
 import {
   ACTIVE_PIN_QUICK_ZOOM,
   ATHENS_CENTER,
   ATHENS_INITIAL_ZOOM,
+  DECLUTTER_VIEWPORT_DEBOUNCE_MS,
   DOT_LAYER_ID,
   GREECE_MAX_BOUNDS,
   LAYER_ID,
@@ -61,6 +65,10 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   const onVisiblePartnersChangeRef = useRef(onVisiblePartnersChange);
   const onPartnerSelectRef = useRef(onPartnerSelect);
   const onMapClickRef = useRef(onMapClick);
+  const declutterStickyRef = useRef<MerchantDeclutterStickyState>({
+    zoomQuantum: Number.NaN,
+    cellWinners: new Map(),
+  });
   const latestViewportStateRef = useRef({
     partners: [] as PartnerFeature[],
     loading: true,
@@ -117,11 +125,17 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
       const previewSource = map.getSource(PREVIEW_SOURCE_ID) as GeoJSONSource | undefined;
       const alwaysKeep = new Set<string>(highlightedPartnerIds);
-      const nextData = buildMerchantsFeatureCollection(map, items, alwaysKeep);
+      if (selectedPartnerId) alwaysKeep.add(selectedPartnerId);
+      const nextData = buildMerchantsFeatureCollection(
+        map,
+        items,
+        alwaysKeep,
+        declutterStickyRef.current,
+      );
       source?.setData(nextData);
       previewSource?.setData(nextData);
     },
-    [highlightedPartnerIds],
+    [highlightedPartnerIds, selectedPartnerId],
   );
 
   useImperativeHandle(ref, () => ({
@@ -293,6 +307,8 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     const map = mapRef.current;
     if (!map) return;
 
+    let reclutterTimer: ReturnType<typeof setTimeout> | undefined;
+
     const syncForCurrentZoom = () => {
       const latest = latestViewportStateRef.current;
       const nextPartners = latest.partners.filter((partner) =>
@@ -308,11 +324,23 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       });
     };
 
-    map.on("zoomend", syncForCurrentZoom);
-    map.on("moveend", syncForCurrentZoom);
+    const scheduleReclutter = () => {
+      if (reclutterTimer) clearTimeout(reclutterTimer);
+      reclutterTimer = setTimeout(() => {
+        reclutterTimer = undefined;
+        syncForCurrentZoom();
+      }, DECLUTTER_VIEWPORT_DEBOUNCE_MS);
+    };
+
+    map.on("zoomend", scheduleReclutter);
+    map.on("moveend", scheduleReclutter);
+    map.on("idle", scheduleReclutter);
+
     return () => {
-      map.off("zoomend", syncForCurrentZoom);
-      map.off("moveend", syncForCurrentZoom);
+      map.off("zoomend", scheduleReclutter);
+      map.off("moveend", scheduleReclutter);
+      map.off("idle", scheduleReclutter);
+      if (reclutterTimer) clearTimeout(reclutterTimer);
     };
   }, [partnerFilter, pushDataToMap]);
 

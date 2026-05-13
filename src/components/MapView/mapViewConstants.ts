@@ -21,12 +21,32 @@ export const MARKER_ICON_DEFAULT_ID = MARKER_ICON_REWARDS_ID;
 export const DETAILED_MARKER_MIN_ZOOM = 13;
 export const SHOW_ALL_MARKERS_ZOOM = 16;
 export const ACTIVE_PIN_QUICK_ZOOM = 16;
+
+/** Zoom is rounded to nearest half-level for marker decluttering to avoid jitter while pinching. */
+export const DECLUTTER_ZOOM_QUANTUM = 0.5;
+
+/** Delay marker declutter redraw after viewport changes so gestures settle before recomputing. */
+export const DECLUTTER_VIEWPORT_DEBOUNCE_MS = 180;
+
 export const ZOOM_REVEAL_STEPS: Array<{ minZoom: number; maxCount: number }> = [
   { minZoom: 0, maxCount: 200 },
   { minZoom: 8, maxCount: 400 },
   { minZoom: 10, maxCount: 800 },
   { minZoom: 12, maxCount: 1600 },
   { minZoom: 14, maxCount: 2400 },
+];
+
+export const MARKER_DENSITY_STEPS: Array<{
+  minZoom: number;
+  cellSizePx: number;
+  maxPerCell: number;
+}> = [
+  { minZoom: 0, cellSizePx: 132, maxPerCell: 1 },
+  { minZoom: 8, cellSizePx: 112, maxPerCell: 1 },
+  { minZoom: 10, cellSizePx: 88, maxPerCell: 1 },
+  { minZoom: 12, cellSizePx: 68, maxPerCell: 1 },
+  { minZoom: 14, cellSizePx: 52, maxPerCell: 2 },
+  { minZoom: 15, cellSizePx: 38, maxPerCell: 3 },
 ];
 
 export const MAPBOX_DARK_STYLE_URL = "mapbox://styles/mapbox/dark-v11";

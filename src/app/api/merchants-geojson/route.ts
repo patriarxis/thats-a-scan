@@ -1,19 +1,12 @@
 import { NextResponse } from "next/server";
 import { fetchAllVenues } from "@/lib/nyamie";
 import type { PartnerFeature } from "@/types";
-
-const UP_HELLAS_API_URL = "https://merchants-map.uphellas.gr/geojson/search";
-
-type BBoxPayload = {
-  north_west: {
-    latitude: number;
-    longitude: number;
-  };
-  south_east: {
-    latitude: number;
-    longitude: number;
-  };
-};
+import {
+  fetchAllUpHellasFeatures,
+  payloadToBounds,
+  type BBoxPayload,
+  type UpHellasFetchResult,
+} from "@/lib/upHellasMerchants";
 
 const DEFAULT_ATHENS_BBOX: BBoxPayload = {
   north_west: { latitude: 38.2, longitude: 23.45 },
@@ -54,35 +47,22 @@ export async function POST(request: Request) {
   }
 
   try {
-    const [upHellasRes, nyamieAllFeatures] = await Promise.all([
-      fetch(UP_HELLAS_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bounds),
-        cache: "no-store",
-      }).catch((err) => {
+    const [upHellasResult, nyamieAllFeatures] = await Promise.all([
+      fetchAllUpHellasFeatures(payloadToBounds(bounds)).catch((err) => {
         console.error("Failed to fetch from Up Hellas:", err);
-        return null;
+        return {
+          features: [],
+          requestCount: 0,
+          saturatedBoundsCount: 0,
+          stoppedByRequestLimit: false,
+          complete: false,
+        } satisfies UpHellasFetchResult;
       }),
       fetchAllVenues().catch((err) => {
         console.error("Failed to fetch from Nyamie:", err);
         return [];
       })
     ]);
-
-    let upHellasFeatures: PartnerFeature[] = [];
-    if (upHellasRes?.ok) {
-      const data = (await upHellasRes.json()) as { features?: PartnerFeature[] };
-      upHellasFeatures = Array.isArray(data.features)
-        ? data.features.map((feature: PartnerFeature) => ({
-            ...feature,
-            properties: {
-              ...feature.properties,
-              __source: "up_hellas",
-            },
-          }))
-        : [];
-    }
 
     const filteredNyamie = nyamieAllFeatures
       .filter((feature) => {
@@ -106,7 +86,15 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       type: "FeatureCollection",
-      features: [...upHellasFeatures, ...filteredNyamie]
+      features: [...upHellasResult.features, ...filteredNyamie],
+      meta: {
+        upHellas: {
+          requestCount: upHellasResult.requestCount,
+          saturatedBoundsCount: upHellasResult.saturatedBoundsCount,
+          stoppedByRequestLimit: upHellasResult.stoppedByRequestLimit,
+          complete: upHellasResult.complete,
+        },
+      },
     });
   } catch (error) {
     console.error("Error merging merchant data sources:", error);

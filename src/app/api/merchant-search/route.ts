@@ -1,21 +1,12 @@
 import { NextResponse } from "next/server";
 import { LOCALE } from "@/enums";
 import { searchMerchantSuggestions } from "@/lib/merchantSearchIndex";
-import {
-  fetchAllUpHellasFeatures,
-  GREECE_UP_HELLAS_BOUNDS,
-  type UpHellasFetchResult,
-} from "@/lib/upHellasMerchants";
+import { getCachedUpHellasResult } from "@/lib/merchantCatalogueCache";
 import { resolveMarkerVisual } from "@/components/MapView/merchantMarkerVisual";
 import type { ILocale } from "@/types";
 
-const SEARCH_CACHE_TTL_MS = 30 * 60 * 1000;
 const DEFAULT_LIMIT = 8;
 const MAX_LIMIT = 20;
-
-let cachedUpHellasResult: UpHellasFetchResult | null = null;
-let cachedAt = 0;
-let pendingFetch: Promise<UpHellasFetchResult> | null = null;
 
 function parseLocale(value: string | null): ILocale {
   return value === LOCALE.EN ? LOCALE.EN : LOCALE.EL;
@@ -25,23 +16,6 @@ function parseLimit(value: string | null): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_LIMIT;
   return Math.min(Math.floor(parsed), MAX_LIMIT);
-}
-
-async function getCachedNationwideMerchants(): Promise<UpHellasFetchResult> {
-  const now = Date.now();
-  if (cachedUpHellasResult && now - cachedAt < SEARCH_CACHE_TTL_MS) {
-    return cachedUpHellasResult;
-  }
-
-  if (!pendingFetch) {
-    pendingFetch = fetchAllUpHellasFeatures(GREECE_UP_HELLAS_BOUNDS).finally(() => {
-      pendingFetch = null;
-    });
-  }
-
-  cachedUpHellasResult = await pendingFetch;
-  cachedAt = Date.now();
-  return cachedUpHellasResult;
 }
 
 export async function GET(request: Request) {
@@ -54,14 +28,14 @@ export async function GET(request: Request) {
     return NextResponse.json({
       suggestions: [],
       meta: {
-        cached: Boolean(cachedUpHellasResult),
-        complete: cachedUpHellasResult?.complete ?? false,
+        cached: false,
+        complete: false,
       },
     });
   }
 
   try {
-    const result = await getCachedNationwideMerchants();
+    const result = await getCachedUpHellasResult();
     const suggestions = searchMerchantSuggestions(
       query,
       result.features,

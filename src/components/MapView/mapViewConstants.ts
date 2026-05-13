@@ -25,15 +25,19 @@ export const ACTIVE_PIN_QUICK_ZOOM = 16;
 /** Zoom is rounded to nearest half-level for marker decluttering to avoid jitter while pinching. */
 export const DECLUTTER_ZOOM_QUANTUM = 0.5;
 
-/** Delay marker declutter redraw after viewport changes so gestures settle before recomputing. */
-export const DECLUTTER_VIEWPORT_DEBOUNCE_MS = 180;
+/**
+ * Delay between the upstream viewport-filter update and the marker declutter redraw.
+ * Sits just after `useMap.ts`'s `MOVE_DEBOUNCE_MS` (200) so the visible set has settled before
+ * we recompute icon/dot states.
+ */
+export const DECLUTTER_VIEWPORT_DEBOUNCE_MS = 250;
 
 export const ZOOM_REVEAL_STEPS: Array<{ minZoom: number; maxCount: number }> = [
-  { minZoom: 0, maxCount: 200 },
-  { minZoom: 8, maxCount: 400 },
-  { minZoom: 10, maxCount: 800 },
-  { minZoom: 12, maxCount: 1600 },
-  { minZoom: 14, maxCount: 2400 },
+  { minZoom: 0, maxCount: 2000 },
+  { minZoom: 8, maxCount: 2500 },
+  { minZoom: 10, maxCount: 3000 },
+  { minZoom: 12, maxCount: 3500 },
+  { minZoom: 14, maxCount: 4500 },
 ];
 
 export const MARKER_DENSITY_STEPS: Array<{
@@ -41,12 +45,12 @@ export const MARKER_DENSITY_STEPS: Array<{
   cellSizePx: number;
   maxPerCell: number;
 }> = [
-  { minZoom: 0, cellSizePx: 132, maxPerCell: 1 },
-  { minZoom: 8, cellSizePx: 112, maxPerCell: 1 },
-  { minZoom: 10, cellSizePx: 88, maxPerCell: 1 },
-  { minZoom: 12, cellSizePx: 68, maxPerCell: 1 },
-  { minZoom: 14, cellSizePx: 52, maxPerCell: 2 },
-  { minZoom: 15, cellSizePx: 38, maxPerCell: 3 },
+  { minZoom: 0, cellSizePx: 72, maxPerCell: 2 },
+  { minZoom: 8, cellSizePx: 60, maxPerCell: 2 },
+  { minZoom: 10, cellSizePx: 52, maxPerCell: 2 },
+  { minZoom: 12, cellSizePx: 44, maxPerCell: 2 },
+  { minZoom: 14, cellSizePx: 38, maxPerCell: 3 },
+  { minZoom: 15, cellSizePx: 30, maxPerCell: 4 },
 ];
 
 export const MAPBOX_DARK_STYLE_URL = "mapbox://styles/mapbox/dark-v11";

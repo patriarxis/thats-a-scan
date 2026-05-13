@@ -154,6 +154,14 @@ const syncDeclutterStickyQuantum = (sticky: MerchantDeclutterStickyState, zoomQu
 
 const GEO_STICKY_MAX_ENTRIES = 1200;
 
+/**
+ * Cell sizes must NOT depend on the moving viewport center.
+ * If we used `map.getCenter().lat`, every pan would change `cos(lat)`, which would shift the
+ * lat/lng step degrees and therefore the integer cell keys — invalidating every sticky winner.
+ * Pinning the reference latitude to Greece's median keeps cell coordinates pan-invariant within a zoom quantum.
+ */
+const DECLUTTER_REFERENCE_LAT = 38;
+
 const pruneStickyBeyondLimit = (sticky: MerchantDeclutterStickyState): void => {
   if (sticky.cellWinners.size <= GEO_STICKY_MAX_ENTRIES) return;
   const keysToDelete = sticky.cellWinners.size - Math.floor(GEO_STICKY_MAX_ENTRIES * 0.6);
@@ -186,14 +194,16 @@ const selectVisibleByStickyGeoGrid = (
   }
 
   const density = densityStepForZoom(zoomQuantum);
-  const center = map.getCenter();
-  const mpp = metersPerPixelApprox(center.lat, zoomQuantum);
+  const mpp = metersPerPixelApprox(DECLUTTER_REFERENCE_LAT, zoomQuantum);
   const metersPerLat = 111320;
   const latStepDeg = Math.max(
     (density.cellSizePx * mpp) / metersPerLat,
     8e-6,
   );
-  const cosLat = Math.max(0.25, Math.cos((center.lat * Math.PI) / 180));
+  const cosLat = Math.max(
+    0.25,
+    Math.cos((DECLUTTER_REFERENCE_LAT * Math.PI) / 180),
+  );
   const lngStepDeg = Math.max(
     (density.cellSizePx * mpp) / (metersPerLat * cosLat),
     8e-6,

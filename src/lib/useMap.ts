@@ -5,11 +5,10 @@ import type { Map as MapboxMap } from "mapbox-gl";
 import { type MerchantFeature } from "@/types";
 import { MAP_MAX_LAT_SPAN, MAP_MAX_LNG_SPAN } from "@/lib/config";
 
-const STORES_API_URL = "/api/merchants-geojson";
-const MOVE_DEBOUNCE_MS = 300;
-const VIEWPORT_CACHE_TTL_MS = 60_000;
-const VIEWPORT_CACHE_DECIMALS = 3;
-const VIEWPORT_CACHE_MAX_ENTRIES = 40;
+const CATALOGUE_URL = "/api/merchants-geojson?scope=all";
+const MOVE_DEBOUNCE_MS = 200;
+const BACKGROUND_REFRESH_MS = 30 * 60 * 1000;
+const FETCH_RETRY_DELAYS_MS = [0, 500, 1500];
 const WIDE_PREVIEW_MAX_FEATURES = 220;
 const WIDE_PREVIEW_GRID_DECIMALS = 1;
 
@@ -26,17 +25,6 @@ type ViewportQueryState = {
   error: string | null;
 };
 
-type ViewportCacheEntry = {
-  createdAt: number;
-  features: MerchantFeature[];
-};
-
-type ViewportFetchResult = {
-  features: MerchantFeature[];
-  complete: boolean;
-  meta: MerchantApiResponse["meta"];
-};
-
 type MerchantApiResponse = {
   features?: MerchantFeature[];
   meta?: {
@@ -46,52 +34,9 @@ type MerchantApiResponse = {
       stoppedByRequestLimit?: boolean;
       complete?: boolean;
     };
+    loadedAt?: number;
   };
 };
-
-type BoundsPayload = {
-  north: number;
-  south: number;
-  west: number;
-  east: number;
-};
-
-const VIEWPORT_BUFFER_FACTOR = 1.9;
-const MIN_FETCH_ZOOM_DELTA = 0.2;
-
-function getBufferedBounds(map: mapboxgl.Map): BoundsPayload | null {
-  const bounds = map.getBounds();
-  if (!bounds) return null;
-
-  const north = bounds.getNorth();
-  const south = bounds.getSouth();
-  const east = bounds.getEast();
-  const west = bounds.getWest();
-
-  const latSpan = north - south;
-  const lngSpan = east - west;
-
-  const padding = (VIEWPORT_BUFFER_FACTOR - 1) / 2;
-
-  return {
-    north: north + latSpan * padding,
-    south: south - latSpan * padding,
-    west: west - lngSpan * padding,
-    east: east + lngSpan * padding,
-  };
-}
-
-function isBoundsContained(
-  inner: BoundsPayload,
-  outer: BoundsPayload,
-): boolean {
-  return (
-    inner.north <= outer.north &&
-    inner.south >= outer.south &&
-    inner.west >= outer.west &&
-    inner.east <= outer.east
-  );
-}
 
 function haversineDistanceKm(
   pointA: [number, number],
@@ -109,27 +54,27 @@ function haversineDistanceKm(
   return 6371 * c;
 }
 
-function logMerchantFetchDebug(
-  source: "initial" | "move" | "wide-preview",
-  bounds: BoundsPayload,
-  zoom: number,
-  result: ViewportFetchResult,
+function logCatalogueFetch(
+  source: "initial" | "background-refresh" | "retry",
+  payload: {
+    featureCount: number;
+    complete: boolean | undefined;
+    meta: MerchantApiResponse["meta"];
+    attempt: number;
+  },
 ) {
   if (process.env.NODE_ENV !== "development") return;
-
-  const upHellas = result.meta?.upHellas;
   console.info("[merchant-fetch]", {
     source,
-    zoom: Number(zoom.toFixed(2)),
-    bounds,
-    featureCount: result.features.length,
+    attempt: payload.attempt,
+    featureCount: payload.featureCount,
     upHellas: {
-      requestCount: upHellas?.requestCount,
-      saturatedBoundsCount: upHellas?.saturatedBoundsCount,
-      stoppedByRequestLimit: upHellas?.stoppedByRequestLimit,
-      complete: upHellas?.complete,
-      split: (upHellas?.requestCount ?? 0) > 1,
+      requestCount: payload.meta?.upHellas?.requestCount,
+      saturatedBoundsCount: payload.meta?.upHellas?.saturatedBoundsCount,
+      stoppedByRequestLimit: payload.meta?.upHellas?.stoppedByRequestLimit,
+      complete: payload.meta?.upHellas?.complete,
     },
+    serverLoadedAt: payload.meta?.loadedAt,
   });
 }
 
@@ -171,55 +116,51 @@ export function useViewportStoreQuery(
     viewportTooWide: false,
     error: null,
   });
-  const hasLoadedRef = useRef(false);
-  const abortRef = useRef<AbortController | null>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const hasAppliedLocationFlyRef = useRef(false);
-  const viewportCacheRef = useRef<Map<string, ViewportCacheEntry>>(new Map());
+
   const globalStoreRef = useRef<Map<string, MerchantFeature>>(new Map());
-  const lastFetchedBufferedBoundsRef = useRef<BoundsPayload | null>(null);
-  const lastWidePreviewBoundsRef = useRef<BoundsPayload | null>(null);
-  const latestStateRef = useRef(state);
-  const lastFetchedZoomRef = useRef<number | null>(null);
+  const initialLoadedRef = useRef(false);
+  const initialFetchControllerRef = useRef<AbortController | null>(null);
+  const backgroundFetchControllerRef = useRef<AbortController | null>(null);
+  const moveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const backgroundRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasAppliedLocationFlyRef = useRef(false);
 
   const getCanonicalFeatureKey = (feature: MerchantFeature): string => {
     const rawId = String(
       feature.properties.ID ??
-      feature.properties.MerchantId ??
-      feature.properties.mongo_id ??
-      "",
-    )
-      .trim()
-      .toLowerCase();
-    if (rawId) return rawId;
-    const name = String(
-      feature.properties.BrandName_EN ??
-      feature.properties.BrandNameEN ??
-      feature.properties.BrandName_GR ??
-      feature.properties.BrandNameGR ??
-      feature.properties.VATName_EN ??
-      feature.properties.VATNameEN ??
-      feature.properties.VATName_GR ??
-      feature.properties.VATNameGR ??
-      "",
+        feature.properties.MerchantId ??
+        feature.properties.mongo_id ??
+        "",
     )
       .trim()
       .toLowerCase();
     const lng = Number(feature.geometry.coordinates[0]);
     const lat = Number(feature.geometry.coordinates[1]);
-    const coordKey = `${lng.toFixed(5)}:${lat.toFixed(5)}`;
+    const coordKey =
+      Number.isFinite(lng) && Number.isFinite(lat)
+        ? `${lng.toFixed(5)}:${lat.toFixed(5)}`
+        : "";
     if (rawId) return `${rawId}|${coordKey}`;
+    const name = String(
+      feature.properties.BrandName_EN ??
+        feature.properties.BrandNameEN ??
+        feature.properties.BrandName_GR ??
+        feature.properties.BrandNameGR ??
+        feature.properties.VATName_EN ??
+        feature.properties.VATNameEN ??
+        feature.properties.VATName_GR ??
+        feature.properties.VATNameGR ??
+        "",
+    )
+      .trim()
+      .toLowerCase();
     if (name) return `${name}|${coordKey}`;
     return coordKey;
   };
 
-  useEffect(() => {
-    latestStateRef.current = state;
-  }, [state]);
-
-  const sortFeatures = (features: MerchantFeature[]) => {
+  const sortFeaturesByUserDistance = (features: MerchantFeature[]) => {
     if (!userLocation || features.length > 1000) return features;
-    const sorted = [...features].sort((a, b) => {
+    return [...features].sort((a, b) => {
       const dA = haversineDistanceKm(a.geometry.coordinates, [
         userLocation.lng,
         userLocation.lat,
@@ -230,43 +171,6 @@ export function useViewportStoreQuery(
       ]);
       return dA - dB;
     });
-    return sorted;
-  };
-
-  const fetchFeaturesForBounds = async (
-    bounds: BoundsPayload,
-    signal: AbortSignal,
-  ): Promise<ViewportFetchResult> => {
-    const res = await fetch(STORES_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        north_west: {
-          latitude: bounds.north,
-          longitude: bounds.west,
-        },
-        south_east: {
-          latitude: bounds.south,
-          longitude: bounds.east,
-        },
-      }),
-      signal,
-    });
-    if (!res.ok) {
-      console.error("Merchant API returned status:", res.status);
-      throw new Error("Failed to load stores");
-    }
-    const json = (await res.json()) as MerchantApiResponse;
-    const features = Array.isArray(json.features) ? json.features : [];
-    return {
-      features: features.filter((feature) => {
-        const lng = Number(feature.geometry.coordinates[0]);
-        const lat = Number(feature.geometry.coordinates[1]);
-        return Number.isFinite(lng) && Number.isFinite(lat);
-      }),
-      complete: json.meta?.upHellas?.complete !== false,
-      meta: json.meta,
-    };
   };
 
   const downsampleForWidePreview = (
@@ -288,239 +192,148 @@ export function useViewportStoreQuery(
       .slice(0, WIDE_PREVIEW_MAX_FEATURES);
   };
 
-  const buildBoundsCacheKey = (map: MapboxMap) => {
-    const bounds = map.getBounds();
-    if (!bounds) return null;
-    const toFixed = (value: number) => value.toFixed(VIEWPORT_CACHE_DECIMALS);
-    return [
-      toFixed(bounds.getNorth()),
-      toFixed(bounds.getWest()),
-      toFixed(bounds.getSouth()),
-      toFixed(bounds.getEast()),
-    ].join("|");
-  };
-
-  const writeViewportCache = (key: string, features: MerchantFeature[]) => {
-    viewportCacheRef.current.set(key, { createdAt: Date.now(), features });
-    if (viewportCacheRef.current.size <= VIEWPORT_CACHE_MAX_ENTRIES) return;
-    let oldestKey: string | null = null;
-    let oldestTimestamp = Number.POSITIVE_INFINITY;
-    for (const [entryKey, entry] of viewportCacheRef.current.entries()) {
-      if (entry.createdAt < oldestTimestamp) {
-        oldestTimestamp = entry.createdAt;
-        oldestKey = entryKey;
-      }
-    }
-    if (oldestKey) viewportCacheRef.current.delete(oldestKey);
-  };
-
   useEffect(() => {
     if (!mapReady) return;
     const map = mapRef.current;
     if (!map) return;
 
-    const fetchVisible = async (source: "initial" | "move") => {
-      const bounds = map.getBounds();
-      if (!bounds) return;
-      const currentZoom = map.getZoom();
-
-      const currentViewport: BoundsPayload = {
-        north: bounds.getNorth(),
-        south: bounds.getSouth(),
-        west: bounds.getWest(),
-        east: bounds.getEast(),
-      };
-
-      const latSpan = Math.abs(currentViewport.north - currentViewport.south);
-      const lngSpan = Math.abs(currentViewport.east - currentViewport.west);
-      const tooWide = latSpan > MAP_MAX_LAT_SPAN || lngSpan > MAP_MAX_LNG_SPAN;
-
-      if (tooWide) {
+    const mergeIntoStore = (incoming: MerchantFeature[]): boolean => {
+      let changed = false;
+      for (const feature of incoming) {
+        const lng = Number(feature.geometry.coordinates[0]);
+        const lat = Number(feature.geometry.coordinates[1]);
+        if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+        const id = getCanonicalFeatureKey(feature);
+        const prev = globalStoreRef.current.get(id);
+        if (!prev) {
+          globalStoreRef.current.set(id, feature);
+          changed = true;
+          continue;
+        }
+        const sameCoords =
+          prev.geometry.coordinates[0] === feature.geometry.coordinates[0] &&
+          prev.geometry.coordinates[1] === feature.geometry.coordinates[1];
         if (
-          lastWidePreviewBoundsRef.current &&
-          isBoundsContained(currentViewport, lastWidePreviewBoundsRef.current)
+          !sameCoords ||
+          JSON.stringify(prev.properties) !== JSON.stringify(feature.properties)
         ) {
-          if (latestStateRef.current.loading || latestStateRef.current.updating || !latestStateRef.current.viewportTooWide) {
-            setState((prev) => ({
-              ...prev,
-              loading: false,
-              updating: false,
-              viewportTooWide: true,
-              error: null,
-            }));
-          }
-          return;
+          globalStoreRef.current.set(id, feature);
+          changed = true;
         }
-
-        abortRef.current?.abort();
-        const controller = new AbortController();
-        abortRef.current = controller;
-        setState((prev) => ({
-          ...prev,
-          loading: false,
-          updating: true,
-          viewportTooWide: true,
-          error: null,
-        }));
-        try {
-          const wideResult = await fetchFeaturesForBounds(
-            currentViewport,
-            controller.signal,
-          );
-          if (controller.signal.aborted) return;
-          logMerchantFetchDebug("wide-preview", currentViewport, currentZoom, wideResult);
-          const processed = downsampleForWidePreview(
-            sortFeatures(wideResult.features),
-          );
-
-          let hasNew = false;
-          processed.forEach((f) => {
-            const id = getCanonicalFeatureKey(f);
-            const prev = globalStoreRef.current.get(id);
-            if (!prev) {
-              globalStoreRef.current.set(id, f);
-              hasNew = true;
-              return;
-            }
-            const sameCoords =
-              prev.geometry.coordinates[0] === f.geometry.coordinates[0] &&
-              prev.geometry.coordinates[1] === f.geometry.coordinates[1];
-            if (!sameCoords || JSON.stringify(prev.properties) !== JSON.stringify(f.properties)) {
-              globalStoreRef.current.set(id, f);
-              hasNew = true;
-            }
-          });
-
-          if (wideResult.complete) {
-            lastWidePreviewBoundsRef.current = currentViewport;
-          }
-
-          if (hasNew || latestStateRef.current.viewportTooWide !== true || latestStateRef.current.loading || latestStateRef.current.updating) {
-            setState({
-              merchants: Array.from(globalStoreRef.current.values()),
-              loading: false,
-              updating: false,
-              viewportTooWide: true,
-              error: null,
-            });
-          }
-        } catch (err) {
-          if (err instanceof DOMException && err.name === "AbortError")
-            return;
-          setState((prev) => ({
-            ...prev,
-            loading: false,
-            updating: false,
-            viewportTooWide: true,
-          }));
-        }
-        return;
       }
-
-      if (
-        lastFetchedBufferedBoundsRef.current &&
-        isBoundsContained(currentViewport, lastFetchedBufferedBoundsRef.current)
-      ) {
-        const lastFetchedZoom = lastFetchedZoomRef.current;
-        const zoomDelta =
-          typeof lastFetchedZoom === "number"
-            ? Math.abs(currentZoom - lastFetchedZoom)
-            : Number.POSITIVE_INFINITY;
-        if (zoomDelta < MIN_FETCH_ZOOM_DELTA) {
-          if (state.viewportTooWide || state.loading || state.updating) {
-            setState((prev) => ({
-              ...prev,
-              loading: false,
-              updating: false,
-              viewportTooWide: false,
-              error: null,
-            }));
-          }
-          return;
-        }
-        if (state.viewportTooWide || state.loading || state.updating) {
-          setState((prev) => ({
-            ...prev,
-            loading: false,
-            updating: false,
-            viewportTooWide: false,
-            error: null,
-          }));
-        }
-        return;
-      }
-
-      const bufferedBounds = getBufferedBounds(map);
-      if (!bufferedBounds) return;
-
-      setState((prev) => ({
-        ...prev,
-        loading: !hasLoadedRef.current,
-        updating: hasLoadedRef.current || source === "move",
-        viewportTooWide: false,
-        error: null,
-      }));
-
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      try {
-        const viewportResult = await fetchFeaturesForBounds(
-          bufferedBounds,
-          controller.signal,
-        );
-        if (controller.signal.aborted) return;
-        logMerchantFetchDebug(source, bufferedBounds, currentZoom, viewportResult);
-
-        viewportResult.features.forEach((f) => {
-          const id = getCanonicalFeatureKey(f);
-          const prev = globalStoreRef.current.get(id);
-          if (!prev) {
-            globalStoreRef.current.set(id, f);
-            return;
-          }
-          const sameCoords =
-            prev.geometry.coordinates[0] === f.geometry.coordinates[0] &&
-            prev.geometry.coordinates[1] === f.geometry.coordinates[1];
-          if (!sameCoords || JSON.stringify(prev.properties) !== JSON.stringify(f.properties)) {
-            globalStoreRef.current.set(id, f);
-          }
-        });
-
-        if (viewportResult.complete) {
-          lastFetchedBufferedBoundsRef.current = bufferedBounds;
-        }
-        lastFetchedZoomRef.current = currentZoom;
-        hasLoadedRef.current = true;
-
-        setState({
-          merchants: Array.from(globalStoreRef.current.values()),
-          loading: false,
-          updating: false,
-          viewportTooWide: false,
-          error: null,
-        });
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        console.error("Failed to fetch merchants:", err);
-        setState((prev) => ({
-          ...prev,
-          loading: false,
-          updating: false,
-          error: "Failed to load stores. Please try again.",
-        }));
-      }
+      return changed;
     };
 
-    const triggerMoveFetch = () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        fetchVisible("move");
+    const computeVisible = () => {
+      const bounds = map.getBounds();
+      if (!bounds) {
+        return { merchants: [] as MerchantFeature[], viewportTooWide: false };
+      }
+      const north = bounds.getNorth();
+      const south = bounds.getSouth();
+      const east = bounds.getEast();
+      const west = bounds.getWest();
+      const latSpan = Math.abs(north - south);
+      const lngSpan = Math.abs(east - west);
+      const viewportTooWide =
+        latSpan > MAP_MAX_LAT_SPAN || lngSpan > MAP_MAX_LNG_SPAN;
+
+      const inView: MerchantFeature[] = [];
+      for (const feature of globalStoreRef.current.values()) {
+        const lng = feature.geometry.coordinates[0];
+        const lat = feature.geometry.coordinates[1];
+        if (lat <= north && lat >= south && lng >= west && lng <= east) {
+          inView.push(feature);
+        }
+      }
+      const sorted = sortFeaturesByUserDistance(inView);
+      const merchants = viewportTooWide
+        ? downsampleForWidePreview(sorted)
+        : sorted;
+      return { merchants, viewportTooWide };
+    };
+
+    const applyVisibleToState = () => {
+      const { merchants, viewportTooWide } = computeVisible();
+      setState({
+        merchants,
+        loading: false,
+        updating: false,
+        viewportTooWide,
+        error: null,
+      });
+    };
+
+    const fetchCatalogue = async (
+      source: "initial" | "background-refresh",
+      signal: AbortSignal,
+    ): Promise<boolean> => {
+      let lastError: unknown = null;
+      for (let attempt = 0; attempt < FETCH_RETRY_DELAYS_MS.length; attempt += 1) {
+        const delay = FETCH_RETRY_DELAYS_MS[attempt];
+        if (delay > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+        if (signal.aborted) return false;
+        try {
+          const res = await fetch(CATALOGUE_URL, { signal });
+          if (!res.ok) {
+            throw new Error(`Merchant catalogue request failed: ${res.status}`);
+          }
+          const json = (await res.json()) as MerchantApiResponse;
+          const features = Array.isArray(json.features) ? json.features : [];
+          mergeIntoStore(features);
+          logCatalogueFetch(source, {
+            featureCount: features.length,
+            complete: json.meta?.upHellas?.complete,
+            meta: json.meta,
+            attempt: attempt + 1,
+          });
+          return true;
+        } catch (err) {
+          if (err instanceof DOMException && err.name === "AbortError") {
+            return false;
+          }
+          lastError = err;
+          if (attempt < FETCH_RETRY_DELAYS_MS.length - 1) {
+            logCatalogueFetch("retry", {
+              featureCount: 0,
+              complete: undefined,
+              meta: undefined,
+              attempt: attempt + 1,
+            });
+          }
+        }
+      }
+      console.error("Failed to load merchant catalogue:", lastError);
+      return false;
+    };
+
+    const triggerVisibleUpdate = () => {
+      if (!initialLoadedRef.current) return;
+      if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
+      moveDebounceRef.current = setTimeout(() => {
+        applyVisibleToState();
       }, MOVE_DEBOUNCE_MS);
     };
 
-    const onMapReady = () => {
+    const scheduleBackgroundRefresh = () => {
+      if (backgroundRefreshTimerRef.current) {
+        clearTimeout(backgroundRefreshTimerRef.current);
+      }
+      backgroundRefreshTimerRef.current = setTimeout(async () => {
+        backgroundFetchControllerRef.current?.abort();
+        const controller = new AbortController();
+        backgroundFetchControllerRef.current = controller;
+        const ok = await fetchCatalogue("background-refresh", controller.signal);
+        if (ok && !controller.signal.aborted) {
+          applyVisibleToState();
+        }
+        scheduleBackgroundRefresh();
+      }, BACKGROUND_REFRESH_MS);
+    };
+
+    const initialise = async () => {
       if (userLocation && !hasAppliedLocationFlyRef.current) {
         hasAppliedLocationFlyRef.current = true;
         map.flyTo({
@@ -528,19 +341,46 @@ export function useViewportStoreQuery(
           zoom: 13,
           duration: 900,
         });
-      } else {
-        fetchVisible("initial");
       }
+
+      const controller = new AbortController();
+      initialFetchControllerRef.current = controller;
+      setState((prev) => ({
+        ...prev,
+        loading: true,
+        updating: false,
+        viewportTooWide: false,
+        error: null,
+      }));
+
+      const ok = await fetchCatalogue("initial", controller.signal);
+      if (controller.signal.aborted) return;
+      if (!ok) {
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          updating: false,
+          error: "Failed to load stores. Please try again.",
+        }));
+        return;
+      }
+      initialLoadedRef.current = true;
+      applyVisibleToState();
+      scheduleBackgroundRefresh();
     };
 
-    map.on("moveend", triggerMoveFetch);
-    if (map.isStyleLoaded()) onMapReady();
-    else map.once("load", onMapReady);
+    map.on("moveend", triggerVisibleUpdate);
+    if (map.isStyleLoaded()) initialise();
+    else map.once("load", initialise);
 
     return () => {
-      map.off("moveend", triggerMoveFetch);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      abortRef.current?.abort();
+      map.off("moveend", triggerVisibleUpdate);
+      if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
+      if (backgroundRefreshTimerRef.current) {
+        clearTimeout(backgroundRefreshTimerRef.current);
+      }
+      initialFetchControllerRef.current?.abort();
+      backgroundFetchControllerRef.current?.abort();
     };
   }, [mapReady, mapRef, userLocation]);
 

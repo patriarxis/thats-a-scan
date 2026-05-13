@@ -118,6 +118,8 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     };
   }, [error, loading, partners, updating, viewportTooWide]);
 
+  const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const pushDataToMap = useCallback(
     (items: PartnerFeature[]) => {
       const map = mapRef.current;
@@ -137,6 +139,35 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     },
     [highlightedPartnerIds, selectedPartnerId],
   );
+
+  const flushReclutter = useCallback(() => {
+    if (pushTimerRef.current) {
+      clearTimeout(pushTimerRef.current);
+      pushTimerRef.current = null;
+    }
+    const map = mapRef.current;
+    if (!map) return;
+    const latest = latestViewportStateRef.current;
+    const nextPartners = latest.partners.filter((partner) =>
+      partnerFilter ? partnerFilter(partner) : true,
+    );
+    pushDataToMap(nextPartners);
+    onVisiblePartnersChangeRef.current?.({
+      partners: nextPartners,
+      loading: latest.loading,
+      updating: latest.updating,
+      viewportTooWide: latest.viewportTooWide,
+      error: latest.error,
+    });
+  }, [partnerFilter, pushDataToMap]);
+
+  const scheduleReclutter = useCallback(() => {
+    if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
+    pushTimerRef.current = setTimeout(() => {
+      pushTimerRef.current = null;
+      flushReclutter();
+    }, DECLUTTER_VIEWPORT_DEBOUNCE_MS);
+  }, [flushReclutter]);
 
   useImperativeHandle(ref, () => ({
     flyTo(center, zoom = 14, padding, options) {
@@ -273,47 +304,23 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     else map.once("load", apply);
   }, [locale, token]);
 
+  // Immediate-flush path: triggered by user-signal changes (filter, selection, highlights,
+  // initial load completion). Layers are (re)ensured here so the first paint after a style
+  // load is correct.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    const syncData = () => {
-      const nextPartners = partners.filter((partner) =>
-        partnerFilter ? partnerFilter(partner) : true,
-      );
-      ensureMerchantMapLayers(map, nextPartners);
-      pushDataToMap(nextPartners);
-      onVisiblePartnersChangeRef.current?.({
-        partners: nextPartners,
-        loading,
-        updating,
-        viewportTooWide,
-        error,
-      });
-    };
-
-    if (map.isStyleLoaded()) {
-      syncData();
-      return;
-    }
-
-    map.once("load", syncData);
-    return () => {
-      map.off("load", syncData);
-    };
-  }, [error, loading, partnerFilter, partners, pushDataToMap, updating, viewportTooWide]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    let reclutterTimer: ReturnType<typeof setTimeout> | undefined;
-
-    const syncForCurrentZoom = () => {
+    const syncImmediate = () => {
       const latest = latestViewportStateRef.current;
       const nextPartners = latest.partners.filter((partner) =>
         partnerFilter ? partnerFilter(partner) : true,
       );
+      ensureMerchantMapLayers(map, nextPartners);
+      if (pushTimerRef.current) {
+        clearTimeout(pushTimerRef.current);
+        pushTimerRef.current = null;
+      }
       pushDataToMap(nextPartners);
       onVisiblePartnersChangeRef.current?.({
         partners: nextPartners,
@@ -324,35 +331,33 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       });
     };
 
-    const scheduleReclutter = () => {
-      if (reclutterTimer) clearTimeout(reclutterTimer);
-      reclutterTimer = setTimeout(() => {
-        reclutterTimer = undefined;
-        syncForCurrentZoom();
-      }, DECLUTTER_VIEWPORT_DEBOUNCE_MS);
-    };
-
-    map.on("zoomend", scheduleReclutter);
-    map.on("moveend", scheduleReclutter);
-    map.on("idle", scheduleReclutter);
-
+    if (map.isStyleLoaded()) {
+      syncImmediate();
+      return;
+    }
+    map.once("load", syncImmediate);
     return () => {
-      map.off("zoomend", scheduleReclutter);
-      map.off("moveend", scheduleReclutter);
-      map.off("idle", scheduleReclutter);
-      if (reclutterTimer) clearTimeout(reclutterTimer);
+      map.off("load", syncImmediate);
     };
-  }, [partnerFilter, pushDataToMap]);
+  }, [error, loading, partnerFilter, pushDataToMap, updating, viewportTooWide]);
 
+  // Debounced-schedule path: triggered only by `partners` list churn (every debounced moveend
+  // from useMap.ts). Single shared timer with `flushReclutter` so user-signal changes can flush.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
-    const latest = latestViewportStateRef.current;
-    const nextPartners = latest.partners.filter((partner) =>
-      partnerFilter ? partnerFilter(partner) : true,
-    );
-    pushDataToMap(nextPartners);
-  }, [partnerFilter, pushDataToMap]);
+    scheduleReclutter();
+  }, [partners, scheduleReclutter]);
+
+  // Cleanup the shared timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (pushTimerRef.current) {
+        clearTimeout(pushTimerRef.current);
+        pushTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;

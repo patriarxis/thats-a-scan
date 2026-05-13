@@ -1,10 +1,8 @@
 import type { MetadataRoute } from "next";
-
-const DEFAULT_SITE_URL = "https://map.uphellas.gr";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? DEFAULT_SITE_URL;
-  const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
+  const normalizedBaseUrl = getSiteUrl().toString().replace(/\/$/, "");
   const lastModified = new Date();
 
   return [

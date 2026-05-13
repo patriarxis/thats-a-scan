@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const DEFAULT_SITE_URL = "https://map.uphellas.gr";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 const ALLOW_ALL_BOTS = [
   "Googlebot",
@@ -40,8 +39,7 @@ const BLOCKED_TRAINING_BOTS = [
 ] as const;
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? DEFAULT_SITE_URL;
-  const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
+  const normalizedBaseUrl = getSiteUrl().toString().replace(/\/$/, "");
 
   const allowRules: MetadataRoute.Robots["rules"] = ALLOW_ALL_BOTS.map((userAgent) => ({
     userAgent,
@@ -59,7 +57,7 @@ export default function robots(): MetadataRoute.Robots {
       ...blockedRules,
       {
         userAgent: "*",
-        allow: "/",
+        allow: ["/", "/api/og/"],
         disallow: [
           "/*?utm_*",
           "/*?fbclid=*",

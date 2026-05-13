@@ -3,12 +3,10 @@ import localFont from "next/font/local";
 import { headers } from "next/headers";
 import { LOCALE } from "@/enums";
 import { getSeoDefaults } from "@/lib/seo";
+import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.scss";
 
-const DEFAULT_SITE_URL = "https://map.uphellas.gr";
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-  ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
-  : new URL(DEFAULT_SITE_URL);
+const siteUrl = getSiteUrl();
 
 const defaultMetaImageUrl = "/meta-image.jpg";
 const defaultSeo = getSeoDefaults(LOCALE.EL);

@@ -35,7 +35,9 @@ import {
 } from "@/lib/searchCategories";
 import { NETWORK_FILTER_DEFINITIONS } from "@/lib/merchantFilters";
 import { useMerchantFilters } from "@/lib/useMerchantFilters";
+import { normalizeStr } from "@/lib/stringUtils";
 import {
+  getMerchantName,
   getPartnerId,
   type PartnerFeature,
   type MerchantDetailSheetLabels,
@@ -133,6 +135,8 @@ const LocatorPageContent = () => {
   const [selectedPartner, setSelectedPartner] = useState<PartnerFeature | null>(null);
   const [sheetCloseSignal, setSheetCloseSignal] = useState(0);
   const [query, setQuery] = useState("");
+  /** User committed a generic keyword (e.g. Enter); keep query when opening merchant details from the map. */
+  const [isFreeformKeywordSearch, setIsFreeformKeywordSearch] = useState(false);
   const [closeActiveSignal, setCloseActiveSignal] = useState(0);
   const [activeQuickCategoryId, setActiveQuickCategoryId] = useState<PopularSearchCategoryId | null>(null);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
@@ -224,6 +228,7 @@ const LocatorPageContent = () => {
     const syncFromBrowserLocation = () => {
       const nextSearchState = parseSearchStateFromLocation();
       setQuery(nextSearchState.query);
+      setIsFreeformKeywordSearch(Boolean(nextSearchState.query.trim()));
       setSelectedNetworkIds(nextSearchState.selectedNetworkIds);
       setActiveQuickCategoryId(null);
       setUrlSelection(parseSelectionFromLocation());
@@ -232,6 +237,11 @@ const LocatorPageContent = () => {
     window.addEventListener("popstate", syncFromBrowserLocation);
     return () => window.removeEventListener("popstate", syncFromBrowserLocation);
   }, [setSelectedNetworkIds]);
+
+  useEffect(() => {
+    if (!selectedPartner || isFreeformKeywordSearch) return;
+    setQuery(getMerchantName(selectedPartner, locale));
+  }, [locale, selectedPartner, isFreeformKeywordSearch]);
 
   const syncSelectionInUrl = useCallback(
     (partner: PartnerFeature | null, historyMode: "push" | "replace" = "replace") => {
@@ -436,6 +446,18 @@ const LocatorPageContent = () => {
   const merchantMatchesAllFilters = useCallback(
     (merchant: PartnerFeature) => {
       if (!merchantMatchesFilters(merchant)) return false;
+
+      const queryTiedToSelected =
+        selectedPartner &&
+        !isFreeformKeywordSearch &&
+        !activeQuickCategory &&
+        normalizeStr(query.trim()) ===
+          normalizeStr(getMerchantName(selectedPartner, locale).trim());
+
+      if (queryTiedToSelected) {
+        return true;
+      }
+
       if (!activeQuickCategory && query.trim()) {
         if (merchantMatchesSearchQuery(merchant, query, locale)) return true;
         return queryMatchedCategoryIds.some((categoryId) => {
@@ -453,18 +475,28 @@ const LocatorPageContent = () => {
       popularCategoryById,
       query,
       queryMatchedCategoryIds,
+      selectedPartner,
+      isFreeformKeywordSearch,
     ],
   );
 
   const handleSelectPartner = useCallback(
     (
       partner: PartnerFeature,
-      options?: { updateUrl?: boolean; historyMode?: "push" | "replace" },
+      options?: {
+        updateUrl?: boolean;
+        historyMode?: "push" | "replace";
+        /** When picking from autocomplete; always replace query with merchant name even if freeform mode is on. */
+        replaceQueryWithMerchantName?: boolean;
+      },
     ) => {
       if (options?.updateUrl !== false) {
         syncSelectionInUrl(partner, options?.historyMode ?? "push");
       }
       setSelectedPartner(partner);
+      if (options?.replaceQueryWithMerchantName || !isFreeformKeywordSearch) {
+        setQuery(getMerchantName(partner, locale));
+      }
       mapRef.current?.panTo(partner.geometry.coordinates, {
         top: isMobile ? 52 : 64,
         right: 16,
@@ -472,13 +504,26 @@ const LocatorPageContent = () => {
         left: 16,
       });
     },
-    [isMobile, mobileDrawerOffsetPx, mobileSelectedMapBottomExtraPx, syncSelectionInUrl],
+    [isMobile, isFreeformKeywordSearch, locale, mobileDrawerOffsetPx, mobileSelectedMapBottomExtraPx, syncSelectionInUrl],
   );
 
+  const handleCommitFreeformSearch = useCallback(() => {
+    setIsFreeformKeywordSearch(query.trim().length > 0);
+  }, [query]);
+
   const clearSelectedPartner = useCallback(
-    (historyMode: "push" | "replace" = "replace") => {
+    (
+      historyMode: "push" | "replace" = "replace",
+      options?: { clearSearchQuery?: boolean },
+    ) => {
       setSelectedPartner(null);
       syncSelectionInUrl(null, historyMode);
+      if (options?.clearSearchQuery !== false) {
+        setQuery("");
+        setSuggestions([]);
+        setActiveQuickCategoryId(null);
+        setIsFreeformKeywordSearch(false);
+      }
     },
     [syncSelectionInUrl],
   );
@@ -639,33 +684,46 @@ const LocatorPageContent = () => {
             onCloseSearch={closeFiltersToDefault}
             isFiltersOpen={isFiltersOpen}
             filtersPanelProps={filtersPanelProps}
+            onCommitFreeformSearch={handleCommitFreeformSearch}
             onChange={(nextQuery) => {
               if (isFiltersOpen) {
                 setIsFiltersOpen(false);
               }
+              if (!isFreeformKeywordSearch && selectedPartner) {
+                const tied = normalizeStr(
+                  getMerchantName(selectedPartner, locale).trim(),
+                );
+                const nextNorm = normalizeStr(nextQuery.trim());
+                if (tied !== nextNorm) {
+                  clearSelectedPartner("replace", { clearSearchQuery: false });
+                }
+              }
+              if (!nextQuery.trim()) {
+                setIsFreeformKeywordSearch(false);
+              }
               setQuery(nextQuery);
             }}
             onClear={() => {
-              setQuery("");
-              setSuggestions([]);
-              setActiveQuickCategoryId(null);
+              clearSelectedPartner("replace");
             }}
             onSelect={(item) => {
               if (item.type === "category" && item.categoryId) {
-                clearSelectedPartner("replace");
+                setIsFreeformKeywordSearch(false);
+                clearSelectedPartner("replace", { clearSearchQuery: false });
                 setActiveQuickCategoryId(item.categoryId as PopularSearchCategoryId);
                 setQuery(item.label);
                 setSuggestions([]);
                 return;
               }
               if (!item.merchantId || !item.coordinates) return;
+              setIsFreeformKeywordSearch(false);
               const partner = allKnownById[item.merchantId];
               if (partner) {
-                handleSelectPartner(partner);
+                handleSelectPartner(partner, { replaceQueryWithMerchantName: true });
               } else {
                 mapRef.current?.panTo(item.coordinates, focusPadding);
+                setQuery(item.label);
               }
-              setQuery(item.label);
               setSuggestions([]);
             }}
             onOpenFilters={() => setIsFiltersOpen(true)}
@@ -682,7 +740,8 @@ const LocatorPageContent = () => {
             <QuickFilterChips
               options={quickChipOptions}
               onToggle={(id) => {
-                clearSelectedPartner("replace");
+                setIsFreeformKeywordSearch(false);
+                clearSelectedPartner("replace", { clearSearchQuery: false });
                 const nextId = id as PopularSearchCategoryId;
                 setActiveQuickCategoryId((prev) => (prev === nextId ? null : nextId));
                 const selectedCategory = popularCategories.find((item) => item.id === id);
@@ -743,7 +802,11 @@ const LocatorPageContent = () => {
             isMobile={isMobile}
             locale={locale}
             labels={merchantDetailLabels}
-            onClose={() => clearSelectedPartner()}
+            onClose={() =>
+              clearSelectedPartner("replace", {
+                clearSearchQuery: !isFreeformKeywordSearch,
+              })
+            }
             closeSignal={sheetCloseSignal}
           />
         )}

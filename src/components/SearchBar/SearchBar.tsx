@@ -49,6 +49,8 @@ type SearchBarProps = {
   showLocaleSwitcher?: boolean;
   localeSwitcherAriaLabel?: string;
   onOpenLocalePanel?: () => void;
+  /** Enter with no listbox option highlighted: accept current text and close (e.g. generic brand search). */
+  onCommitFreeformSearch?: () => void;
 };
 
 export const SearchBar = ({
@@ -78,6 +80,7 @@ export const SearchBar = ({
   showLocaleSwitcher = false,
   localeSwitcherAriaLabel = "Change language",
   onOpenLocalePanel,
+  onCommitFreeformSearch,
 }: SearchBarProps) => {
   const MOBILE_SEARCH_CLOSE_ANIMATION_MS = 200;
   const MOBILE_ONLY_MEDIA_QUERY = "(max-width: 639px)";
@@ -140,8 +143,6 @@ export const SearchBar = ({
     () => (activeIndex >= 0 ? `search-opt-${activeIndex}` : undefined),
     [activeIndex],
   );
-  const selectedSuggestion =
-    activeIndex >= 0 ? suggestions[activeIndex] : suggestions[0];
 
   useEffect(() => {
     if (!isOpen) setActiveIndex(-1);
@@ -273,10 +274,13 @@ export const SearchBar = ({
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              if (selectedSuggestion) {
-                handleSelect(selectedSuggestion);
+              const keyboardPick =
+                isOpen && activeIndex >= 0 ? suggestions[activeIndex] : undefined;
+              if (keyboardPick) {
+                handleSelect(keyboardPick);
                 return;
               }
+              onCommitFreeformSearch?.();
               if (inputRef.current && document.activeElement === inputRef.current) {
                 inputRef.current.blur();
               }

@@ -26,7 +26,7 @@ export const buildStoreUrl = (
   if (lng) params.set("lng", lng);
   const query = params.toString();
   const localePrefix = locale === LOCALE.EN ? "/en" : "";
-  const pathname = `${localePrefix}/store/${encodeURIComponent(storeId)}`;
+  const pathname = `${localePrefix}/place/${encodeURIComponent(storeId)}`;
   return query ? `${pathname}?${query}` : pathname;
 };
 
@@ -36,11 +36,11 @@ export const buildStoreOgImageUrl = (
   lng?: string,
   locale: LOCALE = LOCALE.EL,
 ): string => {
-  const params = new URLSearchParams({ storeId });
+  const params = new URLSearchParams({ placeId: storeId });
   if (lat) params.set("lat", lat);
   if (lng) params.set("lng", lng);
   params.set("locale", locale);
-  return `/api/og/store?${params.toString()}`;
+  return `/api/og/place?${params.toString()}`;
 };
 
 export const fetchStoreDetails = async (

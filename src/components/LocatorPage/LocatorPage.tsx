@@ -63,7 +63,7 @@ const MerchantDetailSheet = dynamic(
 );
 
 type UrlSelectionState = {
-  storeId: string | null;
+  placeId: string | null;
   lat: number;
   lng: number;
 };
@@ -85,16 +85,17 @@ const REMOTE_MERCHANT_SEARCH_MIN_QUERY_LENGTH = 3;
 
 const parseSelectionFromLocation = (): UrlSelectionState => {
   if (typeof window === "undefined") {
-    return { storeId: null, lat: Number.NaN, lng: Number.NaN };
+    return { placeId: null, lat: Number.NaN, lng: Number.NaN };
   }
   const url = new URL(window.location.href);
   const localizedPath = stripLocalePrefix(url.pathname);
-  const pathMatch = localizedPath.match(/^\/store\/([^/]+)$/);
-  const storeIdFromPath = pathMatch?.[1] ? decodeURIComponent(pathMatch[1]) : null;
-  const storeId = storeIdFromPath ?? url.searchParams.get("store");
+  const pathMatch = localizedPath.match(/^\/(?:place|store)\/([^/]+)$/);
+  const placeIdFromPath = pathMatch?.[1] ? decodeURIComponent(pathMatch[1]) : null;
+  const placeId =
+    placeIdFromPath ?? url.searchParams.get("place") ?? url.searchParams.get("store");
   const lat = Number(url.searchParams.get("lat"));
   const lng = Number(url.searchParams.get("lng"));
-  return { storeId, lat, lng };
+  return { placeId, lat, lng };
 };
 
 const parseSearchStateFromLocation = (): UrlSearchState => {
@@ -122,7 +123,7 @@ const LocatorPageContent = () => {
   const [isNarrowViewport, setIsNarrowViewport] = useState(false);
   const { locale, setLocale, t } = useLocale();
   const [urlSelection, setUrlSelection] = useState<UrlSelectionState>({
-    storeId: null,
+    placeId: null,
     lat: Number.NaN,
     lng: Number.NaN,
   });
@@ -251,6 +252,7 @@ const LocatorPageContent = () => {
       const localeAwareRootPath = applyLocalePrefix("/", activeLocale);
       let nextPathname = localeAwareRootPath;
       if (!partner) {
+        nextParams.delete("place");
         nextParams.delete("store");
         nextParams.delete("lat");
         nextParams.delete("lng");
@@ -259,9 +261,10 @@ const LocatorPageContent = () => {
         const partnerId = getPartnerId(partner);
         nextParams.set("lat", String(lat));
         nextParams.set("lng", String(lng));
+        nextParams.delete("place");
         nextParams.delete("store");
         nextPathname = applyLocalePrefix(
-          `/store/${encodeURIComponent(partnerId)}`,
+          `/place/${encodeURIComponent(partnerId)}`,
           activeLocale,
         );
       }
@@ -574,10 +577,10 @@ const LocatorPageContent = () => {
   }, [mapError, mapLoading, mapUpdating, t]);
 
   useEffect(() => {
-    const { storeId, lat, lng } = urlSelection;
+    const { placeId, lat, lng } = urlSelection;
     const hasValidCoordinates = Number.isFinite(lat) && Number.isFinite(lng);
 
-    if (!storeId) {
+    if (!placeId) {
       urlSelectionAppliedRef.current = null;
       if (selectedPartner) {
         setSelectedPartner(null);
@@ -585,18 +588,18 @@ const LocatorPageContent = () => {
       return;
     }
 
-    const partner = allKnownById[storeId];
+    const partner = allKnownById[placeId];
     if (partner) {
-      if (selectedId !== storeId) {
+      if (selectedId !== placeId) {
         handleSelectPartner(partner, { updateUrl: false });
       }
-      urlSelectionAppliedRef.current = storeId;
+      urlSelectionAppliedRef.current = placeId;
       return;
     }
 
-    if (hasValidCoordinates && urlSelectionAppliedRef.current !== storeId) {
+    if (hasValidCoordinates && urlSelectionAppliedRef.current !== placeId) {
       mapRef.current?.flyTo([lng, lat], 15, focusPadding, { preserveHigherZoom: true });
-      urlSelectionAppliedRef.current = storeId;
+      urlSelectionAppliedRef.current = placeId;
     }
   }, [
     allKnownById,

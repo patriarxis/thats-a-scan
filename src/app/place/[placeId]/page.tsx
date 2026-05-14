@@ -11,7 +11,7 @@ import {
 import { LOCALE } from "@/enums";
 
 type MetadataProps = {
-  params: Promise<{ storeId: string }>;
+  params: Promise<{ placeId: string }>;
   searchParams: Promise<{ lat?: string; lng?: string }>;
 };
 
@@ -19,19 +19,19 @@ export async function generateMetadata({
   params,
   searchParams,
 }: MetadataProps): Promise<Metadata> {
-  const { storeId } = await params;
+  const { placeId } = await params;
   const { lat: latRaw, lng: lngRaw } = await searchParams;
   const lat = parseCoordinate(latRaw);
   const lng = parseCoordinate(lngRaw);
 
-  const metadataUrl = buildStoreUrl(storeId, latRaw, lngRaw, LOCALE.EL);
+  const metadataUrl = buildStoreUrl(placeId, latRaw, lngRaw, LOCALE.EL);
   let store = null;
   if (lat !== null && lng !== null) {
-    store = await fetchStoreDetails(storeId, lat, lng);
+    store = await fetchStoreDetails(placeId, lat, lng);
   }
-  const { title, description } = getStoreShareText(storeId, store, LOCALE.EL);
-  const ogImageUrl = buildStoreOgImageUrl(storeId, latRaw, lngRaw, LOCALE.EL);
-  const englishUrl = buildStoreUrl(storeId, latRaw, lngRaw, LOCALE.EN);
+  const { title, description } = getStoreShareText(placeId, store, LOCALE.EL);
+  const ogImageUrl = buildStoreOgImageUrl(placeId, latRaw, lngRaw, LOCALE.EL);
+  const englishUrl = buildStoreUrl(placeId, latRaw, lngRaw, LOCALE.EN);
 
   return {
     title,
@@ -62,7 +62,7 @@ export async function generateMetadata({
   };
 }
 
-export default function StorePage() {
+export default function PlacePage() {
   return (
     <ErrorBoundary>
       <LocatorPage />

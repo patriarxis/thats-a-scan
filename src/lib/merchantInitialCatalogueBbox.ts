@@ -1,7 +1,7 @@
 import type { BBoxPayload } from "@/lib/upHellasMerchants";
 
-/** Athens-area box aligned with the map’s default center/zoom; used for first merchant POST. */
+/** Athens-centred first-fetch box; padded past the default map view so cold loads don’t look like a sharp rectangle before the full catalogue hydrates. */
 export const INITIAL_CATALOGUE_BBOX: BBoxPayload = {
-  north_west: { latitude: 38.2, longitude: 23.45 },
-  south_east: { latitude: 37.85, longitude: 23.95 },
+  north_west: { latitude: 38.38, longitude: 23.22 },
+  south_east: { latitude: 37.68, longitude: 24.12 },
 };

@@ -305,17 +305,32 @@ const LocatorPageContent = () => {
     }
   }, [query, selectedNetworkIds]);
 
-  const focusPadding = useMemo(() => {
-    if (!sidebarOpen) {
-      return { top: 64, right: 16, bottom: 16, left: 16 };
-    }
-    return {
-      top: isMobile ? 52 : 64,
-      right: 16,
-      bottom: isMobile ? mobileDrawerOffsetPx + mobileSelectedMapBottomExtraPx : desktopDrawerOffsetPx,
-      left: 16,
-    };
-  }, [isMobile, sidebarOpen, mobileDrawerOffsetPx, mobileSelectedMapBottomExtraPx]);
+  const sheetOpenMapPadding = useMemo(
+    () =>
+      isMobile
+        ? {
+            top: 52,
+            right: 16,
+            bottom: mobileDrawerOffsetPx + mobileSelectedMapBottomExtraPx,
+            left: 16,
+          }
+        : {
+            top: 64,
+            right: desktopDrawerOffsetPx,
+            bottom: 16,
+            left: 16,
+          },
+    [isMobile, mobileDrawerOffsetPx, mobileSelectedMapBottomExtraPx],
+  );
+
+  /** Padding for Mapbox `easeTo` / `flyTo` (camera). */
+  const focusPadding = useMemo(
+    () =>
+      sidebarOpen
+        ? sheetOpenMapPadding
+        : { top: 64, right: 16, bottom: 16, left: 16 },
+    [sidebarOpen, sheetOpenMapPadding],
+  );
 
   useEffect(() => {
     if (!query.trim()) {
@@ -496,14 +511,9 @@ const LocatorPageContent = () => {
       if (options?.replaceQueryWithMerchantName || !isFreeformKeywordSearch) {
         setQuery(getMerchantName(partner, locale));
       }
-      mapRef.current?.panTo(partner.geometry.coordinates, {
-        top: isMobile ? 52 : 64,
-        right: 16,
-        bottom: isMobile ? mobileDrawerOffsetPx + mobileSelectedMapBottomExtraPx : desktopDrawerOffsetPx,
-        left: 16,
-      });
+      mapRef.current?.panTo(partner.geometry.coordinates, sheetOpenMapPadding);
     },
-    [isMobile, isFreeformKeywordSearch, locale, mobileDrawerOffsetPx, mobileSelectedMapBottomExtraPx, syncSelectionInUrl],
+    [isMobile, isFreeformKeywordSearch, locale, mobileDrawerOffsetPx, mobileSelectedMapBottomExtraPx, sheetOpenMapPadding, syncSelectionInUrl],
   );
 
   const handleCommitFreeformSearch = useCallback(() => {

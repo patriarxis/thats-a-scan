@@ -4,13 +4,41 @@ import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Map as MapboxMap } from "mapbox-gl";
 import { type MerchantFeature } from "@/types";
 import { MAP_MAX_LAT_SPAN, MAP_MAX_LNG_SPAN } from "@/lib/config";
+import { INITIAL_CATALOGUE_BBOX } from "@/lib/merchantInitialCatalogueBbox";
 
-const CATALOGUE_URL = "/api/merchants-geojson?scope=all";
+const MERCHANTS_API_PATH = "/api/merchants-geojson";
 const MOVE_DEBOUNCE_MS = 200;
 const BACKGROUND_REFRESH_MS = 30 * 60 * 1000;
 const FETCH_RETRY_DELAYS_MS = [0, 500, 1500];
 const WIDE_PREVIEW_MAX_FEATURES = 220;
 const WIDE_PREVIEW_GRID_DECIMALS = 1;
+
+/** Wait until style is ready and the map camera is idle before running heavy work (avoids jank during flyTo). */
+const MAP_QUIET_MAX_WAIT_MS = 5000;
+
+function scheduleWhenMapQuiet(
+  map: MapboxMap,
+  isAlive: () => boolean,
+  fn: () => void,
+): void {
+  const deadline = Date.now() + MAP_QUIET_MAX_WAIT_MS;
+
+  const step = () => {
+    if (!isAlive()) return;
+    if (!map.isStyleLoaded()) {
+      map.once("load", step);
+      return;
+    }
+    if (map.isMoving() && Date.now() < deadline) {
+      map.once("idle", step);
+      return;
+    }
+    if (!isAlive()) return;
+    fn();
+  };
+
+  queueMicrotask(step);
+}
 
 export type UserLocation = {
   lat: number;
@@ -55,7 +83,12 @@ function haversineDistanceKm(
 }
 
 function logCatalogueFetch(
-  source: "initial" | "background-refresh" | "retry",
+  source:
+    | "initial-bbox"
+    | "initial-full"
+    | "initial-full-fallback"
+    | "background-refresh"
+    | "retry",
   payload: {
     featureCount: number;
     complete: boolean | undefined;
@@ -119,7 +152,6 @@ export function useViewportStoreQuery(
 
   const globalStoreRef = useRef<Map<string, MerchantFeature>>(new Map());
   const initialLoadedRef = useRef(false);
-  const initialFetchControllerRef = useRef<AbortController | null>(null);
   const backgroundFetchControllerRef = useRef<AbortController | null>(null);
   const moveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -197,6 +229,9 @@ export function useViewportStoreQuery(
     const map = mapRef.current;
     if (!map) return;
 
+    let alive = true;
+    const hydrationController = new AbortController();
+
     const mergeIntoStore = (incoming: MerchantFeature[]): boolean => {
       let changed = false;
       for (const feature of incoming) {
@@ -222,6 +257,18 @@ export function useViewportStoreQuery(
         }
       }
       return changed;
+    };
+
+    /** Full-catalogue responses: rebuild the store in one pass (avoids O(n) deep compares on refresh). */
+    const replaceGlobalStore = (incoming: MerchantFeature[]) => {
+      const next = new Map<string, MerchantFeature>();
+      for (const feature of incoming) {
+        const lng = Number(feature.geometry.coordinates[0]);
+        const lat = Number(feature.geometry.coordinates[1]);
+        if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+        next.set(getCanonicalFeatureKey(feature), feature);
+      }
+      globalStoreRef.current = next;
     };
 
     const computeVisible = () => {
@@ -254,6 +301,7 @@ export function useViewportStoreQuery(
     };
 
     const applyVisibleToState = () => {
+      if (!alive) return;
       const { merchants, viewportTooWide } = computeVisible();
       setState({
         merchants,
@@ -264,35 +312,48 @@ export function useViewportStoreQuery(
       });
     };
 
-    const fetchCatalogue = async (
-      source: "initial" | "background-refresh",
-      signal: AbortSignal,
-    ): Promise<boolean> => {
+    const fetchMerchantCollection = async (
+      kind: "bbox" | "full",
+      logSource:
+        | "initial-bbox"
+        | "initial-full"
+        | "initial-full-fallback"
+        | "background-refresh",
+      signal: AbortSignal | undefined,
+    ): Promise<MerchantApiResponse | null> => {
       let lastError: unknown = null;
       for (let attempt = 0; attempt < FETCH_RETRY_DELAYS_MS.length; attempt += 1) {
         const delay = FETCH_RETRY_DELAYS_MS[attempt];
         if (delay > 0) {
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
-        if (signal.aborted) return false;
+        if (signal?.aborted) return null;
         try {
-          const res = await fetch(CATALOGUE_URL, { signal });
+          const res =
+            kind === "bbox"
+              ? await fetch(MERCHANTS_API_PATH, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(INITIAL_CATALOGUE_BBOX),
+                  signal,
+                })
+              : await fetch(`${MERCHANTS_API_PATH}?scope=all`, { signal });
+
           if (!res.ok) {
             throw new Error(`Merchant catalogue request failed: ${res.status}`);
           }
           const json = (await res.json()) as MerchantApiResponse;
           const features = Array.isArray(json.features) ? json.features : [];
-          mergeIntoStore(features);
-          logCatalogueFetch(source, {
+          logCatalogueFetch(logSource, {
             featureCount: features.length,
             complete: json.meta?.upHellas?.complete,
             meta: json.meta,
             attempt: attempt + 1,
           });
-          return true;
+          return json;
         } catch (err) {
           if (err instanceof DOMException && err.name === "AbortError") {
-            return false;
+            return null;
           }
           lastError = err;
           if (attempt < FETCH_RETRY_DELAYS_MS.length - 1) {
@@ -306,7 +367,7 @@ export function useViewportStoreQuery(
         }
       }
       console.error("Failed to load merchant catalogue:", lastError);
-      return false;
+      return null;
     };
 
     const triggerVisibleUpdate = () => {
@@ -325,15 +386,49 @@ export function useViewportStoreQuery(
         backgroundFetchControllerRef.current?.abort();
         const controller = new AbortController();
         backgroundFetchControllerRef.current = controller;
-        const ok = await fetchCatalogue("background-refresh", controller.signal);
-        if (ok && !controller.signal.aborted) {
-          applyVisibleToState();
+        const json = await fetchMerchantCollection(
+          "full",
+          "background-refresh",
+          controller.signal,
+        );
+        if (json && Array.isArray(json.features) && !controller.signal.aborted && alive) {
+          const features = json.features;
+          scheduleWhenMapQuiet(map, () => alive, () => {
+            if (!alive || controller.signal.aborted) return;
+            replaceGlobalStore(features);
+            applyVisibleToState();
+          });
         }
-        scheduleBackgroundRefresh();
+        if (alive) scheduleBackgroundRefresh();
       }, BACKGROUND_REFRESH_MS);
     };
 
-    const initialise = async () => {
+    map.on("moveend", triggerVisibleUpdate);
+
+    if (initialLoadedRef.current) {
+      if (userLocation && !hasAppliedLocationFlyRef.current) {
+        hasAppliedLocationFlyRef.current = true;
+        map.flyTo({
+          center: [userLocation.lng, userLocation.lat],
+          zoom: 13,
+          duration: 900,
+        });
+      }
+      applyVisibleToState();
+      scheduleBackgroundRefresh();
+      return () => {
+        alive = false;
+        hydrationController.abort();
+        map.off("moveend", triggerVisibleUpdate);
+        if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
+        if (backgroundRefreshTimerRef.current) {
+          clearTimeout(backgroundRefreshTimerRef.current);
+        }
+        backgroundFetchControllerRef.current?.abort();
+      };
+    }
+
+    const runInitialCatalogue = async () => {
       if (userLocation && !hasAppliedLocationFlyRef.current) {
         hasAppliedLocationFlyRef.current = true;
         map.flyTo({
@@ -343,8 +438,6 @@ export function useViewportStoreQuery(
         });
       }
 
-      const controller = new AbortController();
-      initialFetchControllerRef.current = controller;
       setState((prev) => ({
         ...prev,
         loading: true,
@@ -353,9 +446,18 @@ export function useViewportStoreQuery(
         error: null,
       }));
 
-      const ok = await fetchCatalogue("initial", controller.signal);
-      if (controller.signal.aborted) return;
-      if (!ok) {
+      // Bbox first, parallel with Mapbox style; no AbortSignal so Strict Mode cleanup does not cancel it.
+      let json = await fetchMerchantCollection("bbox", "initial-bbox", undefined);
+
+      if (!alive) return;
+
+      if (!json) {
+        json = await fetchMerchantCollection("full", "initial-full-fallback", undefined);
+      }
+
+      if (!alive) return;
+
+      if (!json || !Array.isArray(json.features)) {
         setState((prev) => ({
           ...prev,
           loading: false,
@@ -364,22 +466,53 @@ export function useViewportStoreQuery(
         }));
         return;
       }
+
+      mergeIntoStore(json.features);
       initialLoadedRef.current = true;
       applyVisibleToState();
       scheduleBackgroundRefresh();
+
+      if (!alive) return;
+
+      setState((prev) => ({
+        ...prev,
+        updating: true,
+      }));
+
+      const fullJson = await fetchMerchantCollection(
+        "full",
+        "initial-full",
+        hydrationController.signal,
+      );
+      if (!alive || hydrationController.signal.aborted) {
+        setState((prev) => ({ ...prev, updating: false }));
+        return;
+      }
+      if (fullJson && Array.isArray(fullJson.features)) {
+        const features = fullJson.features;
+        scheduleWhenMapQuiet(map, () => alive, () => {
+          if (!alive || hydrationController.signal.aborted) {
+            setState((prev) => ({ ...prev, updating: false }));
+            return;
+          }
+          replaceGlobalStore(features);
+          applyVisibleToState();
+        });
+      } else {
+        setState((prev) => ({ ...prev, updating: false }));
+      }
     };
 
-    map.on("moveend", triggerVisibleUpdate);
-    if (map.isStyleLoaded()) initialise();
-    else map.once("load", initialise);
+    void runInitialCatalogue();
 
     return () => {
+      alive = false;
+      hydrationController.abort();
       map.off("moveend", triggerVisibleUpdate);
       if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
       if (backgroundRefreshTimerRef.current) {
         clearTimeout(backgroundRefreshTimerRef.current);
       }
-      initialFetchControllerRef.current?.abort();
       backgroundFetchControllerRef.current?.abort();
     };
   }, [mapReady, mapRef, userLocation]);

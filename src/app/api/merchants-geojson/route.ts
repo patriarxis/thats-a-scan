@@ -1,18 +1,21 @@
 import { NextResponse } from "next/server";
 import {
   getCachedMerchantCatalogue,
+  kickMerchantCatalogueWarm,
+  tryGetCachedCompleteSnapshot,
   type MerchantCatalogueSnapshot,
 } from "@/lib/merchantCatalogueCache";
 import type { PartnerFeature } from "@/types";
-import type { BBoxPayload } from "@/lib/upHellasMerchants";
-
-const DEFAULT_ATHENS_BBOX: BBoxPayload = {
-  north_west: { latitude: 38.2, longitude: 23.45 },
-  south_east: { latitude: 37.85, longitude: 23.95 },
-};
+import { INITIAL_CATALOGUE_BBOX } from "@/lib/merchantInitialCatalogueBbox";
+import {
+  fetchAllUpHellasFeatures,
+  payloadToBounds,
+  type BBoxPayload,
+  type UpHellasFetchResult,
+} from "@/lib/upHellasMerchants";
 
 const CACHE_CONTROL_HEADER =
-  "public, s-maxage=600, stale-while-revalidate=3600";
+  "public, max-age=600, s-maxage=600, stale-while-revalidate=3600";
 
 function isValidLatitude(v: number): boolean {
   return Number.isFinite(v) && v >= -90 && v <= 90;
@@ -41,6 +44,18 @@ function buildMeta(snapshot: MerchantCatalogueSnapshot) {
       complete: snapshot.upHellas.complete,
     },
     loadedAt: snapshot.loadedAt,
+  };
+}
+
+function buildMetaFromViewportFetch(up: UpHellasFetchResult, loadedAt: number) {
+  return {
+    upHellas: {
+      requestCount: up.requestCount,
+      saturatedBoundsCount: up.saturatedBoundsCount,
+      stoppedByRequestLimit: up.stoppedByRequestLimit,
+      complete: up.complete,
+    },
+    loadedAt,
   };
 }
 
@@ -102,7 +117,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  let bounds: BBoxPayload = DEFAULT_ATHENS_BBOX;
+  let bounds: BBoxPayload = INITIAL_CATALOGUE_BBOX;
   try {
     const json = (await request.json()) as Partial<BBoxPayload>;
     const nwLat = Number(json?.north_west?.latitude);
@@ -123,21 +138,37 @@ export async function POST(request: Request) {
       };
     }
   } catch {
-    bounds = DEFAULT_ATHENS_BBOX;
+    bounds = INITIAL_CATALOGUE_BBOX;
   }
 
   try {
-    const snapshot = await getCachedMerchantCatalogue();
-    const upHellasInBox = filterByBounds(snapshot.upHellas.features, bounds);
-    const nyamieInBox = filterByBounds(snapshot.nyamie, bounds);
+    const snapshot = tryGetCachedCompleteSnapshot();
+    if (snapshot) {
+      const upHellasInBox = filterByBounds(snapshot.upHellas.features, bounds);
+      const nyamieInBox = filterByBounds(snapshot.nyamie, bounds);
+
+      return jsonWithCacheHeaders({
+        type: "FeatureCollection" as const,
+        features: [
+          ...tagSource(upHellasInBox, "up_hellas"),
+          ...tagSource(nyamieInBox, "nyamie"),
+        ],
+        meta: buildMeta(snapshot),
+      });
+    }
+
+    const upBounds = payloadToBounds(bounds);
+    const upResult = await fetchAllUpHellasFeatures(upBounds);
+
+    // Start full-Greece build only after the viewport response is ready, so this request
+    // does not compete with `fetchAllUpHellasFeatures(GREECE)` for upstream capacity.
+    kickMerchantCatalogueWarm();
+    const loadedAt = Date.now();
 
     return jsonWithCacheHeaders({
       type: "FeatureCollection" as const,
-      features: [
-        ...tagSource(upHellasInBox, "up_hellas"),
-        ...tagSource(nyamieInBox, "nyamie"),
-      ],
-      meta: buildMeta(snapshot),
+      features: tagSource(upResult.features, "up_hellas"),
+      meta: buildMetaFromViewportFetch(upResult, loadedAt),
     });
   } catch (error) {
     console.error("Error merging merchant data sources:", error);

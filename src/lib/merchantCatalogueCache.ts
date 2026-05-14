@@ -102,6 +102,19 @@ export async function getCachedUpHellasResult(): Promise<UpHellasFetchResult> {
   return snapshot.upHellas;
 }
 
+/** Fast path for bbox APIs: use when snapshot is complete and within hard TTL. */
+export function tryGetCachedCompleteSnapshot(): MerchantCatalogueSnapshot | null {
+  if (!cachedSnapshot) return null;
+  if (ageOf(cachedSnapshot) >= CATALOGUE_TTL_MS) return null;
+  if (!cachedSnapshot.upHellas.complete) return null;
+  return cachedSnapshot;
+}
+
+/** Start full-Greece catalogue build without blocking (deduped with `getCachedMerchantCatalogue`). */
+export function kickMerchantCatalogueWarm(): void {
+  ensureFetchInFlight().catch(() => undefined);
+}
+
 if (
   typeof process !== "undefined" &&
   process.env.NEXT_RUNTIME === "nodejs" &&

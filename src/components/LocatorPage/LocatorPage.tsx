@@ -143,7 +143,6 @@ const LocatorPageContent = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [mapLoading, setMapLoading] = useState(true);
   const [mapUpdating, setMapUpdating] = useState(false);
-  const [mapViewportTooWide, setMapViewportTooWide] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
 
@@ -534,11 +533,10 @@ const LocatorPageContent = () => {
   }, [selectedPartner]);
 
   const handleVisiblePartnersChange = useCallback(
-    ({ partners, loading, updating, viewportTooWide, error }: VisiblePartnersChangePayload) => {
+    ({ partners, loading, updating, error }: VisiblePartnersChangePayload) => {
       setVisiblePartners(partners);
       setMapLoading(loading);
       setMapUpdating(updating);
-      setMapViewportTooWide(viewportTooWide);
       setMapError(error);
       setAllKnownById((prev) => {
         const next = { ...prev };
@@ -562,11 +560,8 @@ const LocatorPageContent = () => {
     if (!mapLoading && mapUpdating && !mapError) {
       items.push({ id: "map-updating", message: t("updatingArea"), tone: "neutral" });
     }
-    if (mapViewportTooWide && !selectedId) {
-      items.push({ id: "map-zoom-hint", message: t("zoomInToSeeStores"), tone: "neutral" });
-    }
     return items;
-  }, [mapError, mapLoading, mapUpdating, mapViewportTooWide, selectedId, t]);
+  }, [mapError, mapLoading, mapUpdating, t]);
 
   useEffect(() => {
     const { storeId, lat, lng } = urlSelection;

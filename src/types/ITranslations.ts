@@ -19,7 +19,6 @@ export interface ITranslations {
     list: string;
     merchantDetail: string;
     noResults: string;
-    zoomInToSeeStores: string;
     clearSearch: string;
     noAddress: string;
     loadingSuggestions: string;

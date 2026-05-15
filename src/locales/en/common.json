@@ -27,6 +27,7 @@
   "searchHintClose": "Close",
   "loadingMap": "Loading map...",
   "updatingArea": "Updating area...",
+  "locationOff": "Your location is off",
   "address": "Address",
   "filters": "Filters",
   "openFilters": "Open filters",

@@ -14,25 +14,3 @@
   width: calc(100vw - 2 * $spacing-md);
   max-width: $max-width-sm;
 }
-
-.toast {
-  border-radius: $border-radius-full;
-  padding: $spacing-sm $spacing-md;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-medium;
-  line-height: $line-height-tight;
-  box-shadow: $shadow-lg;
-  backdrop-filter: blur(4px);
-  text-align: center;
-}
-
-.neutral {
-  background: rgba($neutral-2, 0.95);
-  color: $white-70;
-}
-
-.error {
-  border: 1px solid rgba(#ef4444, 0.3);
-  background: rgba(#450a0a, 0.9);
-  color: #fecaca;
-}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Map as MapboxMap } from "mapbox-gl";
+import type { UserLocation } from "@/lib/UserLocationContext";
 import { type MerchantFeature } from "@/types";
 import { MAP_MAX_LAT_SPAN, MAP_MAX_LNG_SPAN } from "@/lib/config";
 import { INITIAL_CATALOGUE_BBOX } from "@/lib/merchantInitialCatalogueBbox";
@@ -47,10 +48,8 @@ function scheduleWhenMapQuiet(
   queueMicrotask(step);
 }
 
-export type UserLocation = {
-  lat: number;
-  lng: number;
-};
+export type { UserLocation, UserLocationPermission } from "@/lib/UserLocationContext";
+export { UserLocationProvider, useUserLocation } from "@/lib/UserLocationContext";
 
 type ViewportQueryState = {
   merchants: MerchantFeature[];
@@ -116,32 +115,6 @@ function logCatalogueFetch(
     },
     serverLoadedAt: payload.meta?.loadedAt,
   });
-}
-
-export function useUserLocation() {
-  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-
-  useEffect(() => {
-    if (!("geolocation" in navigator)) return;
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-      },
-      () => {
-        setUserLocation(null);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 8000,
-        maximumAge: 60000,
-      },
-    );
-  }, []);
-
-  return userLocation;
 }
 
 export function useViewportStoreQuery(

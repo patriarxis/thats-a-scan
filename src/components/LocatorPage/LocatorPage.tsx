@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { LocaleProvider } from "@/lib/LocaleContext";
 import { useLocale } from "@/lib";
+import { UserLocationProvider, useUserLocation } from "@/lib/UserLocationContext";
 import { useIsMobileUx } from "@/lib/useIsMobileUx";
 import { LOCALE } from "@/enums";
 import {
@@ -13,7 +14,8 @@ import { SearchBar } from "@/components/SearchBar/SearchBar";
 import type { FiltersModalProps } from "@/components/FiltersModal/FiltersModal";
 import { QuickFilterChips } from "@/components/QuickFilterChips/QuickFilterChips";
 import { Backdrop } from "@/components/ui/Backdrop/Backdrop";
-import { ToastStack, type ToastStackItem } from "@/components/ui/ToastStack";
+import { ToastStack } from "@/components/ui/ToastStack";
+import { useMapToasts } from "@/components/LocatorPage/useMapToasts";
 import type { MapViewHandle } from "@/components/MapView/MapView";
 import { resolveMarkerVisual } from "@/components/MapView/merchantMarkerVisual";
 import { LocatorHeader } from "@/components/LocatorHeader/LocatorHeader";
@@ -146,6 +148,7 @@ const LocatorPageContent = () => {
   const [mapUpdating, setMapUpdating] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+  const { permission: locationPermission } = useUserLocation();
 
   const allKnownMerchants = useMemo(
     () => Object.values(allKnownById),
@@ -563,19 +566,13 @@ const LocatorPageContent = () => {
     [],
   );
 
-  const mapToasts = useMemo<ToastStackItem[]>(() => {
-    const items: ToastStackItem[] = [];
-    if (mapError) {
-      items.push({ id: "map-error", message: mapError, tone: "error" });
-    }
-    if (mapLoading) {
-      items.push({ id: "map-loading", message: t("loadingMap"), tone: "neutral" });
-    }
-    if (!mapLoading && mapUpdating && !mapError) {
-      items.push({ id: "map-updating", message: t("updatingArea"), tone: "neutral" });
-    }
-    return items;
-  }, [mapError, mapLoading, mapUpdating, t]);
+  const mapToasts = useMapToasts({
+    mapError,
+    mapLoading,
+    mapUpdating,
+    locationPermission,
+    t,
+  });
 
   useEffect(() => {
     const { placeId, lat, lng } = urlSelection;
@@ -842,7 +839,9 @@ const LocatorPageContent = () => {
 export const LocatorPage = () => {
   return (
     <LocaleProvider>
-      <LocatorPageContent />
+      <UserLocationProvider>
+        <LocatorPageContent />
+      </UserLocationProvider>
     </LocaleProvider>
   );
 };

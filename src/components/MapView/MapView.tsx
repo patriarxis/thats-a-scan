@@ -84,7 +84,9 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   });
   const [mapReady, setMapReady] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
-  const userLocation = useUserLocation();
+  const { location: userLocation, onGeolocateSuccess, onGeolocateError } = useUserLocation();
+  const onGeolocateSuccessRef = useRef(onGeolocateSuccess);
+  const onGeolocateErrorRef = useRef(onGeolocateError);
   const { merchants: partners, loading, updating, viewportTooWide, error } = useViewportStoreQuery(
     mapRef,
     userLocation,
@@ -109,6 +111,14 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   useEffect(() => {
     onMapClickRef.current = onMapClick;
   }, [onMapClick]);
+
+  useEffect(() => {
+    onGeolocateSuccessRef.current = onGeolocateSuccess;
+  }, [onGeolocateSuccess]);
+
+  useEffect(() => {
+    onGeolocateErrorRef.current = onGeolocateError;
+  }, [onGeolocateError]);
 
   useEffect(() => {
     partnersRef.current = partners;
@@ -211,13 +221,23 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     setMapReady(true);
 
     map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
-    map.addControl(
-      new mapboxgl.GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: false,
-      }),
-      "bottom-right",
-    );
+    const geolocateControl = new mapboxgl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: false,
+      showUserLocation: true,
+    });
+    const handleGeolocate = (event: { coords: { latitude: number; longitude: number } }) => {
+      onGeolocateSuccessRef.current({
+        latitude: event.coords.latitude,
+        longitude: event.coords.longitude,
+      });
+    };
+    const handleGeolocateError = () => {
+      onGeolocateErrorRef.current("denied");
+    };
+    geolocateControl.on("geolocate", handleGeolocate);
+    geolocateControl.on("error", handleGeolocateError);
+    map.addControl(geolocateControl, "bottom-right");
 
     map.on("load", () => {
       map.setMaxBounds(GREECE_MAX_BOUNDS);
@@ -300,6 +320,8 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     });
 
     return () => {
+      geolocateControl.off("geolocate", handleGeolocate);
+      geolocateControl.off("error", handleGeolocateError);
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
       map.remove();

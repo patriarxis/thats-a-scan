@@ -448,8 +448,6 @@ const LocatorPageContent = () => {
     };
   }, [allKnownById, allKnownMerchants, locale, query, recommendedCategorySuggestions, t, visiblePartners]);
 
-  const highlightedPartnerIds = useMemo(() => [], []);
-  const showQuickChips = !query.trim() && !mapLoading && visiblePartners.length > 0;
   const queryMatchedCategoryIds = useMemo(
     () =>
       query.trim()
@@ -459,6 +457,9 @@ const LocatorPageContent = () => {
         : [],
     [locale, query],
   );
+
+  const highlightedPartnerIds = useMemo(() => [], []);
+  const showQuickChips = !query.trim();
 
   const merchantMatchesAllFilters = useCallback(
     (merchant: PartnerFeature) => {

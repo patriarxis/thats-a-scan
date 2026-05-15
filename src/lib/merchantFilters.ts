@@ -67,6 +67,11 @@ const resolveAcceptedProducts = (properties: Record<string, unknown>): AcceptedP
     }
   }
 
+  // go for EAT merchants also accept FlexOne wallets.
+  if (products.has("go-for-eat")) {
+    products.add("flexone");
+  }
+
   return Array.from(products);
 };
 

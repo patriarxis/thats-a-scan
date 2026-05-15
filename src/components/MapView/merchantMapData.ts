@@ -3,10 +3,9 @@ import { getBufferedBoundsBox, pointInBoundsBox } from "@/lib/mapViewport";
 import { getPartnerId, type PartnerFeature } from "@/types";
 import {
   DECLUTTER_ZOOM_QUANTUM,
+  declutterProfileForZoom,
   DETAILED_MARKER_MIN_ZOOM,
-  MARKER_DENSITY_STEPS,
-  SHOW_ALL_MARKERS_ZOOM,
-  ZOOM_REVEAL_STEPS,
+  usesGeoGridForZoom,
 } from "./mapViewConstants";
 import { withClientIds } from "./merchantMarkerVisual";
 
@@ -61,42 +60,22 @@ export type MerchantDeclutterStickyState = {
   cellWinners: Map<string, string>;
 };
 
+type MarkerState = "hidden" | "small" | "default";
+
 const metersPerPixelApprox = (latitude: number, zoom: number): number => {
   return (156543.03392 * Math.cos((latitude * Math.PI) / 180)) / 2 ** zoom;
 };
 
-const maxMarkerCountForZoom = (zoom: number): number => {
-  if (zoom >= SHOW_ALL_MARKERS_ZOOM) return Number.POSITIVE_INFINITY;
-  let maxCount = ZOOM_REVEAL_STEPS[0].maxCount;
-  for (const step of ZOOM_REVEAL_STEPS) {
-    if (zoom >= step.minZoom) maxCount = step.maxCount;
-  }
-  return maxCount;
-};
-
-const densityStepForZoom = (zoom: number) => {
-  let density = MARKER_DENSITY_STEPS[0];
-  for (const step of MARKER_DENSITY_STEPS) {
-    if (zoom >= step.minZoom) density = step;
-  }
-  return density;
-};
-
-type MarkerState = "hidden" | "small" | "default";
-
-const iconShareForZoom = (zoom: number): number => {
-  if (zoom >= SHOW_ALL_MARKERS_ZOOM) return 1;
-  if (zoom < DETAILED_MARKER_MIN_ZOOM) return 0.06;
-  const progress =
-    (zoom - DETAILED_MARKER_MIN_ZOOM) / (SHOW_ALL_MARKERS_ZOOM - DETAILED_MARKER_MIN_ZOOM);
-  return 0.22 + progress * 0.58;
-};
-
-const pickPrioritizedUpTo = (map: MapboxMap, features: PartnerFeature[], maxCount: number): PartnerFeature[] => {
+const pickPrioritizedUpTo = (
+  map: MapboxMap,
+  features: PartnerFeature[],
+  maxCount: number,
+  zoom: number = map.getZoom(),
+): PartnerFeature[] => {
   if (features.length <= maxCount) return features;
 
-  const bounds = map.getBounds();
-  if (!bounds) return features.slice(0, maxCount);
+  const queryBounds = getBufferedBoundsBox(map, zoom);
+  if (!queryBounds) return features.slice(0, maxCount);
 
   const inView: PartnerFeature[] = [];
   const outOfView: PartnerFeature[] = [];
@@ -107,7 +86,7 @@ const pickPrioritizedUpTo = (map: MapboxMap, features: PartnerFeature[], maxCoun
       outOfView.push(feature);
       continue;
     }
-    if (bounds.contains([lng, lat])) inView.push(feature);
+    if (pointInBoundsBox(lng, lat, queryBounds)) inView.push(feature);
     else outOfView.push(feature);
   }
 
@@ -143,6 +122,85 @@ const isInCurrentViewport = (map: MapboxMap, feature: PartnerFeature): boolean =
   const lng = Number(feature.geometry.coordinates[0]);
   const lat = Number(feature.geometry.coordinates[1]);
   return Number.isFinite(lng) && Number.isFinite(lat) && bounds.contains([lng, lat]);
+};
+
+const isInBufferedBounds = (
+  map: MapboxMap,
+  feature: PartnerFeature,
+  zoom: number,
+): boolean => {
+  const queryBounds = getBufferedBoundsBox(map, zoom);
+  if (!queryBounds) return true;
+  const lng = Number(feature.geometry.coordinates[0]);
+  const lat = Number(feature.geometry.coordinates[1]);
+  return Number.isFinite(lng) && Number.isFinite(lat) && pointInBoundsBox(lng, lat, queryBounds);
+};
+
+/**
+ * Street mode (no geo grid): pick full icons first, then dots from the remainder, then optional
+ * overflow dots for merchants that would otherwise be hidden by the cap.
+ */
+const selectStreetModeVisible = (
+  map: MapboxMap,
+  ranked: PartnerFeature[],
+  zoomQuantum: number,
+  alwaysKeep: ReadonlySet<string>,
+): { visibleIds: Set<string>; iconIds: Set<string> } => {
+  const profile = declutterProfileForZoom(zoomQuantum);
+  const iconBudget = Math.max(
+    alwaysKeep.size,
+    Math.floor(profile.maxVisible * profile.iconShare),
+  );
+  const dotBudget = Math.max(0, profile.maxVisible - iconBudget);
+  const dotOverflowBudget = profile.maxDotOverflow ?? 0;
+
+  const mustIcon: PartnerFeature[] = [];
+  const pool: PartnerFeature[] = [];
+  const seenMust = new Set<string>();
+  for (const feature of ranked) {
+    const id = getPartnerId(feature);
+    if (alwaysKeep.has(id)) {
+      if (!seenMust.has(id)) {
+        seenMust.add(id);
+        mustIcon.push(feature);
+      }
+    } else {
+      pool.push(feature);
+    }
+  }
+
+  const iconFromPool = pickPrioritizedUpTo(
+    map,
+    pool,
+    Math.max(0, iconBudget - mustIcon.length),
+    zoomQuantum,
+  );
+  const iconIds = new Set<string>([
+    ...mustIcon.map((f) => getPartnerId(f)),
+    ...iconFromPool.map((f) => getPartnerId(f)),
+  ]);
+
+  const visibleIds = new Set<string>(iconIds);
+  const afterIcons = ranked.filter((f) => !iconIds.has(getPartnerId(f)));
+  const dotPicks = pickPrioritizedUpTo(map, afterIcons, dotBudget, zoomQuantum);
+  dotPicks.forEach((f) => visibleIds.add(getPartnerId(f)));
+
+  if (dotOverflowBudget > 0) {
+    const overflowPool = ranked.filter((f) => {
+      const id = getPartnerId(f);
+      return !visibleIds.has(id) && isInBufferedBounds(map, f, zoomQuantum);
+    });
+    const overflowDots = pickPrioritizedUpTo(
+      map,
+      overflowPool,
+      dotOverflowBudget,
+      zoomQuantum,
+    );
+    overflowDots.forEach((f) => visibleIds.add(getPartnerId(f)));
+  }
+
+  alwaysKeep.forEach((id) => visibleIds.add(id));
+  return { visibleIds, iconIds };
 };
 
 /** Reset sticky assignments when quantized zoom tier changes so density rules can rebuild. */
@@ -188,18 +246,16 @@ const selectVisibleByStickyGeoGrid = (
   const bounds = map.getBounds();
   const queryBounds = bounds ? getBufferedBoundsBox(map, zoomQuantum) : null;
 
-  if (!bounds || zoomQuantum >= SHOW_ALL_MARKERS_ZOOM) {
-    const fallback = pickPrioritizedUpTo(map, ranked, visibleBudget);
-    fallback.forEach((feature) => visibleIds.add(getPartnerId(feature)));
-    alwaysKeep.forEach((id) => visibleIds.add(id));
+  if (!bounds || !usesGeoGridForZoom(zoomQuantum)) {
     return visibleIds;
   }
 
-  const density = densityStepForZoom(zoomQuantum);
+  const profile = declutterProfileForZoom(zoomQuantum);
+  const cellSizePx = profile.cellSizePx!;
   const mpp = metersPerPixelApprox(DECLUTTER_REFERENCE_LAT, zoomQuantum);
   const metersPerLat = 111320;
   const latStepDeg = Math.max(
-    (density.cellSizePx * mpp) / metersPerLat,
+    (cellSizePx * mpp) / metersPerLat,
     8e-6,
   );
   const cosLat = Math.max(
@@ -207,7 +263,7 @@ const selectVisibleByStickyGeoGrid = (
     Math.cos((DECLUTTER_REFERENCE_LAT * Math.PI) / 180),
   );
   const lngStepDeg = Math.max(
-    (density.cellSizePx * mpp) / (metersPerLat * cosLat),
+    (cellSizePx * mpp) / (metersPerLat * cosLat),
     8e-6,
   );
 
@@ -249,7 +305,7 @@ const selectVisibleByStickyGeoGrid = (
       }
     }
 
-    while (picked.length < density.maxPerCell && pending.length > 0) {
+    while (picked.length < profile.maxPerCell && pending.length > 0) {
       picked.push(pending.shift()!);
     }
 
@@ -278,6 +334,13 @@ const defaultDeclutterStickyForBuild: MerchantDeclutterStickyState = {
   cellWinners: new Map(),
 };
 
+/**
+ * Marker visibility pipeline (upstream filters run before this in MapView / useMap):
+ * 1. Eligibility — partners already scoped by viewport buffer (useMap) and optional product filter.
+ * 2. Dedupe — `dedupeByMerchantId`.
+ * 3. Spatial + budget — geo grid (`usesGeoGridForZoom`) then `maxVisible` from `DECLUTTER_PROFILE_BY_ZOOM`.
+ * 4. Visual weight — `iconShare` splits visible pins into full icons vs dots; street mode also uses `maxDotOverflow` for capped merchants.
+ */
 const assignMarkerStatesByZoom = (
   map: MapboxMap,
   features: PartnerFeature[],
@@ -286,43 +349,57 @@ const assignMarkerStatesByZoom = (
   alwaysKeepIds?: ReadonlySet<string>,
 ): PartnerFeature[] => {
   const zoomQuantum = quantizeDeclutterZoom(zoomRaw);
-  const maxVisibleCount = maxMarkerCountForZoom(zoomQuantum);
+  const profile = declutterProfileForZoom(zoomQuantum);
   const ranked = stableRankByMerchantId(features);
   const alwaysKeep = alwaysKeepIds ?? new Set<string>();
-  const visibleBudget = Number.isFinite(maxVisibleCount)
-    ? Math.max(0, maxVisibleCount)
-    : ranked.length;
-  const visibleIds = selectVisibleByStickyGeoGrid(
-    map,
-    ranked,
-    visibleBudget,
-    zoomQuantum,
-    alwaysKeep,
-    sticky,
-  );
 
-  const visibleCount = Math.min(visibleIds.size, ranked.length);
-  const iconBudget =
-    zoomQuantum >= SHOW_ALL_MARKERS_ZOOM
-      ? visibleCount
-      : Math.min(
-          visibleCount,
-          Math.max(0, Math.floor(visibleCount * iconShareForZoom(zoomQuantum))),
-        );
+  let visibleIds: Set<string>;
+  let iconIds: Set<string>;
 
-  const iconIds = new Set<string>();
+  if (!usesGeoGridForZoom(zoomQuantum)) {
+    const street = selectStreetModeVisible(map, ranked, zoomQuantum, alwaysKeep);
+    visibleIds = street.visibleIds;
+    iconIds = new Set(street.iconIds);
+    for (const feature of ranked) {
+      const id = getPartnerId(feature);
+      if (
+        alwaysKeep.has(id) &&
+        zoomQuantum >= DETAILED_MARKER_MIN_ZOOM &&
+        isInCurrentViewport(map, feature)
+      ) {
+        iconIds.add(id);
+      }
+    }
+  } else {
+    const visibleBudget = Math.max(0, profile.maxVisible);
+    visibleIds = selectVisibleByStickyGeoGrid(
+      map,
+      ranked,
+      visibleBudget,
+      zoomQuantum,
+      alwaysKeep,
+      sticky,
+    );
 
-  let assignedIcons = 0;
-  for (const feature of ranked) {
-    const id = getPartnerId(feature);
-    if (!visibleIds.has(id)) continue;
-    const isPriorityMarker = alwaysKeep.has(id);
-    if (
-      assignedIcons < iconBudget ||
-      (isPriorityMarker && zoomQuantum >= DETAILED_MARKER_MIN_ZOOM)
-    ) {
-      iconIds.add(id);
-      assignedIcons += 1;
+    const visibleCount = Math.min(visibleIds.size, ranked.length);
+    const iconBudget = Math.min(
+      visibleCount,
+      Math.max(0, Math.floor(visibleCount * profile.iconShare)),
+    );
+
+    iconIds = new Set<string>();
+    let assignedIcons = 0;
+    for (const feature of ranked) {
+      const id = getPartnerId(feature);
+      if (!visibleIds.has(id)) continue;
+      const isPriorityMarker = alwaysKeep.has(id);
+      if (
+        assignedIcons < iconBudget ||
+        (isPriorityMarker && zoomQuantum >= DETAILED_MARKER_MIN_ZOOM)
+      ) {
+        iconIds.add(id);
+        assignedIcons += 1;
+      }
     }
   }
 
@@ -343,37 +420,6 @@ const assignMarkerStatesByZoom = (
       },
     };
   });
-};
-
-export const prioritizeAndCapByZoom = (
-  map: MapboxMap,
-  features: PartnerFeature[],
-  zoom: number,
-  alwaysKeepIds?: ReadonlySet<string>,
-): PartnerFeature[] => {
-  const maxCount = maxMarkerCountForZoom(zoom);
-
-  if (!alwaysKeepIds?.size) {
-    return pickPrioritizedUpTo(map, features, maxCount);
-  }
-
-  const mustKeep: PartnerFeature[] = [];
-  const seenMust = new Set<string>();
-  const pool: PartnerFeature[] = [];
-  for (const feature of features) {
-    const id = getPartnerId(feature);
-    if (alwaysKeepIds.has(id)) {
-      if (!seenMust.has(id)) {
-        seenMust.add(id);
-        mustKeep.push(feature);
-      }
-    } else {
-      pool.push(feature);
-    }
-  }
-
-  const budget = Math.max(0, maxCount - mustKeep.length);
-  return [...mustKeep, ...pickPrioritizedUpTo(map, pool, budget)];
 };
 
 export const buildMerchantsFeatureCollection = (

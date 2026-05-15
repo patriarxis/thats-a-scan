@@ -18,9 +18,9 @@ export const MARKER_ICON_REWARDS_ID = "merchant-marker-rewards";
 export const MARKER_ICON_GYMS_ID = "merchant-marker-gyms";
 export const MARKER_ICON_DEFAULT_ID = MARKER_ICON_REWARDS_ID;
 
-export const DETAILED_MARKER_MIN_ZOOM = 13;
-export const SHOW_ALL_MARKERS_ZOOM = 16;
-export const ACTIVE_PIN_QUICK_ZOOM = 16;
+export const DETAILED_MARKER_MIN_ZOOM = 12;
+export const SHOW_ALL_MARKERS_ZOOM = 14;
+export const ACTIVE_PIN_QUICK_ZOOM = 15;
 
 /** Zoom is rounded to nearest half-level for marker decluttering to avoid jitter while pinching. */
 export const DECLUTTER_ZOOM_QUANTUM = 0.5;
@@ -31,26 +31,48 @@ export const DECLUTTER_ZOOM_QUANTUM = 0.5;
  */
 export const DECLUTTER_VIEWPORT_DEBOUNCE_MS = 250;
 
-export const ZOOM_REVEAL_STEPS: Array<{ minZoom: number; maxCount: number }> = [
-  { minZoom: 0, maxCount: 2000 },
-  { minZoom: 8, maxCount: 2500 },
-  { minZoom: 10, maxCount: 3000 },
-  { minZoom: 12, maxCount: 3500 },
-  { minZoom: 14, maxCount: 4500 },
+/** Single source of truth for per-zoom pin caps, spatial grid, and icon/dot mix. */
+export type DeclutterProfile = {
+  minZoom: number;
+  maxVisible: number;
+  /** When null, the sticky geo grid is skipped (street mode). */
+  cellSizePx: number | null;
+  maxPerCell: number;
+  /** Fraction of `maxVisible` that render as full brand icons; the rest are orange dots. */
+  iconShare: number;
+  /**
+   * Street mode only: extra merchants beyond `maxVisible` that still render as dots
+   * (instead of being fully hidden by the cap).
+   */
+  maxDotOverflow?: number;
+};
+
+export const DECLUTTER_PROFILE_BY_ZOOM: DeclutterProfile[] = [
+  { minZoom: 0, maxVisible: 4000, cellSizePx: 56, maxPerCell: 4, iconShare: 0.2 },
+  { minZoom: 8, maxVisible: 5500, cellSizePx: 48, maxPerCell: 5, iconShare: 0.2 },
+  { minZoom: 10, maxVisible: 7000, cellSizePx: 40, maxPerCell: 6, iconShare: 0.35 },
+  { minZoom: 12, maxVisible: 9000, cellSizePx: 32, maxPerCell: 8, iconShare: 0.5 },
+  { minZoom: 13, maxVisible: 9000, cellSizePx: 26, maxPerCell: 10, iconShare: 0.75 },
+  {
+    minZoom: 14,
+    maxVisible: 3200,
+    cellSizePx: null,
+    maxPerCell: 0,
+    iconShare: 0.38,
+    maxDotOverflow: 1800,
+  },
 ];
 
-export const MARKER_DENSITY_STEPS: Array<{
-  minZoom: number;
-  cellSizePx: number;
-  maxPerCell: number;
-}> = [
-  { minZoom: 0, cellSizePx: 72, maxPerCell: 2 },
-  { minZoom: 8, cellSizePx: 60, maxPerCell: 2 },
-  { minZoom: 10, cellSizePx: 52, maxPerCell: 2 },
-  { minZoom: 12, cellSizePx: 44, maxPerCell: 2 },
-  { minZoom: 14, cellSizePx: 38, maxPerCell: 3 },
-  { minZoom: 15, cellSizePx: 30, maxPerCell: 4 },
-];
+export const declutterProfileForZoom = (zoom: number): DeclutterProfile => {
+  let profile = DECLUTTER_PROFILE_BY_ZOOM[0]!;
+  for (const step of DECLUTTER_PROFILE_BY_ZOOM) {
+    if (zoom >= step.minZoom) profile = step;
+  }
+  return profile;
+};
+
+export const usesGeoGridForZoom = (zoom: number): boolean =>
+  declutterProfileForZoom(zoom).cellSizePx !== null;
 
 export const MAPBOX_DARK_STYLE_URL = "mapbox://styles/mapbox/dark-v11";
 

@@ -55,9 +55,10 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
       filter: ["==", ["get", "__marker_state"], "small"],
       paint: {
         "circle-color": ["coalesce", ["get", "__marker_dot_color"], "#f59100"],
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 1.8, 8, 2.6, 11.5, 3.3, 14, 3.8, 16, 4.2],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 1.8, 8, 2.6, 11.5, 3.3, 14, 3.2, 16, 3.6],
         "circle-stroke-color": "rgba(15,23,42,0.7)",
         "circle-stroke-width": 0.8,
+        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 12, 0.92, 14, 0.88, 16, 0.82],
       },
     });
   }

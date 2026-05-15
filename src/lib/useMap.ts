@@ -17,7 +17,7 @@ import {
 const MERCHANTS_API_PATH = "/api/merchants-geojson";
 const BACKGROUND_REFRESH_MS = 30 * 60 * 1000;
 const FETCH_RETRY_DELAYS_MS = [0, 500, 1500];
-const WIDE_PREVIEW_MAX_FEATURES = 220;
+const WIDE_PREVIEW_MAX_FEATURES = 400;
 const WIDE_PREVIEW_GRID_DECIMALS = 1;
 
 /** Wait until style is ready and the map camera is idle before running heavy work (avoids jank during flyTo). */

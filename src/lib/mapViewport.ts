@@ -15,10 +15,10 @@ const DECLUTTER_DEBOUNCE_WIDE_MS = 250;
 const DECLUTTER_DEBOUNCE_FAST_MS = 0;
 
 const VIEWPORT_BUFFER_STEPS: Array<{ minZoom: number; fraction: number }> = [
-  { minZoom: 0, fraction: 0.15 },
-  { minZoom: 12, fraction: 0.35 },
-  { minZoom: 14, fraction: 0.5 },
-  { minZoom: 16, fraction: 1 },
+  { minZoom: 0, fraction: 0.25 },
+  { minZoom: 11, fraction: 0.45 },
+  { minZoom: 13, fraction: 0.65 },
+  { minZoom: 14, fraction: 0.75 },
 ];
 
 export type MapBoundsBox = {

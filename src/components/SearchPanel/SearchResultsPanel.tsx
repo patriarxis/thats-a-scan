@@ -64,8 +64,12 @@ export const SearchResultsPanel = ({
         role="option"
         aria-selected={isActive}
         onMouseEnter={() => onHover(index)}
-        onMouseDown={(e) => {
-          e.preventDefault();
+        onPointerDown={(event) => {
+          event.preventDefault();
+        }}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
           onSelect(item);
         }}
         className={`${styles.option} ${isActive ? styles.optionActive : ""}`}

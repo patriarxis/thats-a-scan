@@ -189,10 +189,11 @@ export const SearchBar = ({
   }, [closeActiveSignal, closeFocusShellDirect, isFiltersOpen, isFocusShellActive]);
 
   const handleSelect = (item: SearchSuggestion) => {
+    skipBlurCloseRef.current = true;
+    onSelect(item);
     if (inputRef.current && document.activeElement === inputRef.current) {
       inputRef.current.blur();
     }
-    onSelect(item);
     closeFocusShellDirect(() => setActiveIndex(-1));
   };
 

@@ -85,6 +85,12 @@ const NETWORK_FILTER_ID_SET: ReadonlySet<string> = new Set(
 
 const REMOTE_MERCHANT_SEARCH_MIN_QUERY_LENGTH = 3;
 
+const EMPTY_URL_SELECTION: UrlSelectionState = {
+  placeId: null,
+  lat: Number.NaN,
+  lng: Number.NaN,
+};
+
 const parseSelectionFromLocation = (): UrlSelectionState => {
   if (typeof window === "undefined") {
     return { placeId: null, lat: Number.NaN, lng: Number.NaN };
@@ -121,6 +127,7 @@ const LocatorPageContent = () => {
   const searchRequestRef = useRef(0);
   const geocodeAbortRef = useRef<AbortController | null>(null);
   const urlSelectionAppliedRef = useRef<string | null>(null);
+  const isSelectingSearchSuggestionRef = useRef(false);
   const isMobile = useIsMobileUx();
   const [isNarrowViewport, setIsNarrowViewport] = useState(false);
   const { locale, setLocale, t } = useLocale();
@@ -532,6 +539,8 @@ const LocatorPageContent = () => {
       historyMode: "push" | "replace" = "replace",
       options?: { clearSearchQuery?: boolean },
     ) => {
+      urlSelectionAppliedRef.current = null;
+      setUrlSelection(EMPTY_URL_SELECTION);
       setSelectedPartner(null);
       syncSelectionInUrl(null, historyMode);
       if (options?.clearSearchQuery !== false) {
@@ -692,6 +701,9 @@ const LocatorPageContent = () => {
             filtersPanelProps={filtersPanelProps}
             onCommitFreeformSearch={handleCommitFreeformSearch}
             onChange={(nextQuery) => {
+              if (isSelectingSearchSuggestionRef.current) {
+                return;
+              }
               if (isFiltersOpen) {
                 setIsFiltersOpen(false);
               }
@@ -722,24 +734,31 @@ const LocatorPageContent = () => {
               clearSelectedPartner("replace");
             }}
             onSelect={(item) => {
-              if (item.type === "category" && item.categoryId) {
-                clearSelectedPartner("replace", { clearSearchQuery: false });
-                setActiveQuickCategoryId(item.categoryId as PopularSearchCategoryId);
-                setQuery(item.label);
-                setIsFreeformKeywordSearch(true);
+              isSelectingSearchSuggestionRef.current = true;
+              try {
+                if (item.type === "category" && item.categoryId) {
+                  clearSelectedPartner("replace", { clearSearchQuery: false });
+                  setActiveQuickCategoryId(item.categoryId as PopularSearchCategoryId);
+                  setQuery(item.label);
+                  setIsFreeformKeywordSearch(true);
+                  setSuggestions([]);
+                  return;
+                }
+                if (!item.merchantId || !item.coordinates) return;
+                setIsFreeformKeywordSearch(false);
+                const partner = allKnownById[item.merchantId];
+                if (partner) {
+                  handleSelectPartner(partner, { replaceQueryWithMerchantName: true });
+                } else {
+                  mapRef.current?.panTo(item.coordinates, focusPadding);
+                  setQuery(item.label);
+                }
                 setSuggestions([]);
-                return;
+              } finally {
+                queueMicrotask(() => {
+                  isSelectingSearchSuggestionRef.current = false;
+                });
               }
-              if (!item.merchantId || !item.coordinates) return;
-              setIsFreeformKeywordSearch(false);
-              const partner = allKnownById[item.merchantId];
-              if (partner) {
-                handleSelectPartner(partner, { replaceQueryWithMerchantName: true });
-              } else {
-                mapRef.current?.panTo(item.coordinates, focusPadding);
-                setQuery(item.label);
-              }
-              setSuggestions([]);
             }}
             onOpenFilters={() => setIsFiltersOpen(true)}
             onFocusInput={() => {

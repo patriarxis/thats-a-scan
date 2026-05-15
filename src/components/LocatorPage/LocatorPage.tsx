@@ -138,7 +138,7 @@ const LocatorPageContent = () => {
   const [selectedPartner, setSelectedPartner] = useState<PartnerFeature | null>(null);
   const [sheetCloseSignal, setSheetCloseSignal] = useState(0);
   const [query, setQuery] = useState("");
-  /** User committed a generic keyword (e.g. Enter); keep query when opening merchant details from the map. */
+  /** Committed keyword or category label; keep query when opening merchant details from the map. */
   const [isFreeformKeywordSearch, setIsFreeformKeywordSearch] = useState(false);
   const [closeActiveSignal, setCloseActiveSignal] = useState(0);
   const [activeQuickCategoryId, setActiveQuickCategoryId] = useState<PopularSearchCategoryId | null>(null);
@@ -704,8 +704,17 @@ const LocatorPageContent = () => {
                   clearSelectedPartner("replace", { clearSearchQuery: false });
                 }
               }
+              if (activeQuickCategoryId) {
+                const category = popularCategoryById.get(activeQuickCategoryId);
+                const nextNorm = normalizeStr(nextQuery.trim());
+                const categoryNorm = normalizeStr(category?.label.trim() ?? "");
+                if (!nextNorm || nextNorm !== categoryNorm) {
+                  setActiveQuickCategoryId(null);
+                }
+              }
               if (!nextQuery.trim()) {
                 setIsFreeformKeywordSearch(false);
+                setActiveQuickCategoryId(null);
               }
               setQuery(nextQuery);
             }}
@@ -714,10 +723,10 @@ const LocatorPageContent = () => {
             }}
             onSelect={(item) => {
               if (item.type === "category" && item.categoryId) {
-                setIsFreeformKeywordSearch(false);
                 clearSelectedPartner("replace", { clearSearchQuery: false });
                 setActiveQuickCategoryId(item.categoryId as PopularSearchCategoryId);
                 setQuery(item.label);
+                setIsFreeformKeywordSearch(true);
                 setSuggestions([]);
                 return;
               }
@@ -746,13 +755,20 @@ const LocatorPageContent = () => {
             <QuickFilterChips
               options={quickChipOptions}
               onToggle={(id) => {
-                setIsFreeformKeywordSearch(false);
                 clearSelectedPartner("replace", { clearSearchQuery: false });
                 const nextId = id as PopularSearchCategoryId;
-                setActiveQuickCategoryId((prev) => (prev === nextId ? null : nextId));
+                const isDeselecting = activeQuickCategoryId === nextId;
+                if (isDeselecting) {
+                  setActiveQuickCategoryId(null);
+                  setQuery("");
+                  setIsFreeformKeywordSearch(false);
+                  return;
+                }
                 const selectedCategory = popularCategories.find((item) => item.id === id);
+                setActiveQuickCategoryId(nextId);
                 if (selectedCategory) {
                   setQuery(selectedCategory.label);
+                  setIsFreeformKeywordSearch(true);
                 }
               }}
             />

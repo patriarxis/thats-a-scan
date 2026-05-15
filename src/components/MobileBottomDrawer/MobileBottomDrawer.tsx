@@ -123,13 +123,10 @@ export const MobileBottomDrawer = ({
     startedOnHandleRef.current = !!target.closest('[data-drawer-handle="true"]');
     dragStartStateRef.current = drawerState;
     startedAtTopRef.current = contentRef.current ? contentRef.current.scrollTop <= 0 : true;
-    setIsDragging(true);
     setDragY(0);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-
     const currentY = e.touches[0].clientY;
     const currentX = e.touches[0].clientX;
     const deltaY = currentY - startYRef.current;
@@ -145,7 +142,7 @@ export const MobileBottomDrawer = ({
     }
 
     if (gestureModeRef.current === "horizontal") {
-      setIsDragging(false);
+      if (isDragging) setIsDragging(false);
       return;
     }
 
@@ -157,16 +154,18 @@ export const MobileBottomDrawer = ({
     const canDragDrawer = startedOnHandleRef.current || canDragFromContent;
 
     if (!canDragDrawer) {
-      setIsDragging(false);
+      if (isDragging) setIsDragging(false);
       return;
     }
 
+    if (!isDragging) setIsDragging(true);
     if (e.cancelable) e.preventDefault();
     setDragY(deltaY);
     currentYRef.current = currentY;
   };
 
   const handleTouchEnd = () => {
+    gestureModeRef.current = "undecided";
     if (!isDragging) return;
     setIsDragging(false);
 
@@ -250,7 +249,7 @@ export const MobileBottomDrawer = ({
 
   if (!isRendered) return null;
   const { heightPx, translatePx } = getDrawerMetrics();
-  const shouldAllowContentScroll = drawerState === "full" && !isDragging;
+  const isContentScrollable = drawerState === "full";
 
   return (
     <aside
@@ -272,34 +271,11 @@ export const MobileBottomDrawer = ({
         <span className={styles.handle} />
       </div>
       <div
-        className={`${styles.content} ${
-          !shouldAllowContentScroll ? styles.contentLocked : ""
-        }`}
+        className={`${styles.content} ${isContentScrollable ? "" : styles.contentLocked}`}
         ref={contentRef}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        onTouchMoveCapture={
-          !shouldAllowContentScroll
-            ? (e) => {
-                if (e.cancelable) e.preventDefault();
-              }
-            : undefined
-        }
-        onWheelCapture={
-          !shouldAllowContentScroll
-            ? (e) => {
-                e.preventDefault();
-              }
-            : undefined
-        }
-        onScrollCapture={
-          !shouldAllowContentScroll
-            ? () => {
-                if (contentRef.current) contentRef.current.scrollTop = 0;
-              }
-            : undefined
-        }
       >
         {children}
       </div>

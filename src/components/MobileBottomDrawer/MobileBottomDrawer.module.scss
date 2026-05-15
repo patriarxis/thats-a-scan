@@ -3,6 +3,7 @@
 .sheet {
   width: calc(100% - (2 * $spacing-sm));
   max-width: $max-width-md;
+  min-height: 0;
   transition:
     transform $transition-slow,
     height $transition-slow,
@@ -45,6 +46,7 @@
 
 .content {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
@@ -53,16 +55,17 @@
   box-shadow: $shadow-lg;
   overflow-y: auto;
   overflow-x: hidden;
+  padding-top: calc($spacing-sm + 0.125rem + $spacing-sm);
   transition:
     padding $transition-slow,
     border-radius $transition-slow;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   touch-action: pan-y;
 
   &.contentLocked {
     overflow-y: hidden;
     overscroll-behavior-y: none;
-    -webkit-overflow-scrolling: auto;
     touch-action: none;
   }
 

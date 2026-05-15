@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "export:up-hellas": "node scripts/export-up-hellas-data.mjs"
+    "export:up-hellas": "node scripts/export-up-hellas-data.mjs",
+    "test:categorization": "npx --yes tsx scripts/validate-categorization-fixtures.ts"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

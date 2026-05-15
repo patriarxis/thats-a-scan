@@ -13,6 +13,41 @@ type MerchantCategorizationFixture = {
 
 export const MERCHANT_CATEGORIZATION_FIXTURES: MerchantCategorizationFixture[] = [
   {
+    name: "Nyamie venue is always gym",
+    properties: {
+      ID: "fixture-nyamie",
+      __source: "nyamie",
+      BrandNameEN: "Any Studio",
+      MCCCategoryEN: "Pilates",
+    },
+    expectedPrimaryCategoryId: "gym",
+    expectedNetworkCategoryId: "gyms",
+  },
+  {
+    name: "Up Hellas wrong MCC overridden by supermarket name",
+    properties: {
+      ID: "fixture-supermarket-override",
+      __source: "up_hellas",
+      BrandNameEN: "Sklavenitis",
+      MCCCategoryEN: "Fitness and gyms",
+      AcceptedProducts: "go for EAT",
+    },
+    expectedPrimaryCategoryId: "supermarket",
+    expectedNetworkCategoryId: "meal",
+  },
+  {
+    name: "Up Hellas correct MCC kept for supermarket",
+    properties: {
+      ID: "fixture-supermarket-mcc",
+      __source: "up_hellas",
+      BrandNameEN: "Local Store",
+      MCCCategoryEN: "Supermarket",
+      AcceptedProducts: "go for EAT",
+    },
+    expectedPrimaryCategoryId: "supermarket",
+    expectedNetworkCategoryId: "meal",
+  },
+  {
     name: "Pharmacy MCC falls back to shopping",
     properties: {
       ID: "fixture-pharmacy",
@@ -77,4 +112,3 @@ export const validateMerchantCategorizationFixtures = (): string[] =>
 
     return failures;
   });
-

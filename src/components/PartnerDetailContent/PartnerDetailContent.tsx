@@ -14,7 +14,7 @@ import {
   getMerchantCategoryLabel,
   resolveMerchantCategorization,
 } from "@/lib/merchantCategorization";
-import { Icon } from "@/components/ui";
+import { Icon, IconButton } from "@/components/ui";
 import { RichText } from "../RichText";
 import styles from "./PartnerDetailContent.module.scss";
 import { ICONS, LOCALE } from "@/enums";
@@ -70,6 +70,7 @@ export const MerchantDetailContent = ({
   partner,
   locale,
   labels,
+  onClose,
   className,
 }: MerchantDetailContentProps) => {
   const [isBioExpanded, setIsBioExpanded] = useState(false);
@@ -328,6 +329,14 @@ export const MerchantDetailContent = ({
             )}
           </div>
         </div>
+        <IconButton
+          icon={ICONS.X}
+          variant="ghost"
+          size="sm"
+          className={styles.closeButton}
+          aria-label={labels.close}
+          onClick={onClose}
+        />
       </div>
 
       <div className={styles.actions}>

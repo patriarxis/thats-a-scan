@@ -1,4 +1,5 @@
 import type { Map as MapboxMap } from "mapbox-gl";
+import { getBufferedBoundsBox, pointInBoundsBox } from "@/lib/mapViewport";
 import { getPartnerId, type PartnerFeature } from "@/types";
 import {
   DECLUTTER_ZOOM_QUANTUM,
@@ -185,6 +186,7 @@ const selectVisibleByStickyGeoGrid = (
 
   const visibleIds = new Set<string>();
   const bounds = map.getBounds();
+  const queryBounds = bounds ? getBufferedBoundsBox(map, zoomQuantum) : null;
 
   if (!bounds || zoomQuantum >= SHOW_ALL_MARKERS_ZOOM) {
     const fallback = pickPrioritizedUpTo(map, ranked, visibleBudget);
@@ -214,7 +216,7 @@ const selectVisibleByStickyGeoGrid = (
     const lng = Number(feature.geometry.coordinates[0]);
     const lat = Number(feature.geometry.coordinates[1]);
     if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
-    if (!bounds.contains([lng, lat])) continue;
+    if (!queryBounds || !pointInBoundsBox(lng, lat, queryBounds)) continue;
 
     const latIdx = Math.floor(lat / latStepDeg);
     const lngIdx = Math.floor(lng / lngStepDeg);

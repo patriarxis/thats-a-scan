@@ -5,9 +5,16 @@ import type { Map as MapboxMap } from "mapbox-gl";
 import { type MerchantFeature } from "@/types";
 import { MAP_MAX_LAT_SPAN, MAP_MAX_LNG_SPAN } from "@/lib/config";
 import { INITIAL_CATALOGUE_BBOX } from "@/lib/merchantInitialCatalogueBbox";
+import {
+  getBufferedBoundsBox,
+  MAP_MOVE_THROTTLE_MS,
+  moveDebounceMsForZoom,
+  pointInBoundsBox,
+  shouldUpdateViewportOnMove,
+  throttle,
+} from "@/lib/mapViewport";
 
 const MERCHANTS_API_PATH = "/api/merchants-geojson";
-const MOVE_DEBOUNCE_MS = 200;
 const BACKGROUND_REFRESH_MS = 30 * 60 * 1000;
 const FETCH_RETRY_DELAYS_MS = [0, 500, 1500];
 const WIDE_PREVIEW_MAX_FEATURES = 220;
@@ -285,11 +292,12 @@ export function useViewportStoreQuery(
       const viewportTooWide =
         latSpan > MAP_MAX_LAT_SPAN || lngSpan > MAP_MAX_LNG_SPAN;
 
+      const queryBounds = getBufferedBoundsBox(map);
       const inView: MerchantFeature[] = [];
       for (const feature of globalStoreRef.current.values()) {
         const lng = feature.geometry.coordinates[0];
         const lat = feature.geometry.coordinates[1];
-        if (lat <= north && lat >= south && lng >= west && lng <= east) {
+        if (queryBounds && pointInBoundsBox(lng, lat, queryBounds)) {
           inView.push(feature);
         }
       }
@@ -373,10 +381,22 @@ export function useViewportStoreQuery(
     const triggerVisibleUpdate = () => {
       if (!initialLoadedRef.current) return;
       if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
-      moveDebounceRef.current = setTimeout(() => {
+      const delay = moveDebounceMsForZoom(map.getZoom());
+      if (delay === 0) {
         applyVisibleToState();
-      }, MOVE_DEBOUNCE_MS);
+        return;
+      }
+      moveDebounceRef.current = setTimeout(() => {
+        moveDebounceRef.current = null;
+        applyVisibleToState();
+      }, delay);
     };
+
+    const throttledMoveVisibleUpdate = throttle(() => {
+      if (!initialLoadedRef.current) return;
+      if (!shouldUpdateViewportOnMove(map.getZoom())) return;
+      applyVisibleToState();
+    }, MAP_MOVE_THROTTLE_MS);
 
     const scheduleBackgroundRefresh = () => {
       if (backgroundRefreshTimerRef.current) {
@@ -404,6 +424,7 @@ export function useViewportStoreQuery(
     };
 
     map.on("moveend", triggerVisibleUpdate);
+    map.on("move", throttledMoveVisibleUpdate);
 
     if (initialLoadedRef.current) {
       if (userLocation && !hasAppliedLocationFlyRef.current) {
@@ -420,6 +441,8 @@ export function useViewportStoreQuery(
         alive = false;
         hydrationController.abort();
         map.off("moveend", triggerVisibleUpdate);
+        map.off("move", throttledMoveVisibleUpdate);
+        throttledMoveVisibleUpdate.cancel();
         if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
         if (backgroundRefreshTimerRef.current) {
           clearTimeout(backgroundRefreshTimerRef.current);
@@ -509,6 +532,8 @@ export function useViewportStoreQuery(
       alive = false;
       hydrationController.abort();
       map.off("moveend", triggerVisibleUpdate);
+      map.off("move", throttledMoveVisibleUpdate);
+      throttledMoveVisibleUpdate.cancel();
       if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
       if (backgroundRefreshTimerRef.current) {
         clearTimeout(backgroundRefreshTimerRef.current);

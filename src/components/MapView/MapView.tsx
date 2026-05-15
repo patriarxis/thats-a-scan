@@ -9,6 +9,12 @@ import {
   type PartnerFeature,
   type VisiblePartnersChangePayload,
 } from "@/types";
+import {
+  declutterDebounceMsForZoom,
+  MAP_MOVE_THROTTLE_MS,
+  shouldUpdateViewportOnMove,
+  throttle,
+} from "@/lib/mapViewport";
 import { useUserLocation, useViewportStoreQuery } from "@/lib/useMap";
 import { ensureMerchantMapLayers } from "./ensureMerchantMapLayers";
 import {
@@ -163,10 +169,16 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
 
   const scheduleReclutter = useCallback(() => {
     if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
+    const map = mapRef.current;
+    const delay = map ? declutterDebounceMsForZoom(map.getZoom()) : DECLUTTER_VIEWPORT_DEBOUNCE_MS;
+    if (delay === 0) {
+      flushReclutter();
+      return;
+    }
     pushTimerRef.current = setTimeout(() => {
       pushTimerRef.current = null;
       flushReclutter();
-    }, DECLUTTER_VIEWPORT_DEBOUNCE_MS);
+    }, delay);
   }, [flushReclutter]);
 
   useImperativeHandle(ref, () => ({
@@ -348,6 +360,24 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     if (!map || !map.isStyleLoaded()) return;
     scheduleReclutter();
   }, [partners, scheduleReclutter]);
+
+  // Throttled reclutter while panning at street zoom so pins track the buffered viewport.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    const throttledReclutter = throttle(() => {
+      if (!map.isStyleLoaded()) return;
+      if (!shouldUpdateViewportOnMove(map.getZoom())) return;
+      flushReclutter();
+    }, MAP_MOVE_THROTTLE_MS);
+
+    map.on("move", throttledReclutter);
+    return () => {
+      map.off("move", throttledReclutter);
+      throttledReclutter.cancel();
+    };
+  }, [flushReclutter, mapReady]);
 
   // Cleanup the shared timer on unmount.
   useEffect(() => {

@@ -26,9 +26,8 @@ export const ACTIVE_PIN_QUICK_ZOOM = 16;
 export const DECLUTTER_ZOOM_QUANTUM = 0.5;
 
 /**
- * Delay between the upstream viewport-filter update and the marker declutter redraw.
- * Sits just after `useMap.ts`'s `MOVE_DEBOUNCE_MS` (200) so the visible set has settled before
- * we recompute icon/dot states.
+ * Declutter delay at wide zoom. At zoom ≥ 14, `declutterDebounceMsForZoom` in `mapViewport.ts`
+ * uses 0ms so pins refresh immediately after the viewport store updates.
  */
 export const DECLUTTER_VIEWPORT_DEBOUNCE_MS = 250;
 

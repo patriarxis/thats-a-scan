@@ -79,6 +79,23 @@ export const declutterDebounceMsForZoom = (zoom: number): number =>
 export const shouldUpdateViewportOnMove = (zoom: number): boolean =>
   zoom >= MAP_MOVE_UPDATE_MIN_ZOOM;
 
+export const mapCenter = (map: MapboxMap): { lat: number; lng: number } | null => {
+  const center = map.getCenter();
+  if (!center) return null;
+  return { lat: center.lat, lng: center.lng };
+};
+
+export const movementBetweenCenters = (
+  prev: { lat: number; lng: number } | null,
+  next: { lat: number; lng: number },
+): { dLat: number; dLng: number } | null => {
+  if (!prev) return null;
+  const dLat = next.lat - prev.lat;
+  const dLng = next.lng - prev.lng;
+  if (Math.abs(dLat) < 1e-8 && Math.abs(dLng) < 1e-8) return null;
+  return { dLat, dLng };
+};
+
 export function throttle<Args extends unknown[]>(
   fn: (...args: Args) => void,
   ms: number,

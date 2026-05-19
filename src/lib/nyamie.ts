@@ -93,6 +93,7 @@ export function mapVenueToMerchantFeature(
 
 let cachedVenues: MerchantFeature[] | null = null;
 let lastFetchTime: number = 0;
+let pendingNyamieFetch: Promise<MerchantFeature[]> | null = null;
 let cachedDescriptions: Map<string, string> | null = null;
 let lastDescriptionsFetchTime = 0;
 const CACHE_TTL = 30 * 60 * 1000;
@@ -147,6 +148,22 @@ async function fetchVenuesPage(
   }
 
   return null;
+}
+
+export function isNyamieCacheWarm(): boolean {
+  return cachedVenues !== null && Date.now() - lastFetchTime < CACHE_TTL;
+}
+
+export function kickNyamieWarm(): void {
+  if (isNyamieCacheWarm() || pendingNyamieFetch) return;
+  pendingNyamieFetch = fetchAllVenues()
+    .catch((err) => {
+      console.error("kickNyamieWarm failed:", err);
+      return [] as MerchantFeature[];
+    })
+    .finally(() => {
+      pendingNyamieFetch = null;
+    });
 }
 
 export async function fetchAllVenues(): Promise<MerchantFeature[]> {

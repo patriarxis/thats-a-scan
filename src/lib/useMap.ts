@@ -4,24 +4,47 @@ import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Map as MapboxMap } from "mapbox-gl";
 import type { UserLocation } from "@/lib/UserLocationContext";
 import { type MerchantFeature } from "@/types";
-import { MAP_MAX_LAT_SPAN, MAP_MAX_LNG_SPAN } from "@/lib/config";
-import { INITIAL_CATALOGUE_BBOX } from "@/lib/merchantInitialCatalogueBbox";
+import {
+  INITIAL_FOCUS_ZOOM,
+  MAP_MAX_LAT_SPAN,
+  MAP_MAX_LNG_SPAN,
+  MAX_CONCURRENT_FETCHES,
+  MAX_MERCHANTS_FOR_MAP_RENDER,
+  MAX_VIEWPORT_FETCH_CONTINUE_ROUNDS,
+  OVERVIEW_FETCH_DELAY_MS,
+  PREFETCH_MOVE_THROTTLE_MS,
+} from "@/lib/config";
+import {
+  backfillFetchedTilesFromStore,
+  bboxesIntersect,
+  downsampleForViewportHotspots,
+  GREECE_OVERVIEW_BBOX,
+  overviewDisplayWeight,
+  initialCatalogueBboxForLocation,
+  isMapSpanTooWide,
+  isViewportSatisfied,
+  markTilesFetched,
+  markTilesFetchedForBbox,
+  planFocusDetailFetch,
+  planLeadingEdgeFetches,
+  planViewportFetches,
+  sortPlannedBboxesByPriority,
+  viewportFetchMode,
+  type PlannedBbox,
+} from "@/lib/merchantViewportTiles";
 import {
   getBufferedBoundsBox,
   MAP_MOVE_THROTTLE_MS,
+  mapCenter,
   moveDebounceMsForZoom,
+  movementBetweenCenters,
   pointInBoundsBox,
-  shouldUpdateViewportOnMove,
   throttle,
 } from "@/lib/mapViewport";
+import type { BBoxPayload } from "@/lib/upHellasMerchants";
 
 const MERCHANTS_API_PATH = "/api/merchants-geojson";
-const BACKGROUND_REFRESH_MS = 30 * 60 * 1000;
 const FETCH_RETRY_DELAYS_MS = [0, 500, 1500];
-const WIDE_PREVIEW_MAX_FEATURES = 400;
-const WIDE_PREVIEW_GRID_DECIMALS = 1;
-
-/** Wait until style is ready and the map camera is idle before running heavy work (avoids jank during flyTo). */
 const MAP_QUIET_MAX_WAIT_MS = 5000;
 
 function scheduleWhenMapQuiet(
@@ -62,6 +85,7 @@ type ViewportQueryState = {
 type MerchantApiResponse = {
   features?: MerchantFeature[];
   meta?: {
+    cache?: { hit?: string };
     upHellas?: {
       requestCount?: number;
       saturatedBoundsCount?: number;
@@ -89,32 +113,49 @@ function haversineDistanceKm(
 }
 
 function logCatalogueFetch(
-  source:
-    | "initial-bbox"
-    | "initial-full"
-    | "initial-full-fallback"
-    | "background-refresh"
-    | "retry",
+  source: string,
   payload: {
     featureCount: number;
     complete: boolean | undefined;
     meta: MerchantApiResponse["meta"];
     attempt: number;
+    durationMs?: number;
+    generation?: number;
   },
 ) {
   if (process.env.NODE_ENV !== "development") return;
   console.info("[merchant-fetch]", {
     source,
     attempt: payload.attempt,
+    generation: payload.generation,
     featureCount: payload.featureCount,
+    durationMs: payload.durationMs,
+    cacheHit: payload.meta?.cache?.hit,
     upHellas: {
       requestCount: payload.meta?.upHellas?.requestCount,
-      saturatedBoundsCount: payload.meta?.upHellas?.saturatedBoundsCount,
-      stoppedByRequestLimit: payload.meta?.upHellas?.stoppedByRequestLimit,
       complete: payload.meta?.upHellas?.complete,
     },
-    serverLoadedAt: payload.meta?.loadedAt,
   });
+}
+
+async function runWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  let index = 0;
+
+  const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (index < items.length) {
+      const current = index;
+      index += 1;
+      results[current] = await worker(items[current]!);
+    }
+  });
+
+  await Promise.all(runners);
+  return results;
 }
 
 export function useViewportStoreQuery(
@@ -131,11 +172,17 @@ export function useViewportStoreQuery(
   });
 
   const globalStoreRef = useRef<Map<string, MerchantFeature>>(new Map());
+  const overviewStoreRef = useRef<Map<string, MerchantFeature>>(new Map());
+  const overviewLoadedRef = useRef(false);
+  const overviewLoadingRef = useRef(false);
   const initialLoadedRef = useRef(false);
-  const backgroundFetchControllerRef = useRef<AbortController | null>(null);
+  const fetchedTilesRef = useRef<Set<string>>(new Set());
+  const inFlightControllersRef = useRef<Map<string, AbortController>>(new Map());
+  const fetchGenerationRef = useRef(0);
+  const viewportContinueRoundsRef = useRef(0);
   const moveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const backgroundRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasAppliedLocationFlyRef = useRef(false);
+  const prevMapCenterRef = useRef<{ lat: number; lng: number } | null>(null);
 
   const getCanonicalFeatureKey = (feature: MerchantFeature): string => {
     const rawId = String(
@@ -158,10 +205,6 @@ export function useViewportStoreQuery(
         feature.properties.BrandNameEN ??
         feature.properties.BrandName_GR ??
         feature.properties.BrandNameGR ??
-        feature.properties.VATName_EN ??
-        feature.properties.VATNameEN ??
-        feature.properties.VATName_GR ??
-        feature.properties.VATNameGR ??
         "",
     )
       .trim()
@@ -185,32 +228,12 @@ export function useViewportStoreQuery(
     });
   };
 
-  const downsampleForWidePreview = (
-    features: MerchantFeature[],
-  ): MerchantFeature[] => {
-    if (features.length <= WIDE_PREVIEW_MAX_FEATURES) return features;
-    const byGrid = new Map<string, MerchantFeature>();
-    for (const feature of features) {
-      const lng = Number(feature.geometry.coordinates[0]);
-      const lat = Number(feature.geometry.coordinates[1]);
-      const key = `${lat.toFixed(WIDE_PREVIEW_GRID_DECIMALS)}:${lng.toFixed(WIDE_PREVIEW_GRID_DECIMALS)}`;
-      if (!byGrid.has(key)) byGrid.set(key, feature);
-    }
-    const compact = Array.from(byGrid.values());
-    if (compact.length <= WIDE_PREVIEW_MAX_FEATURES) return compact;
-    const step = Math.ceil(compact.length / WIDE_PREVIEW_MAX_FEATURES);
-    return compact
-      .filter((_, index) => index % step === 0)
-      .slice(0, WIDE_PREVIEW_MAX_FEATURES);
-  };
-
   useEffect(() => {
     if (!mapReady) return;
     const map = mapRef.current;
     if (!map) return;
 
     let alive = true;
-    const hydrationController = new AbortController();
 
     const mergeIntoStore = (incoming: MerchantFeature[]): boolean => {
       let changed = false;
@@ -239,16 +262,39 @@ export function useViewportStoreQuery(
       return changed;
     };
 
-    /** Full-catalogue responses: rebuild the store in one pass (avoids O(n) deep compares on refresh). */
-    const replaceGlobalStore = (incoming: MerchantFeature[]) => {
-      const next = new Map<string, MerchantFeature>();
+    const mergeOverviewIntoStore = (incoming: MerchantFeature[]): boolean => {
+      let changed = false;
       for (const feature of incoming) {
         const lng = Number(feature.geometry.coordinates[0]);
         const lat = Number(feature.geometry.coordinates[1]);
         if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
-        next.set(getCanonicalFeatureKey(feature), feature);
+        const id = getCanonicalFeatureKey(feature);
+        if (!overviewStoreRef.current.has(id)) {
+          overviewStoreRef.current.set(id, feature);
+          changed = true;
+        }
       }
-      globalStoreRef.current = next;
+      return changed;
+    };
+
+    const loadGreeceOverview = async () => {
+      if (overviewLoadedRef.current || overviewLoadingRef.current || !alive) return;
+      overviewLoadingRef.current = true;
+      const json = await fetchBbox(GREECE_OVERVIEW_BBOX, "overview", undefined, -1);
+      overviewLoadingRef.current = false;
+      if (!alive) return;
+      if (json && Array.isArray(json.features) && json.features.length > 0) {
+        mergeOverviewIntoStore(json.features);
+        overviewLoadedRef.current = true;
+        applyVisibleToState({ updating: false });
+      }
+    };
+
+    const scheduleGreeceOverviewLoad = () => {
+      if (overviewLoadedRef.current || overviewLoadingRef.current) return;
+      window.setTimeout(() => {
+        if (alive) void loadGreeceOverview();
+      }, OVERVIEW_FETCH_DELAY_MS);
     };
 
     const computeVisible = () => {
@@ -256,52 +302,75 @@ export function useViewportStoreQuery(
       if (!bounds) {
         return { merchants: [] as MerchantFeature[], viewportTooWide: false };
       }
-      const north = bounds.getNorth();
-      const south = bounds.getSouth();
-      const east = bounds.getEast();
-      const west = bounds.getWest();
-      const latSpan = Math.abs(north - south);
-      const lngSpan = Math.abs(east - west);
+      const latSpan = Math.abs(bounds.getNorth() - bounds.getSouth());
+      const lngSpan = Math.abs(bounds.getEast() - bounds.getWest());
       const viewportTooWide =
         latSpan > MAP_MAX_LAT_SPAN || lngSpan > MAP_MAX_LNG_SPAN;
+      const zoom = map.getZoom();
+      const overviewWeight = overviewDisplayWeight(zoom, viewportTooWide);
 
       const queryBounds = getBufferedBoundsBox(map);
-      const inView: MerchantFeature[] = [];
+      const inViewByKey = new Map<string, MerchantFeature>();
+
       for (const feature of globalStoreRef.current.values()) {
         const lng = feature.geometry.coordinates[0];
         const lat = feature.geometry.coordinates[1];
         if (queryBounds && pointInBoundsBox(lng, lat, queryBounds)) {
-          inView.push(feature);
+          inViewByKey.set(getCanonicalFeatureKey(feature), feature);
         }
       }
-      const sorted = sortFeaturesByUserDistance(inView);
-      const merchants = viewportTooWide
-        ? downsampleForWidePreview(sorted)
-        : sorted;
+
+      if (overviewWeight > 0) {
+        for (const feature of overviewStoreRef.current.values()) {
+          const key = getCanonicalFeatureKey(feature);
+          if (inViewByKey.has(key)) continue;
+          const lng = feature.geometry.coordinates[0];
+          const lat = feature.geometry.coordinates[1];
+          if (queryBounds && pointInBoundsBox(lng, lat, queryBounds)) {
+            inViewByKey.set(key, feature);
+          }
+        }
+      }
+
+      let merchants = Array.from(inViewByKey.values());
+      if (overviewWeight > 0 && queryBounds) {
+        merchants = downsampleForViewportHotspots(
+          merchants,
+          queryBounds,
+          zoom,
+          viewportTooWide,
+        );
+      } else if (merchants.length > MAX_MERCHANTS_FOR_MAP_RENDER && queryBounds) {
+        merchants = downsampleForViewportHotspots(
+          merchants,
+          queryBounds,
+          zoom,
+          false,
+        ).slice(0, MAX_MERCHANTS_FOR_MAP_RENDER);
+      }
+      merchants = sortFeaturesByUserDistance(merchants);
       return { merchants, viewportTooWide };
     };
 
-    const applyVisibleToState = () => {
+    const applyVisibleToState = (options?: { updating?: boolean }) => {
       if (!alive) return;
       const { merchants, viewportTooWide } = computeVisible();
-      setState({
+      setState((prev) => ({
         merchants,
         loading: false,
-        updating: false,
+        updating: options?.updating ?? prev.updating,
         viewportTooWide,
         error: null,
-      });
+      }));
     };
 
-    const fetchMerchantCollection = async (
-      kind: "bbox" | "full",
-      logSource:
-        | "initial-bbox"
-        | "initial-full"
-        | "initial-full-fallback"
-        | "background-refresh",
+    const fetchBbox = async (
+      bbox: BBoxPayload,
+      logSource: string,
       signal: AbortSignal | undefined,
+      generation: number,
     ): Promise<MerchantApiResponse | null> => {
+      const started = Date.now();
       let lastError: unknown = null;
       for (let attempt = 0; attempt < FETCH_RETRY_DELAYS_MS.length; attempt += 1) {
         const delay = FETCH_RETRY_DELAYS_MS[attempt];
@@ -310,15 +379,12 @@ export function useViewportStoreQuery(
         }
         if (signal?.aborted) return null;
         try {
-          const res =
-            kind === "bbox"
-              ? await fetch(MERCHANTS_API_PATH, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(INITIAL_CATALOGUE_BBOX),
-                  signal,
-                })
-              : await fetch(`${MERCHANTS_API_PATH}?scope=all`, { signal });
+          const res = await fetch(MERCHANTS_API_PATH, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(bbox),
+            signal,
+          });
 
           if (!res.ok) {
             throw new Error(`Merchant catalogue request failed: ${res.status}`);
@@ -330,6 +396,8 @@ export function useViewportStoreQuery(
             complete: json.meta?.upHellas?.complete,
             meta: json.meta,
             attempt: attempt + 1,
+            durationMs: Date.now() - started,
+            generation,
           });
           return json;
         } catch (err) {
@@ -337,90 +405,320 @@ export function useViewportStoreQuery(
             return null;
           }
           lastError = err;
-          if (attempt < FETCH_RETRY_DELAYS_MS.length - 1) {
-            logCatalogueFetch("retry", {
-              featureCount: 0,
-              complete: undefined,
-              meta: undefined,
-              attempt: attempt + 1,
-            });
-          }
         }
       }
       console.error("Failed to load merchant catalogue:", lastError);
       return null;
     };
 
+    const abortStaleOutOfView = (
+      queryBounds: NonNullable<ReturnType<typeof getBufferedBoundsBox>>,
+    ) => {
+      for (const [requestId, controller] of inFlightControllersRef.current.entries()) {
+        const [, bboxJson] = requestId.split("|");
+        if (!bboxJson) continue;
+        try {
+          const bbox = JSON.parse(bboxJson) as BBoxPayload;
+          if (!bboxesIntersect(bbox, queryBounds)) {
+            controller.abort();
+            inFlightControllersRef.current.delete(requestId);
+          }
+        } catch {
+          controller.abort();
+          inFlightControllersRef.current.delete(requestId);
+        }
+      }
+    };
+
+    const requestIdFor = (generation: number, bbox: BBoxPayload): string =>
+      `${generation}|${JSON.stringify(bbox)}`;
+
+    const runPlannedFetches = async (
+      planned: PlannedBbox[],
+      generation: number,
+      options: { priorityOnly: boolean },
+    ) => {
+      if (planned.length === 0) return;
+
+      const queryBounds = getBufferedBoundsBox(map);
+      if (!queryBounds) return;
+
+      const center = mapCenter(map) ?? {
+        lat: (queryBounds.north + queryBounds.south) / 2,
+        lng: (queryBounds.east + queryBounds.west) / 2,
+      };
+
+      const sorted = sortPlannedBboxesByPriority(planned, center);
+      const minPriority = Math.min(...sorted.map((p) => p.priority));
+      const priorityBatch = sorted.filter((p) => p.priority === minPriority);
+      const backgroundBatch = sorted.filter((p) => p.priority > minPriority);
+
+      const batches = options.priorityOnly
+        ? [priorityBatch]
+        : [priorityBatch, backgroundBatch].filter((b) => b.length > 0);
+
+      let storeChanged = false;
+
+      for (const batch of batches) {
+        if (!alive || generation !== fetchGenerationRef.current) break;
+
+        const isBackground = batch === backgroundBatch && backgroundBatch.length > 0;
+        if (!isBackground) {
+          setState((prev) => ({ ...prev, updating: true }));
+        }
+
+        await runWithConcurrency(batch, MAX_CONCURRENT_FETCHES, async (item) => {
+          if (!alive || generation !== fetchGenerationRef.current) return;
+
+          const requestId = requestIdFor(generation, item.bbox);
+          if (inFlightControllersRef.current.has(requestId)) return;
+
+          const controller = new AbortController();
+          inFlightControllersRef.current.set(requestId, controller);
+
+          try {
+            const json = await fetchBbox(
+              item.bbox,
+              isBackground ? "prefetch" : "viewport",
+              controller.signal,
+              generation,
+            );
+
+            if (!alive || generation !== fetchGenerationRef.current) return;
+
+            markTilesFetched(item.tileKeys, fetchedTilesRef.current);
+
+            if (json && Array.isArray(json.features) && json.features.length > 0) {
+              if (mergeIntoStore(json.features)) {
+                storeChanged = true;
+              }
+            }
+          } finally {
+            inFlightControllersRef.current.delete(requestId);
+          }
+        });
+
+        if (!isBackground && alive && generation === fetchGenerationRef.current) {
+          if (storeChanged) {
+            applyVisibleToState({ updating: false });
+            storeChanged = false;
+          } else {
+            setState((prev) => ({ ...prev, updating: false }));
+          }
+
+          const zoom = map.getZoom();
+          const boundsAfter = getBufferedBoundsBox(map);
+          if (
+            boundsAfter &&
+            batch.length > 0 &&
+            viewportContinueRoundsRef.current < MAX_VIEWPORT_FETCH_CONTINUE_ROUNDS &&
+            !isViewportSatisfied(boundsAfter, fetchedTilesRef.current, {
+              zoom,
+              neighborPadding: 1,
+            })
+          ) {
+            viewportContinueRoundsRef.current += 1;
+            window.setTimeout(() => {
+              if (!alive || generation !== fetchGenerationRef.current) return;
+              ensureViewportLoaded({ continueGeneration: true });
+            }, 0);
+          } else {
+            viewportContinueRoundsRef.current = 0;
+          }
+        }
+      }
+    };
+
+    const ensureViewportLoaded = (options?: {
+      prefetchOnly?: boolean;
+      movement?: { dLat: number; dLng: number } | null;
+      /** Keep the current generation so follow-up cluster fetches are not aborted. */
+      continueGeneration?: boolean;
+    }) => {
+      if (!initialLoadedRef.current) return;
+      const queryBounds = getBufferedBoundsBox(map);
+      if (!queryBounds) return;
+
+      const zoom = map.getZoom();
+      const mode = viewportFetchMode(zoom, queryBounds);
+      const overviewWeight = overviewDisplayWeight(zoom, isMapSpanTooWide(queryBounds));
+
+      if (overviewWeight > 0 && !overviewLoadedRef.current) {
+        void loadGreeceOverview();
+      }
+
+      if (mode === "none") {
+        void loadGreeceOverview();
+        const focusPlanned = planFocusDetailFetch(queryBounds, zoom, fetchedTilesRef.current);
+        if (focusPlanned.length > 0) {
+          void runPlannedFetches(focusPlanned, fetchGenerationRef.current, {
+            priorityOnly: false,
+          });
+        }
+        applyVisibleToState();
+        return;
+      }
+
+      if (options?.prefetchOnly && mode !== "tiles") {
+        return;
+      }
+
+      if (mode === "tiles" && globalStoreRef.current.size < 8000) {
+        backfillFetchedTilesFromStore(
+          queryBounds,
+          globalStoreRef.current.values(),
+          fetchedTilesRef.current,
+        );
+      }
+
+      if (
+        isViewportSatisfied(queryBounds, fetchedTilesRef.current, {
+          zoom,
+          neighborPadding: 1,
+        })
+      ) {
+        applyVisibleToState();
+        return;
+      }
+
+      abortStaleOutOfView(queryBounds);
+
+      const generation =
+        options?.prefetchOnly || options?.continueGeneration
+          ? fetchGenerationRef.current
+          : ++fetchGenerationRef.current;
+
+      if (!options?.continueGeneration) {
+        viewportContinueRoundsRef.current = 0;
+      }
+
+      let planned: PlannedBbox[] = [];
+
+      if (overviewWeight > 0) {
+        planned.push(
+          ...planFocusDetailFetch(queryBounds, zoom, fetchedTilesRef.current),
+        );
+      }
+
+      if (options?.movement) {
+        planned.push(
+          ...planLeadingEdgeFetches(
+            queryBounds,
+            zoom,
+            options.movement,
+            fetchedTilesRef.current,
+          ),
+        );
+      }
+
+      if (!options?.prefetchOnly) {
+        planned.push(
+          ...planViewportFetches(queryBounds, zoom, fetchedTilesRef.current, {
+            neighborPadding: 1,
+            priority: 0,
+          }),
+        );
+      }
+
+      const seen = new Set<string>();
+      planned = planned.filter((p) => {
+        const key = JSON.stringify(p.bbox);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      if (planned.length === 0) {
+        applyVisibleToState();
+        return;
+      }
+
+      void runPlannedFetches(planned, generation, {
+        priorityOnly: Boolean(options?.prefetchOnly),
+      });
+    };
+
     const triggerVisibleUpdate = () => {
       if (!initialLoadedRef.current) return;
       if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
       const delay = moveDebounceMsForZoom(map.getZoom());
-      if (delay === 0) {
+      const run = () => {
+        const center = mapCenter(map);
+        const movement = movementBetweenCenters(
+          prevMapCenterRef.current,
+          center ?? { lat: 0, lng: 0 },
+        );
+        if (center) prevMapCenterRef.current = center;
         applyVisibleToState();
+        ensureViewportLoaded({ movement });
+      };
+      if (delay === 0) {
+        run();
         return;
       }
       moveDebounceRef.current = setTimeout(() => {
         moveDebounceRef.current = null;
-        applyVisibleToState();
+        run();
       }, delay);
     };
 
     const throttledMoveVisibleUpdate = throttle(() => {
       if (!initialLoadedRef.current) return;
-      if (!shouldUpdateViewportOnMove(map.getZoom())) return;
+      const queryBounds = getBufferedBoundsBox(map);
+      if (
+        queryBounds &&
+        viewportFetchMode(map.getZoom(), queryBounds) === "none"
+      ) {
+        return;
+      }
       applyVisibleToState();
     }, MAP_MOVE_THROTTLE_MS);
 
-    const scheduleBackgroundRefresh = () => {
-      if (backgroundRefreshTimerRef.current) {
-        clearTimeout(backgroundRefreshTimerRef.current);
+    const throttledPrefetch = throttle(() => {
+      if (!initialLoadedRef.current) return;
+      const queryBounds = getBufferedBoundsBox(map);
+      if (
+        !queryBounds ||
+        viewportFetchMode(map.getZoom(), queryBounds) !== "tiles"
+      ) {
+        return;
       }
-      backgroundRefreshTimerRef.current = setTimeout(async () => {
-        backgroundFetchControllerRef.current?.abort();
-        const controller = new AbortController();
-        backgroundFetchControllerRef.current = controller;
-        const json = await fetchMerchantCollection(
-          "full",
-          "background-refresh",
-          controller.signal,
-        );
-        if (json && Array.isArray(json.features) && !controller.signal.aborted && alive) {
-          const features = json.features;
-          scheduleWhenMapQuiet(map, () => alive, () => {
-            if (!alive || controller.signal.aborted) return;
-            replaceGlobalStore(features);
-            applyVisibleToState();
-          });
-        }
-        if (alive) scheduleBackgroundRefresh();
-      }, BACKGROUND_REFRESH_MS);
-    };
+      const center = mapCenter(map);
+      if (!center) return;
+      const movement = movementBetweenCenters(prevMapCenterRef.current, center);
+      if (!movement) return;
+      ensureViewportLoaded({ prefetchOnly: true, movement });
+    }, PREFETCH_MOVE_THROTTLE_MS);
 
     map.on("moveend", triggerVisibleUpdate);
+    map.on("zoomend", triggerVisibleUpdate);
     map.on("move", throttledMoveVisibleUpdate);
+    map.on("move", throttledPrefetch);
 
     if (initialLoadedRef.current) {
       if (userLocation && !hasAppliedLocationFlyRef.current) {
         hasAppliedLocationFlyRef.current = true;
         map.flyTo({
           center: [userLocation.lng, userLocation.lat],
-          zoom: 13,
+          zoom: INITIAL_FOCUS_ZOOM,
           duration: 900,
         });
       }
       applyVisibleToState();
-      scheduleBackgroundRefresh();
+      ensureViewportLoaded();
       return () => {
         alive = false;
-        hydrationController.abort();
-        map.off("moveend", triggerVisibleUpdate);
-        map.off("move", throttledMoveVisibleUpdate);
-        throttledMoveVisibleUpdate.cancel();
-        if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
-        if (backgroundRefreshTimerRef.current) {
-          clearTimeout(backgroundRefreshTimerRef.current);
+        for (const controller of inFlightControllersRef.current.values()) {
+          controller.abort();
         }
-        backgroundFetchControllerRef.current?.abort();
+        inFlightControllersRef.current.clear();
+        map.off("moveend", triggerVisibleUpdate);
+        map.off("zoomend", triggerVisibleUpdate);
+        map.off("move", throttledMoveVisibleUpdate);
+        map.off("move", throttledPrefetch);
+        throttledMoveVisibleUpdate.cancel();
+        throttledPrefetch.cancel();
+        if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
       };
     }
 
@@ -429,7 +727,7 @@ export function useViewportStoreQuery(
         hasAppliedLocationFlyRef.current = true;
         map.flyTo({
           center: [userLocation.lng, userLocation.lat],
-          zoom: 13,
+          zoom: INITIAL_FOCUS_ZOOM,
           duration: 900,
         });
       }
@@ -442,14 +740,11 @@ export function useViewportStoreQuery(
         error: null,
       }));
 
-      // Bbox first, parallel with Mapbox style; no AbortSignal so Strict Mode cleanup does not cancel it.
-      let json = await fetchMerchantCollection("bbox", "initial-bbox", undefined);
-
-      if (!alive) return;
-
-      if (!json) {
-        json = await fetchMerchantCollection("full", "initial-full-fallback", undefined);
-      }
+      const initialBbox = initialCatalogueBboxForLocation(
+        userLocation,
+        INITIAL_FOCUS_ZOOM,
+      );
+      const json = await fetchBbox(initialBbox, "initial", undefined, 0);
 
       if (!alive) return;
 
@@ -463,55 +758,35 @@ export function useViewportStoreQuery(
         return;
       }
 
+      markTilesFetchedForBbox(initialBbox, fetchedTilesRef.current);
       mergeIntoStore(json.features);
       initialLoadedRef.current = true;
+      const center = mapCenter(map);
+      if (center) prevMapCenterRef.current = center;
       applyVisibleToState();
-      scheduleBackgroundRefresh();
 
-      if (!alive) return;
+      scheduleGreeceOverviewLoad();
 
-      setState((prev) => ({
-        ...prev,
-        updating: true,
-      }));
-
-      const fullJson = await fetchMerchantCollection(
-        "full",
-        "initial-full",
-        hydrationController.signal,
-      );
-      if (!alive || hydrationController.signal.aborted) {
-        setState((prev) => ({ ...prev, updating: false }));
-        return;
-      }
-      if (fullJson && Array.isArray(fullJson.features)) {
-        const features = fullJson.features;
-        scheduleWhenMapQuiet(map, () => alive, () => {
-          if (!alive || hydrationController.signal.aborted) {
-            setState((prev) => ({ ...prev, updating: false }));
-            return;
-          }
-          replaceGlobalStore(features);
-          applyVisibleToState();
-        });
-      } else {
-        setState((prev) => ({ ...prev, updating: false }));
-      }
+      scheduleWhenMapQuiet(map, () => alive, () => {
+        ensureViewportLoaded();
+      });
     };
 
     void runInitialCatalogue();
 
     return () => {
       alive = false;
-      hydrationController.abort();
-      map.off("moveend", triggerVisibleUpdate);
-      map.off("move", throttledMoveVisibleUpdate);
-      throttledMoveVisibleUpdate.cancel();
-      if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
-      if (backgroundRefreshTimerRef.current) {
-        clearTimeout(backgroundRefreshTimerRef.current);
+      for (const controller of inFlightControllersRef.current.values()) {
+        controller.abort();
       }
-      backgroundFetchControllerRef.current?.abort();
+      inFlightControllersRef.current.clear();
+      map.off("moveend", triggerVisibleUpdate);
+      map.off("zoomend", triggerVisibleUpdate);
+      map.off("move", throttledMoveVisibleUpdate);
+      map.off("move", throttledPrefetch);
+      throttledMoveVisibleUpdate.cancel();
+      throttledPrefetch.cancel();
+      if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
     };
   }, [mapReady, mapRef, userLocation]);
 

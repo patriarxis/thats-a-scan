@@ -163,6 +163,35 @@ async function processUpHellasBounds(
   );
 }
 
+/**
+ * One upstream POST per bbox for map viewports (mobile-app style).
+ * Use `fetchAllUpHellasFeatures` only for full-catalogue builds.
+ */
+export async function fetchUpHellasViewport(bounds: Bounds): Promise<UpHellasFetchResult> {
+  try {
+    const raw = await fetchUpHellasBounds(bounds);
+    const features = raw.map((feature) => addSourceFlag(feature));
+    const saturated = features.length >= UP_HELLAS_DENSE_RESULT_THRESHOLD;
+    return {
+      features,
+      requestCount: 1,
+      saturatedBoundsCount: saturated ? 1 : 0,
+      stoppedByRequestLimit: false,
+      complete: !saturated,
+    };
+  } catch (err) {
+    console.error("fetchUpHellasViewport failed:", bounds, err);
+    return {
+      features: [],
+      requestCount: 1,
+      saturatedBoundsCount: 0,
+      stoppedByRequestLimit: false,
+      complete: false,
+    };
+  }
+}
+
+/** Full-catalogue / nationwide search only — never use for map viewport POSTs. */
 export async function fetchAllUpHellasFeatures(
   bounds: Bounds,
 ): Promise<UpHellasFetchResult> {

@@ -45,6 +45,7 @@ import {
   type MerchantDetailSheetLabels,
   type VisiblePartnersChangePayload,
 } from "@/types";
+import { kickMerchantCatalogueWarmClient } from "@/lib/merchantCatalogueWarmClient";
 import {
   MERCHANT_SUGGESTION_LIMIT,
   SEARCH_DEBOUNCE_MS,
@@ -208,7 +209,8 @@ const LocatorPageContent = () => {
 
   const selectedId = selectedPartner ? getPartnerId(selectedPartner) : null;
   const sidebarOpen = !!selectedPartner;
-  const desktopDrawerOffsetPx = 340;
+  /** Bottom inset when the desktop detail sheet is open (~40dvh, capped in CSS). */
+  const desktopSheetMapPaddingBottomPx = 320;
   const mobileDrawerOffsetPx = 280;
   const mobileSelectedMapBottomExtraPx = 48;
   const closeFiltersToResults = useCallback(() => {
@@ -329,8 +331,8 @@ const LocatorPageContent = () => {
           }
         : {
             top: 64,
-            right: desktopDrawerOffsetPx,
-            bottom: 16,
+            right: 16,
+            bottom: desktopSheetMapPaddingBottomPx,
             left: 16,
           },
     [isMobile, mobileDrawerOffsetPx, mobileSelectedMapBottomExtraPx],
@@ -359,6 +361,10 @@ const LocatorPageContent = () => {
       const controller = new AbortController();
       geocodeAbortRef.current = controller;
       setSearchLoading(true);
+
+      if (query.trim().length >= 2) {
+        kickMerchantCatalogueWarmClient();
+      }
 
       const localMerchantResults = searchMerchantSuggestions(
         query,
@@ -762,6 +768,7 @@ const LocatorPageContent = () => {
             }}
             onOpenFilters={() => setIsFiltersOpen(true)}
             onFocusInput={() => {
+              kickMerchantCatalogueWarmClient();
               if (isFiltersOpen) {
                 setIsFiltersOpen(false);
               }

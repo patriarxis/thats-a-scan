@@ -115,12 +115,15 @@ export function kickMerchantCatalogueWarm(): void {
   ensureFetchInFlight().catch(() => undefined);
 }
 
-if (
-  typeof process !== "undefined" &&
-  process.env.NEXT_RUNTIME === "nodejs" &&
-  process.env.NODE_ENV !== "test"
-) {
-  setTimeout(() => {
-    getCachedMerchantCatalogue().catch(() => undefined);
-  }, 0);
+const CATALOGUE_WARM_DELAY_MS = 3000;
+let delayedWarmTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Defer catalogue warm so viewport Up Hellas requests are not competing on a cold instance. */
+export function scheduleDelayedMerchantCatalogueWarm(): void {
+  if (tryGetCachedCompleteSnapshot()) return;
+  if (delayedWarmTimer !== null) return;
+  delayedWarmTimer = setTimeout(() => {
+    delayedWarmTimer = null;
+    kickMerchantCatalogueWarm();
+  }, CATALOGUE_WARM_DELAY_MS);
 }

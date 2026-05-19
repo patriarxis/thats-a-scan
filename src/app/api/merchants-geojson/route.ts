@@ -1,14 +1,23 @@
 import { NextResponse } from "next/server";
 import {
+  getCachedBboxFeatures,
+  setCachedBboxFeatures,
+} from "@/lib/merchantBboxCache";
+import {
   getCachedMerchantCatalogue,
   kickMerchantCatalogueWarm,
   tryGetCachedCompleteSnapshot,
   type MerchantCatalogueSnapshot,
 } from "@/lib/merchantCatalogueCache";
-import type { PartnerFeature } from "@/types";
 import { INITIAL_CATALOGUE_BBOX } from "@/lib/merchantInitialCatalogueBbox";
 import {
-  fetchAllUpHellasFeatures,
+  fetchAllVenues,
+  isNyamieCacheWarm,
+  kickNyamieWarm,
+} from "@/lib/nyamie";
+import type { PartnerFeature } from "@/types";
+import {
+  fetchUpHellasViewport,
   payloadToBounds,
   type BBoxPayload,
   type UpHellasFetchResult,
@@ -35,8 +44,9 @@ function tagSource(features: PartnerFeature[], source: string): PartnerFeature[]
   }));
 }
 
-function buildMeta(snapshot: MerchantCatalogueSnapshot) {
+function buildMeta(snapshot: MerchantCatalogueSnapshot, cacheHit?: string) {
   return {
+    cache: cacheHit ? { hit: cacheHit } : undefined,
     upHellas: {
       requestCount: snapshot.upHellas.requestCount,
       saturatedBoundsCount: snapshot.upHellas.saturatedBoundsCount,
@@ -47,8 +57,14 @@ function buildMeta(snapshot: MerchantCatalogueSnapshot) {
   };
 }
 
-function buildMetaFromViewportFetch(up: UpHellasFetchResult, loadedAt: number) {
+function buildMetaFromViewportFetch(
+  up: UpHellasFetchResult,
+  loadedAt: number,
+  options?: { cacheHit?: string; nyamie?: { included: boolean } },
+) {
   return {
+    cache: options?.cacheHit ? { hit: options.cacheHit } : undefined,
+    nyamie: options?.nyamie,
     upHellas: {
       requestCount: up.requestCount,
       saturatedBoundsCount: up.saturatedBoundsCount,
@@ -66,7 +82,7 @@ function buildFullCollection(snapshot: MerchantCatalogueSnapshot) {
       ...tagSource(snapshot.upHellas.features, "up_hellas"),
       ...tagSource(snapshot.nyamie, "nyamie"),
     ],
-    meta: buildMeta(snapshot),
+    meta: buildMeta(snapshot, "catalogue"),
   };
 }
 
@@ -94,17 +110,63 @@ function jsonWithCacheHeaders(body: unknown, status = 200): NextResponse {
   return response;
 }
 
+async function fetchColdViewportFeatures(bounds: BBoxPayload): Promise<{
+  features: PartnerFeature[];
+  upResult: UpHellasFetchResult;
+  nyamieIncluded: boolean;
+}> {
+  const upBounds = payloadToBounds(bounds);
+  const nyamieWarm = isNyamieCacheWarm();
+
+  let upResult: UpHellasFetchResult;
+  let nyamieInBox: PartnerFeature[] = [];
+
+  if (nyamieWarm) {
+    const [up, nyamieAll] = await Promise.all([
+      fetchUpHellasViewport(upBounds),
+      fetchAllVenues().catch((err) => {
+        console.error("Nyamie fetch failed on warm cache path:", err);
+        return [] as PartnerFeature[];
+      }),
+    ]);
+    upResult = up;
+    nyamieInBox = filterByBounds(nyamieAll, bounds);
+  } else {
+    kickNyamieWarm();
+    upResult = await fetchUpHellasViewport(upBounds);
+  }
+
+  const features = [
+    ...tagSource(upResult.features, "up_hellas"),
+    ...tagSource(nyamieInBox, "nyamie"),
+  ];
+
+  return {
+    features,
+    upResult,
+    nyamieIncluded: nyamieWarm,
+  };
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const scope = url.searchParams.get("scope");
 
   try {
+    if (scope === "warm") {
+      kickMerchantCatalogueWarm();
+      return jsonWithCacheHeaders({ ok: true, warming: true });
+    }
+
     const snapshot = await getCachedMerchantCatalogue();
     if (scope === "all") {
       return jsonWithCacheHeaders(buildFullCollection(snapshot));
     }
     return NextResponse.json(
-      { error: "Use ?scope=all for the full catalogue, or POST with bbox." },
+      {
+        error:
+          "Use ?scope=all for the full catalogue, ?scope=warm to pre-warm, or POST with bbox.",
+      },
       { status: 400 },
     );
   } catch (error) {
@@ -153,22 +215,41 @@ export async function POST(request: Request) {
           ...tagSource(upHellasInBox, "up_hellas"),
           ...tagSource(nyamieInBox, "nyamie"),
         ],
-        meta: buildMeta(snapshot),
+        meta: buildMeta(snapshot, "catalogue"),
       });
     }
 
-    const upBounds = payloadToBounds(bounds);
-    const upResult = await fetchAllUpHellasFeatures(upBounds);
+    const lruHit = getCachedBboxFeatures(bounds);
+    if (lruHit) {
+      return jsonWithCacheHeaders({
+        type: "FeatureCollection" as const,
+        features: lruHit,
+        meta: buildMetaFromViewportFetch(
+          {
+            features: [],
+            requestCount: 0,
+            saturatedBoundsCount: 0,
+            stoppedByRequestLimit: false,
+            complete: true,
+          },
+          Date.now(),
+          { cacheHit: "bbox-lru", nyamie: { included: true } },
+        ),
+      });
+    }
 
-    // Start full-Greece build only after the viewport response is ready, so this request
-    // does not compete with `fetchAllUpHellasFeatures(GREECE)` for upstream capacity.
-    kickMerchantCatalogueWarm();
+    const { features, upResult, nyamieIncluded } =
+      await fetchColdViewportFeatures(bounds);
+    setCachedBboxFeatures(bounds, features);
     const loadedAt = Date.now();
 
     return jsonWithCacheHeaders({
       type: "FeatureCollection" as const,
-      features: tagSource(upResult.features, "up_hellas"),
-      meta: buildMetaFromViewportFetch(upResult, loadedAt),
+      features,
+      meta: buildMetaFromViewportFetch(upResult, loadedAt, {
+        cacheHit: "upstream",
+        nyamie: { included: nyamieIncluded },
+      }),
     });
   } catch (error) {
     console.error("Error merging merchant data sources:", error);

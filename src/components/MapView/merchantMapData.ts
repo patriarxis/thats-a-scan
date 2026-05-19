@@ -349,14 +349,14 @@ const assignMarkerStatesByZoom = (
   alwaysKeepIds?: ReadonlySet<string>,
 ): PartnerFeature[] => {
   const zoomQuantum = quantizeDeclutterZoom(zoomRaw);
-  const profile = declutterProfileForZoom(zoomQuantum);
+  const profile = declutterProfileForZoom(zoomRaw);
   const ranked = stableRankByMerchantId(features);
   const alwaysKeep = alwaysKeepIds ?? new Set<string>();
 
   let visibleIds: Set<string>;
   let iconIds: Set<string>;
 
-  if (!usesGeoGridForZoom(zoomQuantum)) {
+  if (!usesGeoGridForZoom(zoomRaw)) {
     const street = selectStreetModeVisible(map, ranked, zoomQuantum, alwaysKeep);
     visibleIds = street.visibleIds;
     iconIds = new Set(street.iconIds);

@@ -1,7 +1,7 @@
 import type { StyleSpecification } from "mapbox-gl";
 
 export const ATHENS_CENTER: [number, number] = [23.7275, 37.9838];
-export const ATHENS_INITIAL_ZOOM = 11;
+export { INITIAL_FOCUS_ZOOM as ATHENS_INITIAL_ZOOM } from "@/lib/config";
 export const GREECE_MAX_BOUNDS: [[number, number], [number, number]] = [
   [18.85, 34.24],
   [28.75, 42.16],
@@ -19,7 +19,8 @@ export const MARKER_ICON_GYMS_ID = "merchant-marker-gyms";
 export const MARKER_ICON_DEFAULT_ID = MARKER_ICON_REWARDS_ID;
 
 export const DETAILED_MARKER_MIN_ZOOM = 12;
-export const SHOW_ALL_MARKERS_ZOOM = 14;
+/** Below this zoom, Mapbox collision hides overlapping brand icons (pairs with declutter grid). */
+export const SHOW_ALL_MARKERS_ZOOM = 16;
 export const ACTIVE_PIN_QUICK_ZOOM = 15;
 
 /** Zoom is rounded to nearest half-level for marker decluttering to avoid jitter while pinching. */
@@ -48,27 +49,90 @@ export type DeclutterProfile = {
 };
 
 export const DECLUTTER_PROFILE_BY_ZOOM: DeclutterProfile[] = [
-  { minZoom: 0, maxVisible: 4000, cellSizePx: 56, maxPerCell: 4, iconShare: 0.2 },
-  { minZoom: 8, maxVisible: 5500, cellSizePx: 48, maxPerCell: 5, iconShare: 0.2 },
-  { minZoom: 10, maxVisible: 7000, cellSizePx: 40, maxPerCell: 6, iconShare: 0.35 },
-  { minZoom: 12, maxVisible: 9000, cellSizePx: 32, maxPerCell: 8, iconShare: 0.5 },
-  { minZoom: 13, maxVisible: 9000, cellSizePx: 26, maxPerCell: 10, iconShare: 0.75 },
+  { minZoom: 0, maxVisible: 1400, cellSizePx: 52, maxPerCell: 4, iconShare: 0.22 },
+  { minZoom: 8, maxVisible: 1800, cellSizePx: 44, maxPerCell: 5, iconShare: 0.24 },
+  { minZoom: 10, maxVisible: 2200, cellSizePx: 36, maxPerCell: 5, iconShare: 0.3 },
+  { minZoom: 12, maxVisible: 2600, cellSizePx: 30, maxPerCell: 6, iconShare: 0.38 },
+  { minZoom: 13, maxVisible: 2800, cellSizePx: 26, maxPerCell: 6, iconShare: 0.4 },
   {
     minZoom: 14,
+    maxVisible: 2400,
+    cellSizePx: 28,
+    maxPerCell: 3,
+    iconShare: 0.36,
+  },
+  {
+    minZoom: 15,
+    maxVisible: 2600,
+    cellSizePx: 22,
+    maxPerCell: 3,
+    iconShare: 0.4,
+  },
+  {
+    minZoom: 16,
+    maxVisible: 2200,
+    cellSizePx: 18,
+    maxPerCell: 3,
+    iconShare: 0.42,
+    maxDotOverflow: 500,
+  },
+  {
+    minZoom: 17,
     maxVisible: 3200,
     cellSizePx: null,
     maxPerCell: 0,
-    iconShare: 0.38,
-    maxDotOverflow: 1800,
+    iconShare: 0.45,
+    maxDotOverflow: 800,
   },
 ];
 
 export const declutterProfileForZoom = (zoom: number): DeclutterProfile => {
-  let profile = DECLUTTER_PROFILE_BY_ZOOM[0]!;
-  for (const step of DECLUTTER_PROFILE_BY_ZOOM) {
-    if (zoom >= step.minZoom) profile = step;
+  const steps = DECLUTTER_PROFILE_BY_ZOOM;
+  const z = zoom;
+
+  if (z <= steps[0]!.minZoom) return { ...steps[0]! };
+  const last = steps[steps.length - 1]!;
+  if (z >= last.minZoom) return { ...last };
+
+  let lower = steps[0]!;
+  let upper = steps[1]!;
+  for (let i = 0; i < steps.length - 1; i += 1) {
+    if (z >= steps[i]!.minZoom && z < steps[i + 1]!.minZoom) {
+      lower = steps[i]!;
+      upper = steps[i + 1]!;
+      break;
+    }
   }
-  return profile;
+
+  const span = upper.minZoom - lower.minZoom;
+  const t = span > 0 ? (z - lower.minZoom) / span : 0;
+
+  const cellSizePx = (() => {
+    if (lower.cellSizePx === null && upper.cellSizePx === null) return null;
+    if (lower.cellSizePx !== null && upper.cellSizePx === null) {
+      return t >= 0.88 ? null : lower.cellSizePx;
+    }
+    if (lower.cellSizePx === null && upper.cellSizePx !== null) {
+      return upper.cellSizePx;
+    }
+    return Math.round(lower.cellSizePx! + (upper.cellSizePx! - lower.cellSizePx!) * t);
+  })();
+
+  const lowerOverflow = lower.maxDotOverflow ?? 0;
+  const upperOverflow = upper.maxDotOverflow ?? lowerOverflow;
+  const maxDotOverflow =
+    lower.maxDotOverflow !== undefined || upper.maxDotOverflow !== undefined
+      ? Math.round(lowerOverflow + (upperOverflow - lowerOverflow) * t)
+      : undefined;
+
+  return {
+    minZoom: lower.minZoom,
+    maxVisible: Math.round(lower.maxVisible + (upper.maxVisible - lower.maxVisible) * t),
+    cellSizePx,
+    maxPerCell: Math.round(lower.maxPerCell + (upper.maxPerCell - lower.maxPerCell) * t),
+    iconShare: lower.iconShare + (upper.iconShare - lower.iconShare) * t,
+    ...(maxDotOverflow !== undefined && maxDotOverflow > 0 ? { maxDotOverflow } : {}),
+  };
 };
 
 export const usesGeoGridForZoom = (zoom: number): boolean =>

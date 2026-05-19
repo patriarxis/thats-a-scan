@@ -32,6 +32,7 @@ export class MerchantMarkerFadeAnimator {
   private lastFrameMs = 0;
   private hasSynced = false;
   private latestTarget: PartnerFeature[] = [];
+  private neverFadeOutIds = new Set<string>();
   private emit: ((features: PartnerFeature[]) => void) | null = null;
 
   dispose(): void {
@@ -43,8 +44,13 @@ export class MerchantMarkerFadeAnimator {
     this.emit = null;
   }
 
-  sync(targetFeatures: PartnerFeature[], onEmit: (features: PartnerFeature[]) => void): void {
+  sync(
+    targetFeatures: PartnerFeature[],
+    onEmit: (features: PartnerFeature[]) => void,
+    neverFadeOutIds: ReadonlySet<string> = new Set(),
+  ): void {
     this.latestTarget = targetFeatures;
+    this.neverFadeOutIds = new Set(neverFadeOutIds);
     this.emit = onEmit;
 
     const targetById = new Map<string, PartnerFeature>();
@@ -59,23 +65,42 @@ export class MerchantMarkerFadeAnimator {
       const id = getPartnerId(feature);
       const state = feature.properties.__marker_state;
       const track = this.tracks.get(id);
+      const keepVisible = neverFadeOutIds.has(id);
 
-      if (isVisibleMarkerState(state)) {
+      if (isVisibleMarkerState(state) || keepVisible) {
+        const displayState: VisibleMarkerState = isVisibleMarkerState(state) ? state : "small";
         if (!track) {
           this.tracks.set(id, {
-            current: skipFadeIn ? 1 : 0,
+            current: skipFadeIn || keepVisible ? 1 : 0,
             target: 1,
-            displayState: state,
+            displayState,
             snapshot: feature,
           });
           continue;
         }
 
         track.target = 1;
-        track.displayState = state;
+        track.displayState = displayState;
         track.snapshot = feature;
-        if (skipFadeIn) {
+        if (skipFadeIn || keepVisible) {
           track.current = 1;
+        }
+        continue;
+      }
+
+      if (keepVisible) {
+        if (!track) {
+          this.tracks.set(id, {
+            current: 1,
+            target: 1,
+            displayState: "small",
+            snapshot: feature,
+          });
+        } else {
+          track.target = 1;
+          track.current = 1;
+          track.displayState = "small";
+          track.snapshot = feature;
         }
         continue;
       }
@@ -89,7 +114,7 @@ export class MerchantMarkerFadeAnimator {
     }
 
     for (const [id, track] of this.tracks) {
-      if (!targetById.has(id)) {
+      if (!targetById.has(id) && !neverFadeOutIds.has(id)) {
         track.target = 0;
       }
     }
@@ -176,6 +201,18 @@ export class MerchantMarkerFadeAnimator {
 
       if (isVisibleMarkerState(state)) {
         out.push(withMarkerFade(feature, state, track?.current ?? 1));
+        written.add(id);
+        continue;
+      }
+
+      if (this.neverFadeOutIds.has(id)) {
+        out.push(
+          withMarkerFade(
+            feature,
+            track?.displayState ?? "small",
+            track?.current ?? 1,
+          ),
+        );
         written.add(id);
         continue;
       }

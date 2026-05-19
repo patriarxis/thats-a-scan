@@ -341,47 +341,77 @@ const defaultDeclutterStickyForBuild: MerchantDeclutterStickyState = {
  * 3. Spatial + budget — geo grid (`usesGeoGridForZoom`) then `maxVisible` from `DECLUTTER_PROFILE_BY_ZOOM`.
  * 4. Visual weight — `iconShare` splits visible pins into full icons vs dots; street mode also uses `maxDotOverflow` for capped merchants.
  */
+const resolveMarkerState = (
+  map: MapboxMap,
+  feature: PartnerFeature,
+  id: string,
+  zoomRaw: number,
+  zoomQuantum: number,
+  visibleIds: Set<string>,
+  iconIds: Set<string>,
+  alwaysKeep: ReadonlySet<string>,
+  searchPinnedIds: ReadonlySet<string>,
+  selectedPartnerId: string | null,
+): MarkerState => {
+  const isSearchResultPin = searchPinnedIds.has(id) && id !== selectedPartnerId;
+  if (isSearchResultPin) {
+    return "small";
+  }
+
+  if (!visibleIds.has(id)) return "hidden";
+
+  const isPinned = alwaysKeep.has(id);
+  if (isPinned && zoomRaw < DETAILED_MARKER_MIN_ZOOM) {
+    return "small";
+  }
+  if (iconIds.has(id) || (isPinned && isInCurrentViewport(map, feature))) {
+    return "default";
+  }
+  return "small";
+};
+
 const assignMarkerStatesByZoom = (
   map: MapboxMap,
   features: PartnerFeature[],
   zoomRaw: number,
   sticky: MerchantDeclutterStickyState,
   alwaysKeepIds?: ReadonlySet<string>,
+  searchPinnedIds: ReadonlySet<string> = new Set(),
+  selectedPartnerId: string | null = null,
 ): PartnerFeature[] => {
   const zoomQuantum = quantizeDeclutterZoom(zoomRaw);
   const profile = declutterProfileForZoom(zoomRaw);
   const ranked = stableRankByMerchantId(features);
   const alwaysKeep = alwaysKeepIds ?? new Set<string>();
 
+  const pinnedFeatures = ranked.filter((feature) => {
+    const id = getPartnerId(feature);
+    return alwaysKeep.has(id) || searchPinnedIds.has(id);
+  });
+  const declutterCandidates = ranked.filter((feature) => {
+    const id = getPartnerId(feature);
+    return !alwaysKeep.has(id) && !searchPinnedIds.has(id);
+  });
+
   let visibleIds: Set<string>;
   let iconIds: Set<string>;
 
   if (!usesGeoGridForZoom(zoomRaw)) {
-    const street = selectStreetModeVisible(map, ranked, zoomQuantum, alwaysKeep);
+    const street = selectStreetModeVisible(map, declutterCandidates, zoomQuantum, new Set());
     visibleIds = street.visibleIds;
     iconIds = new Set(street.iconIds);
-    for (const feature of ranked) {
-      const id = getPartnerId(feature);
-      if (
-        alwaysKeep.has(id) &&
-        zoomQuantum >= DETAILED_MARKER_MIN_ZOOM &&
-        isInCurrentViewport(map, feature)
-      ) {
-        iconIds.add(id);
-      }
-    }
   } else {
     const visibleBudget = Math.max(0, profile.maxVisible);
     visibleIds = selectVisibleByStickyGeoGrid(
       map,
-      ranked,
+      declutterCandidates,
       visibleBudget,
       zoomQuantum,
-      alwaysKeep,
+      new Set(),
       sticky,
     );
 
-    const visibleCount = Math.min(visibleIds.size, ranked.length);
+    const visibleCount = Math.min(visibleIds.size, declutterCandidates.length);
     const iconBudget = Math.min(
       visibleCount,
       Math.max(0, Math.floor(visibleCount * profile.iconShare)),
@@ -389,29 +419,43 @@ const assignMarkerStatesByZoom = (
 
     iconIds = new Set<string>();
     let assignedIcons = 0;
-    for (const feature of ranked) {
+    for (const feature of declutterCandidates) {
       const id = getPartnerId(feature);
       if (!visibleIds.has(id)) continue;
-      const isPriorityMarker = alwaysKeep.has(id);
-      if (
-        assignedIcons < iconBudget ||
-        (isPriorityMarker && zoomQuantum >= DETAILED_MARKER_MIN_ZOOM)
-      ) {
+      if (assignedIcons < iconBudget) {
         iconIds.add(id);
         assignedIcons += 1;
       }
     }
   }
 
+  for (const feature of pinnedFeatures) {
+    const id = getPartnerId(feature);
+    visibleIds.add(id);
+    const isSearchResultPin = searchPinnedIds.has(id) && id !== selectedPartnerId;
+    if (
+      !isSearchResultPin &&
+      zoomQuantum >= DETAILED_MARKER_MIN_ZOOM &&
+      isInCurrentViewport(map, feature)
+    ) {
+      iconIds.add(id);
+    }
+  }
+
   return ranked.map((feature) => {
     const id = getPartnerId(feature);
-    let markerState: MarkerState = "hidden";
-    if (visibleIds.has(id)) {
-      markerState =
-        iconIds.has(id) || (alwaysKeep.has(id) && isInCurrentViewport(map, feature))
-          ? "default"
-          : "small";
-    }
+    const markerState = resolveMarkerState(
+      map,
+      feature,
+      id,
+      zoomRaw,
+      zoomQuantum,
+      visibleIds,
+      iconIds,
+      alwaysKeep,
+      searchPinnedIds,
+      selectedPartnerId,
+    );
     return {
       ...feature,
       properties: {
@@ -427,6 +471,8 @@ export const buildMerchantsFeatureCollection = (
   items: PartnerFeature[],
   alwaysKeepIds?: ReadonlySet<string>,
   sticky: MerchantDeclutterStickyState = defaultDeclutterStickyForBuild,
+  searchPinnedIds: ReadonlySet<string> = new Set(),
+  selectedPartnerId: string | null = null,
 ) => {
   const dedupedItems = dedupeByMerchantId(items);
   const zoomCappedItems = assignMarkerStatesByZoom(
@@ -435,6 +481,8 @@ export const buildMerchantsFeatureCollection = (
     map.getZoom(),
     sticky,
     alwaysKeepIds,
+    searchPinnedIds,
+    selectedPartnerId,
   );
   return {
     type: "FeatureCollection" as const,

@@ -22,6 +22,9 @@ type SearchResultsPanelProps = {
   keyboardHintClose: string;
   mobileFullscreen?: boolean;
   mobileClosing?: boolean;
+  searchMapResultCount?: number | null;
+  searchMapLoading?: boolean;
+  searchResultsOnMapLabel?: string;
   onSelect: (item: SearchSuggestion) => void;
   onHover: (index: number) => void;
 };
@@ -39,6 +42,9 @@ export const SearchResultsPanel = ({
   keyboardHintClose,
   mobileFullscreen = false,
   mobileClosing = false,
+  searchMapResultCount = null,
+  searchMapLoading = false,
+  searchResultsOnMapLabel,
   onSelect,
   onHover,
 }: SearchResultsPanelProps) => {
@@ -112,6 +118,17 @@ export const SearchResultsPanel = ({
         )}
         {merchantEntries.map(({ item, index }) => renderOption(item, index))}
       </ul>
+
+      {(searchMapLoading || (searchMapResultCount !== null && searchMapResultCount > 0)) && (
+        <p className={styles.mapResultsFooter} aria-live="polite">
+          {searchMapLoading
+            ? "…"
+            : searchResultsOnMapLabel?.replace(
+                "{{count}}",
+                String(searchMapResultCount ?? 0),
+              )}
+        </p>
+      )}
 
       <div className={styles.keyboardHints} aria-hidden>
         <span className={styles.keyboardHintItem}>

@@ -51,6 +51,9 @@ type SearchBarProps = {
   onOpenLocalePanel?: () => void;
   /** Enter with no listbox option highlighted: accept current text and close (e.g. generic brand search). */
   onCommitFreeformSearch?: () => void;
+  searchMapResultCount?: number | null;
+  searchMapLoading?: boolean;
+  searchResultsOnMapLabel?: string;
 };
 
 export const SearchBar = ({
@@ -81,6 +84,9 @@ export const SearchBar = ({
   localeSwitcherAriaLabel = "Change language",
   onOpenLocalePanel,
   onCommitFreeformSearch,
+  searchMapResultCount = null,
+  searchMapLoading = false,
+  searchResultsOnMapLabel,
 }: SearchBarProps) => {
   const MOBILE_SEARCH_CLOSE_ANIMATION_MS = 200;
   const MOBILE_ONLY_MEDIA_QUERY = "(max-width: 639px)";
@@ -371,6 +377,9 @@ export const SearchBar = ({
               keyboardHintClose={keyboardHintClose}
               mobileFullscreen={isSearchUiActive}
               mobileClosing={isClosing || isSuggestionsPanelClosing}
+              searchMapResultCount={searchMapResultCount}
+              searchMapLoading={searchMapLoading}
+              searchResultsOnMapLabel={searchResultsOnMapLabel}
               onSelect={handleSelect}
               onHover={setActiveIndex}
             />

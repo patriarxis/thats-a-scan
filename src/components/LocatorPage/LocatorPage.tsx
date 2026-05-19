@@ -47,8 +47,11 @@ import {
 } from "@/types";
 import { kickMerchantCatalogueWarmClient } from "@/lib/merchantCatalogueWarmClient";
 import {
+  MAP_SEARCH_MAX_FEATURES,
   MERCHANT_SUGGESTION_LIMIT,
-  SEARCH_DEBOUNCE_MS,
+  SEARCH_MAP_DEBOUNCE_MS,
+  SEARCH_MAP_MIN_QUERY_LENGTH,
+  SEARCH_SUGGESTIONS_DEBOUNCE_MS,
   SEARCH_SUGGESTION_LIMIT,
 } from "@/lib/config";
 import styles from "./LocatorPage.module.scss";
@@ -78,6 +81,18 @@ type UrlSearchState = {
 
 type MerchantSearchApiResponse = {
   suggestions?: SearchSuggestion[];
+};
+
+type MerchantMapSearchApiResponse = {
+  features?: PartnerFeature[];
+  total?: number;
+  truncated?: boolean;
+};
+
+type SearchMapMeta = {
+  total: number;
+  truncated: boolean;
+  displayed: number;
 };
 
 const NETWORK_FILTER_ID_SET: ReadonlySet<string> = new Set(
@@ -126,7 +141,9 @@ const parseSearchStateFromLocation = (): UrlSearchState => {
 const LocatorPageContent = () => {
   const mapRef = useRef<MapViewHandle | null>(null);
   const searchRequestRef = useRef(0);
+  const mapSearchRequestRef = useRef(0);
   const geocodeAbortRef = useRef<AbortController | null>(null);
+  const mapSearchAbortRef = useRef<AbortController | null>(null);
   const urlSelectionAppliedRef = useRef<string | null>(null);
   const isSelectingSearchSuggestionRef = useRef(false);
   const isMobile = useIsMobileUx();
@@ -152,6 +169,10 @@ const LocatorPageContent = () => {
   const [activeQuickCategoryId, setActiveQuickCategoryId] = useState<PopularSearchCategoryId | null>(null);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchMapFeatures, setSearchMapFeatures] = useState<PartnerFeature[]>([]);
+  const [searchMapMeta, setSearchMapMeta] = useState<SearchMapMeta | null>(null);
+  const [searchMapLoading, setSearchMapLoading] = useState(false);
+  const [searchTruncationDismissed, setSearchTruncationDismissed] = useState(false);
   const [mapLoading, setMapLoading] = useState(true);
   const [mapUpdating, setMapUpdating] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -456,7 +477,7 @@ const LocatorPageContent = () => {
         setSuggestions([...categoryResults, ...mergedMerchantResults].slice(0, SEARCH_SUGGESTION_LIMIT));
         setSearchLoading(false);
       }
-    }, SEARCH_DEBOUNCE_MS);
+    }, SEARCH_SUGGESTIONS_DEBOUNCE_MS);
 
     return () => {
       clearTimeout(timer);
@@ -474,8 +495,153 @@ const LocatorPageContent = () => {
     [locale, query],
   );
 
-  const highlightedPartnerIds = useMemo(() => [], []);
   const showQuickChips = !query.trim();
+
+  const isQueryTiedToSelected = useMemo(
+    () =>
+      Boolean(
+        selectedPartner &&
+          !isFreeformKeywordSearch &&
+          !activeQuickCategory &&
+          normalizeStr(query.trim()) ===
+            normalizeStr(getMerchantName(selectedPartner, locale).trim()),
+      ),
+    [
+      activeQuickCategory,
+      isFreeformKeywordSearch,
+      locale,
+      query,
+      selectedPartner,
+    ],
+  );
+
+  const isSearchMapActive = useMemo(
+    () =>
+      Boolean(activeQuickCategory) ||
+      (Boolean(query.trim()) && !isQueryTiedToSelected),
+    [activeQuickCategory, isQueryTiedToSelected, query],
+  );
+
+  const fetchSearchMapFeatures = useCallback(async (overrides?: {
+    query?: string;
+    categoryId?: PopularSearchCategoryId | null;
+  }) => {
+    const effectiveQuery = (overrides?.query ?? query).trim();
+    const effectiveCategoryId =
+      overrides?.categoryId !== undefined ? overrides.categoryId : activeQuickCategoryId;
+    const effectiveSearchActive =
+      Boolean(effectiveCategoryId) ||
+      (Boolean(effectiveQuery) &&
+        !(
+          selectedPartner &&
+          !isFreeformKeywordSearch &&
+          !effectiveCategoryId &&
+          normalizeStr(effectiveQuery) ===
+            normalizeStr(getMerchantName(selectedPartner, locale).trim())
+        ));
+
+    if (!effectiveSearchActive) {
+      setSearchMapFeatures([]);
+      setSearchMapMeta(null);
+      setSearchMapLoading(false);
+      return;
+    }
+
+    const trimmedQuery = effectiveQuery;
+    if (
+      trimmedQuery.length > 0 &&
+      trimmedQuery.length < SEARCH_MAP_MIN_QUERY_LENGTH &&
+      !effectiveCategoryId
+    ) {
+      setSearchMapFeatures([]);
+      setSearchMapMeta(null);
+      setSearchMapLoading(false);
+      return;
+    }
+
+    mapSearchAbortRef.current?.abort();
+    const controller = new AbortController();
+    mapSearchAbortRef.current = controller;
+    const requestId = ++mapSearchRequestRef.current;
+    setSearchMapLoading(true);
+    kickMerchantCatalogueWarmClient();
+
+    try {
+      const params = new URLSearchParams({
+        forMap: "1",
+        locale,
+        limit: String(MAP_SEARCH_MAX_FEATURES),
+      });
+      if (trimmedQuery) {
+        params.set("q", trimmedQuery);
+      }
+      if (effectiveCategoryId) {
+        params.set("categoryId", effectiveCategoryId);
+      }
+
+      const response = await fetch(`/api/merchant-search?${params.toString()}`, {
+        signal: controller.signal,
+      });
+      if (!response.ok || requestId !== mapSearchRequestRef.current) {
+        return;
+      }
+
+      const data = (await response.json()) as MerchantMapSearchApiResponse;
+      const rawFeatures = Array.isArray(data.features) ? data.features : [];
+      const features = rawFeatures.filter(merchantMatchesFilters);
+      const total = typeof data.total === "number" ? data.total : features.length;
+      const truncated = Boolean(data.truncated);
+
+      setSearchMapFeatures(features);
+      setSearchMapMeta({
+        total,
+        truncated,
+        displayed: features.length,
+      });
+      setSearchTruncationDismissed(false);
+      setAllKnownById((prev) => {
+        const next = { ...prev };
+        for (const feature of features) {
+          next[getPartnerId(feature)] = feature;
+        }
+        return next;
+      });
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        console.error("Failed to load search map features:", error);
+      }
+    } finally {
+      if (requestId === mapSearchRequestRef.current) {
+        setSearchMapLoading(false);
+      }
+    }
+  }, [
+    activeQuickCategoryId,
+    isFreeformKeywordSearch,
+    locale,
+    merchantMatchesFilters,
+    query,
+    selectedPartner,
+  ]);
+
+  useEffect(() => {
+    if (!isSearchMapActive) {
+      mapSearchAbortRef.current?.abort();
+      setSearchMapFeatures([]);
+      setSearchMapMeta(null);
+      setSearchMapLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void fetchSearchMapFeatures();
+    }, SEARCH_MAP_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+      mapSearchAbortRef.current?.abort();
+    };
+  }, [fetchSearchMapFeatures, isSearchMapActive]);
 
   const merchantMatchesAllFilters = useCallback(
     (merchant: PartnerFeature) => {
@@ -514,6 +680,11 @@ const LocatorPageContent = () => {
     ],
   );
 
+  const highlightedPartnerIds = useMemo(
+    () => searchMapFeatures.map(getPartnerId),
+    [searchMapFeatures],
+  );
+
   const handleSelectPartner = useCallback(
     (
       partner: PartnerFeature,
@@ -537,8 +708,12 @@ const LocatorPageContent = () => {
   );
 
   const handleCommitFreeformSearch = useCallback(() => {
-    setIsFreeformKeywordSearch(query.trim().length > 0);
-  }, [query]);
+    const hasQuery = query.trim().length > 0;
+    setIsFreeformKeywordSearch(hasQuery);
+    if (hasQuery || activeQuickCategoryId) {
+      void fetchSearchMapFeatures();
+    }
+  }, [activeQuickCategoryId, fetchSearchMapFeatures, query]);
 
   const clearSelectedPartner = useCallback(
     (
@@ -554,6 +729,10 @@ const LocatorPageContent = () => {
         setSuggestions([]);
         setActiveQuickCategoryId(null);
         setIsFreeformKeywordSearch(false);
+        setSearchMapFeatures([]);
+        setSearchMapMeta(null);
+        setSearchTruncationDismissed(false);
+        mapSearchAbortRef.current?.abort();
       }
     },
     [syncSelectionInUrl],
@@ -586,6 +765,9 @@ const LocatorPageContent = () => {
     mapLoading,
     mapUpdating,
     locationPermission,
+    searchMapMeta,
+    searchTruncationDismissed,
+    onDismissSearchTruncation: () => setSearchTruncationDismissed(true),
     t,
   });
 
@@ -670,6 +852,7 @@ const LocatorPageContent = () => {
         locale={locale}
         selectedPartnerId={selectedId}
         highlightedPartnerIds={highlightedPartnerIds}
+        searchMapFeatures={searchMapFeatures}
         partnerFilter={merchantMatchesAllFilters}
         onPartnerSelect={handleSelectPartner}
         onVisiblePartnersChange={handleVisiblePartnersChange}
@@ -706,6 +889,9 @@ const LocatorPageContent = () => {
             isFiltersOpen={isFiltersOpen}
             filtersPanelProps={filtersPanelProps}
             onCommitFreeformSearch={handleCommitFreeformSearch}
+            searchMapResultCount={searchMapMeta?.total ?? null}
+            searchMapLoading={searchMapLoading}
+            searchResultsOnMapLabel={t("searchResultsOnMap")}
             onChange={(nextQuery) => {
               if (isSelectingSearchSuggestionRef.current) {
                 return;
@@ -744,10 +930,12 @@ const LocatorPageContent = () => {
               try {
                 if (item.type === "category" && item.categoryId) {
                   clearSelectedPartner("replace", { clearSearchQuery: false });
-                  setActiveQuickCategoryId(item.categoryId as PopularSearchCategoryId);
+                  const categoryId = item.categoryId as PopularSearchCategoryId;
+                  setActiveQuickCategoryId(categoryId);
                   setQuery(item.label);
                   setIsFreeformKeywordSearch(true);
                   setSuggestions([]);
+                  void fetchSearchMapFeatures({ query: item.label, categoryId });
                   return;
                 }
                 if (!item.merchantId || !item.coordinates) return;
@@ -795,6 +983,10 @@ const LocatorPageContent = () => {
                 if (selectedCategory) {
                   setQuery(selectedCategory.label);
                   setIsFreeformKeywordSearch(true);
+                  void fetchSearchMapFeatures({
+                    query: selectedCategory.label,
+                    categoryId: nextId,
+                  });
                 }
               }}
             />

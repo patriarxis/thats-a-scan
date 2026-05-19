@@ -2,11 +2,20 @@ import { useEffect, useMemo, useState } from "react";
 import type { ToastStackItem } from "@/components/ui/ToastStack";
 import type { UserLocationPermission } from "@/lib/UserLocationContext";
 
+type SearchMapMeta = {
+  total: number;
+  truncated: boolean;
+  displayed: number;
+};
+
 type UseMapToastsParams = {
   mapError: string | null;
   mapLoading: boolean;
   mapUpdating: boolean;
   locationPermission: UserLocationPermission;
+  searchMapMeta: SearchMapMeta | null;
+  searchTruncationDismissed: boolean;
+  onDismissSearchTruncation: () => void;
   t: (key: string) => string;
 };
 
@@ -15,6 +24,9 @@ export function useMapToasts({
   mapLoading,
   mapUpdating,
   locationPermission,
+  searchMapMeta,
+  searchTruncationDismissed,
+  onDismissSearchTruncation,
   t,
 }: UseMapToastsParams): ToastStackItem[] {
   const [locationToastDismissed, setLocationToastDismissed] = useState(false);
@@ -42,6 +54,21 @@ export function useMapToasts({
     if (!mapLoading && mapUpdating && !mapError) {
       items.push({ id: "map-updating", message: t("updatingArea"), tone: "neutral" });
     }
+    if (
+      searchMapMeta?.truncated &&
+      !searchTruncationDismissed &&
+      searchMapMeta.total > searchMapMeta.displayed
+    ) {
+      items.push({
+        id: "search-truncated",
+        message: t("searchResultsTruncated")
+          .replace("{{displayed}}", String(searchMapMeta.displayed))
+          .replace("{{total}}", String(searchMapMeta.total)),
+        tone: "neutral",
+        dismissLabel: t("close"),
+        onDismiss: onDismissSearchTruncation,
+      });
+    }
     if (showLocationOffToast) {
       items.push({
         id: "location-off",
@@ -53,5 +80,14 @@ export function useMapToasts({
     }
 
     return items;
-  }, [mapError, mapLoading, mapUpdating, showLocationOffToast, t]);
+  }, [
+    mapError,
+    mapLoading,
+    mapUpdating,
+    onDismissSearchTruncation,
+    searchMapMeta,
+    searchTruncationDismissed,
+    showLocationOffToast,
+    t,
+  ]);
 }

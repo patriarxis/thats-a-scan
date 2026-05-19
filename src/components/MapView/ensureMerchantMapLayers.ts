@@ -6,6 +6,8 @@ import {
   LAYER_ID,
   MARKER_ICON_DEFAULT_ID,
   PREVIEW_SOURCE_ID,
+  SEARCH_DOTS_LAYER_ID,
+  SEARCH_SOURCE_ID,
   SELECTED_LAYER_ID,
   SHOW_ALL_MARKERS_ZOOM,
   SOURCE_ID,
@@ -22,6 +24,13 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
 
   if (!map.getSource(PREVIEW_SOURCE_ID)) {
     map.addSource(PREVIEW_SOURCE_ID, {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    });
+  }
+
+  if (!map.getSource(SEARCH_SOURCE_ID)) {
+    map.addSource(SEARCH_SOURCE_ID, {
       type: "geojson",
       data: { type: "FeatureCollection", features: [] },
     });
@@ -44,6 +53,12 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
     "interpolate",
     ["linear"],
     ["zoom"],
+    4,
+    ["*", markerFade, 0.95],
+    8,
+    ["*", markerFade, 0.94],
+    11,
+    ["*", markerFade, 0.93],
     12,
     ["*", markerFade, 0.92],
     14,
@@ -91,6 +106,38 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
     });
   } else {
     map.setPaintProperty(DOT_LAYER_ID, "circle-opacity", dotCircleOpacity);
+  }
+
+  if (!map.getLayer(SEARCH_DOTS_LAYER_ID)) {
+    const beforeSelected = map.getLayer(SELECTED_LAYER_ID) ? SELECTED_LAYER_ID : undefined;
+    map.addLayer(
+      {
+        id: SEARCH_DOTS_LAYER_ID,
+        type: "circle",
+        source: SEARCH_SOURCE_ID,
+        minzoom: 0,
+        paint: {
+          "circle-color": ["coalesce", ["get", "__marker_dot_color"], "#f59100"],
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            4,
+            3.2,
+            8,
+            4,
+            12,
+            4.5,
+            16,
+            4,
+          ],
+          "circle-stroke-color": "rgba(255,255,255,0.85)",
+          "circle-stroke-width": 1,
+          "circle-opacity": 0.95,
+        },
+      },
+      beforeSelected,
+    );
   }
 
   if (!map.getLayer(SELECTED_LAYER_ID)) {

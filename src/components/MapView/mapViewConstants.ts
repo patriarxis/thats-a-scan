@@ -9,8 +9,11 @@ export const GREECE_MAX_BOUNDS: [[number, number], [number, number]] = [
 
 export const SOURCE_ID = "merchants-source";
 export const PREVIEW_SOURCE_ID = "merchants-preview-source";
+/** Nationwide search hits — separate source so declutter / fade never hide them. */
+export const SEARCH_SOURCE_ID = "merchants-search-source";
 export const LAYER_ID = "merchants-markers";
 export const DOT_LAYER_ID = "merchants-markers-dots";
+export const SEARCH_DOTS_LAYER_ID = "merchants-search-dots";
 export const SELECTED_LAYER_ID = "merchants-markers-selected";
 
 export const MARKER_ICON_MEAL_ID = "merchant-marker-meal";

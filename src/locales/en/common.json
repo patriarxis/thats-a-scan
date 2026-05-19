@@ -20,6 +20,8 @@
   "clearSearch": "Clear search",
   "noAddress": "No address available",
   "loadingSuggestions": "Loading suggestions",
+  "searchResultsTruncated": "Showing {{displayed}} of {{total}} matches. Zoom in for more detail.",
+  "searchResultsOnMap": "{{count}} places on map",
   "searchSectionCategories": "Categories",
   "searchSectionPlaces": "Places",
   "searchHintNavigate": "Navigate",

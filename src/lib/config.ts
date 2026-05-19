@@ -1,7 +1,13 @@
 // Search & suggestions
-export const SEARCH_DEBOUNCE_MS = 250;
+/** @deprecated Use SEARCH_SUGGESTIONS_DEBOUNCE_MS */
+export const SEARCH_DEBOUNCE_MS = 300;
+export const SEARCH_SUGGESTIONS_DEBOUNCE_MS = 300;
+export const SEARCH_MAP_DEBOUNCE_MS = 500;
 export const SEARCH_SUGGESTION_LIMIT = 10;
 export const MERCHANT_SUGGESTION_LIMIT = 10;
+/** Max nationwide search pins rendered on the map. */
+export const MAP_SEARCH_MAX_FEATURES = 2500;
+export const SEARCH_MAP_MIN_QUERY_LENGTH = 2;
 export const GEOCODING_RESULT_LIMIT = 6;
 export const GEOCODING_MIN_QUERY_LENGTH = 2;
 export const GEOCODING_FETCH_TIMEOUT_MS = 5000;

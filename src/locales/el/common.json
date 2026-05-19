@@ -20,6 +20,8 @@
   "clearSearch": "Καθαρισμός αναζήτησης",
   "noAddress": "Δεν υπάρχει διαθέσιμη διεύθυνση",
   "loadingSuggestions": "Φόρτωση προτάσεων",
+  "searchResultsTruncated": "Εμφανίζονται {{displayed}} από {{total}} αποτελέσματα. Κάνε zoom για περισσότερες λεπτομέρειες.",
+  "searchResultsOnMap": "{{count}} σημεία στον χάρτη",
   "searchSectionCategories": "Κατηγορίες",
   "searchSectionPlaces": "Καταστήματα",
   "searchHintNavigate": "Πλοήγηση",

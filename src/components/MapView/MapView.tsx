@@ -19,9 +19,11 @@ import { useUserLocation, useViewportStoreQuery } from "@/lib/useMap";
 import { ensureMerchantMapLayers } from "./ensureMerchantMapLayers";
 import {
   buildMerchantsFeatureCollection,
+  dedupeByMerchantId,
   type MerchantDeclutterStickyState,
 } from "./merchantMapData";
 import { MerchantMarkerFadeAnimator } from "./merchantMarkerFade";
+import { withClientIds } from "./merchantMarkerVisual";
 import {
   ACTIVE_PIN_QUICK_ZOOM,
   ATHENS_CENTER,
@@ -31,6 +33,8 @@ import {
   GREECE_MAX_BOUNDS,
   LAYER_ID,
   PREVIEW_SOURCE_ID,
+  SEARCH_DOTS_LAYER_ID,
+  SEARCH_SOURCE_ID,
   SELECTED_LAYER_ID,
   SOURCE_ID,
 } from "./mapViewConstants";
@@ -45,6 +49,7 @@ type MapViewProps = {
   locale: ILocale;
   selectedPartnerId: string | null;
   highlightedPartnerIds: string[];
+  searchMapFeatures?: PartnerFeature[];
   partnerFilter?: (partner: PartnerFeature) => boolean;
   onVisiblePartnersChange: (payload: VisiblePartnersChangePayload) => void;
   onPartnerSelect: (partner: PartnerFeature) => void;
@@ -57,6 +62,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     locale,
     selectedPartnerId,
     highlightedPartnerIds,
+    searchMapFeatures = [],
     partnerFilter,
     onVisiblePartnersChange,
     onPartnerSelect,
@@ -69,6 +75,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   const mapRef = useRef<MapboxMap | null>(null);
   const userMarkerRef = useRef<MapboxMarker | null>(null);
   const partnersRef = useRef<PartnerFeature[]>([]);
+  const searchPartnersRef = useRef<PartnerFeature[]>([]);
   const onVisiblePartnersChangeRef = useRef(onVisiblePartnersChange);
   const onPartnerSelectRef = useRef(onPartnerSelect);
   const onMapClickRef = useRef(onMapClick);
@@ -127,6 +134,10 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   }, [partners]);
 
   useEffect(() => {
+    searchPartnersRef.current = searchMapFeatures;
+  }, [searchMapFeatures]);
+
+  useEffect(() => {
     latestViewportStateRef.current = {
       partners,
       loading,
@@ -151,11 +162,62 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     previewSource?.setData(nextData);
   }, []);
 
+  const mergeMapItems = useCallback(
+    (viewportItems: PartnerFeature[]) => {
+      if (searchMapFeatures.length === 0) {
+        return dedupeByMerchantId(viewportItems);
+      }
+      const searchIds = new Set(searchMapFeatures.map(getPartnerId));
+      return dedupeByMerchantId(
+        viewportItems.filter((partner) => !searchIds.has(getPartnerId(partner))),
+      );
+    },
+    [searchMapFeatures],
+  );
+
+  const applySearchOverlayToMap = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const source = map.getSource(SEARCH_SOURCE_ID) as GeoJSONSource | undefined;
+    if (!source) return;
+
+    if (searchMapFeatures.length === 0) {
+      source.setData({ type: "FeatureCollection", features: [] });
+      if (map.getLayer(SEARCH_DOTS_LAYER_ID)) {
+        map.setLayoutProperty(SEARCH_DOTS_LAYER_ID, "visibility", "none");
+      }
+      return;
+    }
+
+    const overlayFeatures = withClientIds(
+      searchMapFeatures.filter((partner) => getPartnerId(partner) !== selectedPartnerId),
+    );
+    source.setData({ type: "FeatureCollection", features: overlayFeatures });
+    if (map.getLayer(SEARCH_DOTS_LAYER_ID)) {
+      map.setLayoutProperty(SEARCH_DOTS_LAYER_ID, "visibility", "visible");
+    }
+  }, [searchMapFeatures, selectedPartnerId]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const syncOverlay = () => applySearchOverlayToMap();
+    if (map.isStyleLoaded()) {
+      syncOverlay();
+      return;
+    }
+    map.once("load", syncOverlay);
+    return () => {
+      map.off("load", syncOverlay);
+    };
+  }, [applySearchOverlayToMap, mapReady]);
+
   const pushDataToMap = useCallback(
-    (items: PartnerFeature[]) => {
+    (viewportItems: PartnerFeature[]) => {
       const map = mapRef.current;
       if (!map) return;
-      const alwaysKeep = new Set<string>(highlightedPartnerIds);
+      const items = mergeMapItems(viewportItems);
+      const alwaysKeep = new Set<string>();
       if (selectedPartnerId) alwaysKeep.add(selectedPartnerId);
       const nextData = buildMerchantsFeatureCollection(
         map,
@@ -169,7 +231,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       }
       markerFadeRef.current.sync(nextData.features, applyFeatureCollectionToMap);
     },
-    [applyFeatureCollectionToMap, highlightedPartnerIds, selectedPartnerId],
+    [applyFeatureCollectionToMap, mergeMapItems, selectedPartnerId],
   );
 
   const flushReclutter = useCallback(() => {
@@ -265,6 +327,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       );
       ensureMerchantMapLayers(map, nextPartners);
       pushDataToMap(nextPartners);
+      applySearchOverlayToMap();
       onVisiblePartnersChangeRef.current?.({
         partners: nextPartners,
         loading: latest.loading,
@@ -280,6 +343,9 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     map.on("mouseenter", DOT_LAYER_ID, () => {
       map.getCanvas().style.cursor = "pointer";
     });
+    map.on("mouseenter", SEARCH_DOTS_LAYER_ID, () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
     map.on("mouseenter", SELECTED_LAYER_ID, () => {
       map.getCanvas().style.cursor = "pointer";
     });
@@ -289,32 +355,33 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     map.on("mouseleave", DOT_LAYER_ID, () => {
       map.getCanvas().style.cursor = "";
     });
+    map.on("mouseleave", SEARCH_DOTS_LAYER_ID, () => {
+      map.getCanvas().style.cursor = "";
+    });
     map.on("mouseleave", SELECTED_LAYER_ID, () => {
       map.getCanvas().style.cursor = "";
     });
-    map.on("click", LAYER_ID, (e) => {
+    const handleMerchantClick = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
       const feature = e.features?.[0];
       if (!feature || feature.geometry.type !== "Point") return;
       const merchantId = String(feature.properties?.__merchant_id ?? "");
-      const partner = partnersRef.current.find((item) => getPartnerId(item) === merchantId);
+      const partner =
+        partnersRef.current.find((item) => getPartnerId(item) === merchantId) ??
+        searchPartnersRef.current.find((item) => getPartnerId(item) === merchantId);
       if (partner) {
         onPartnerSelectRef.current?.(partner);
       }
-    });
-    map.on("click", DOT_LAYER_ID, (e) => {
-      const feature = e.features?.[0];
-      if (!feature || feature.geometry.type !== "Point") return;
-      const merchantId = String(feature.properties?.__merchant_id ?? "");
-      const partner = partnersRef.current.find((item) => getPartnerId(item) === merchantId);
-      if (partner) {
-        onPartnerSelectRef.current?.(partner);
-      }
-    });
+    };
+    map.on("click", LAYER_ID, handleMerchantClick);
+    map.on("click", DOT_LAYER_ID, handleMerchantClick);
+    map.on("click", SEARCH_DOTS_LAYER_ID, handleMerchantClick);
     map.on("click", SELECTED_LAYER_ID, (e) => {
       const feature = e.features?.[0];
       if (!feature || feature.geometry.type !== "Point") return;
       const merchantId = String(feature.properties?.__merchant_id ?? "");
-      const partner = partnersRef.current.find((item) => getPartnerId(item) === merchantId);
+      const partner =
+        partnersRef.current.find((item) => getPartnerId(item) === merchantId) ??
+        searchPartnersRef.current.find((item) => getPartnerId(item) === merchantId);
       if (partner) {
         onPartnerSelectRef.current?.(partner);
         const targetZoom = Math.max(map.getZoom(), ACTIVE_PIN_QUICK_ZOOM);
@@ -328,7 +395,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
 
     map.on("click", (e) => {
       const features = map.queryRenderedFeatures(e.point, {
-        layers: [DOT_LAYER_ID, LAYER_ID, SELECTED_LAYER_ID],
+        layers: [SEARCH_DOTS_LAYER_ID, DOT_LAYER_ID, LAYER_ID, SELECTED_LAYER_ID],
       });
       if (!features.length) {
         onMapClickRef.current?.();
@@ -374,6 +441,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
         pushTimerRef.current = null;
       }
       pushDataToMap(nextPartners);
+      applySearchOverlayToMap();
       onVisiblePartnersChangeRef.current?.({
         partners: nextPartners,
         loading: latest.loading,
@@ -391,7 +459,18 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     return () => {
       map.off("load", syncImmediate);
     };
-  }, [error, loading, partnerFilter, pushDataToMap, updating, viewportTooWide]);
+  }, [
+    error,
+    highlightedPartnerIds,
+    loading,
+    partnerFilter,
+    pushDataToMap,
+    applySearchOverlayToMap,
+    searchMapFeatures,
+    selectedPartnerId,
+    updating,
+    viewportTooWide,
+  ]);
 
   // Debounced-schedule path: triggered only by `partners` list churn (every debounced moveend
   // from useMap.ts). Single shared timer with `flushReclutter` so user-signal changes can flush.

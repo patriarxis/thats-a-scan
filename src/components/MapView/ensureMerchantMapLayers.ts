@@ -29,6 +29,29 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
 
   ensureMarkerIcons(map, partnersForIcons);
 
+  const markerIconOpacity: ["coalesce", ["get", string], number] = [
+    "coalesce",
+    ["get", "__marker_fade"],
+    1,
+  ];
+  const markerFade = ["coalesce", ["get", "__marker_fade"], 1] as ["coalesce", ["get", string], number];
+  const dotCircleOpacity: [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    ...Array<number | ["*", ["coalesce", ["get", string], number], number]>,
+  ] = [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    12,
+    ["*", markerFade, 0.92],
+    14,
+    ["*", markerFade, 0.88],
+    16,
+    ["*", markerFade, 0.82],
+  ];
+
   if (!map.getLayer(LAYER_ID)) {
     map.addLayer({
       id: LAYER_ID,
@@ -43,7 +66,12 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
         "icon-ignore-placement": ["step", ["zoom"], false, SHOW_ALL_MARKERS_ZOOM, true],
         "icon-anchor": "center",
       },
+      paint: {
+        "icon-opacity": markerIconOpacity,
+      },
     });
+  } else {
+    map.setPaintProperty(LAYER_ID, "icon-opacity", markerIconOpacity);
   }
 
   if (!map.getLayer(DOT_LAYER_ID)) {
@@ -58,9 +86,11 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 1.8, 8, 2.6, 11.5, 3.3, 14, 3.2, 16, 3.6],
         "circle-stroke-color": "rgba(15,23,42,0.7)",
         "circle-stroke-width": 0.8,
-        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 12, 0.92, 14, 0.88, 16, 0.82],
+        "circle-opacity": dotCircleOpacity,
       },
     });
+  } else {
+    map.setPaintProperty(DOT_LAYER_ID, "circle-opacity", dotCircleOpacity);
   }
 
   if (!map.getLayer(SELECTED_LAYER_ID)) {
@@ -77,7 +107,12 @@ export const ensureMerchantMapLayers = (map: MapboxMap, partnersForIcons: Partne
         "icon-ignore-placement": true,
         "icon-anchor": "center",
       },
+      paint: {
+        "icon-opacity": markerIconOpacity,
+      },
     });
+  } else {
+    map.setPaintProperty(SELECTED_LAYER_ID, "icon-opacity", markerIconOpacity);
   }
 
 };

@@ -32,6 +32,9 @@ export const DECLUTTER_ZOOM_QUANTUM = 0.5;
  */
 export const DECLUTTER_VIEWPORT_DEBOUNCE_MS = 250;
 
+/** Pin opacity transition when declutter shows or hides a merchant. */
+export const MARKER_FADE_DURATION_MS = 220;
+
 /** Single source of truth for per-zoom pin caps, spatial grid, and icon/dot mix. */
 export type DeclutterProfile = {
   minZoom: number;

@@ -21,6 +21,7 @@ import {
   buildMerchantsFeatureCollection,
   type MerchantDeclutterStickyState,
 } from "./merchantMapData";
+import { MerchantMarkerFadeAnimator } from "./merchantMarkerFade";
 import {
   ACTIVE_PIN_QUICK_ZOOM,
   ATHENS_CENTER,
@@ -75,6 +76,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     zoomQuantum: Number.NaN,
     cellWinners: new Map(),
   });
+  const markerFadeRef = useRef<MerchantMarkerFadeAnimator | null>(null);
   const latestViewportStateRef = useRef({
     partners: [] as PartnerFeature[],
     loading: true,
@@ -136,12 +138,23 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
 
   const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const applyFeatureCollectionToMap = useCallback((features: PartnerFeature[]) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
+    const previewSource = map.getSource(PREVIEW_SOURCE_ID) as GeoJSONSource | undefined;
+    const nextData = {
+      type: "FeatureCollection" as const,
+      features,
+    };
+    source?.setData(nextData);
+    previewSource?.setData(nextData);
+  }, []);
+
   const pushDataToMap = useCallback(
     (items: PartnerFeature[]) => {
       const map = mapRef.current;
       if (!map) return;
-      const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
-      const previewSource = map.getSource(PREVIEW_SOURCE_ID) as GeoJSONSource | undefined;
       const alwaysKeep = new Set<string>(highlightedPartnerIds);
       if (selectedPartnerId) alwaysKeep.add(selectedPartnerId);
       const nextData = buildMerchantsFeatureCollection(
@@ -150,10 +163,13 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
         alwaysKeep,
         declutterStickyRef.current,
       );
-      source?.setData(nextData);
-      previewSource?.setData(nextData);
+
+      if (!markerFadeRef.current) {
+        markerFadeRef.current = new MerchantMarkerFadeAnimator();
+      }
+      markerFadeRef.current.sync(nextData.features, applyFeatureCollectionToMap);
     },
-    [highlightedPartnerIds, selectedPartnerId],
+    [applyFeatureCollectionToMap, highlightedPartnerIds, selectedPartnerId],
   );
 
   const flushReclutter = useCallback(() => {
@@ -324,6 +340,8 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
       geolocateControl.off("error", handleGeolocateError);
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
+      markerFadeRef.current?.dispose();
+      markerFadeRef.current = null;
       map.remove();
       mapRef.current = null;
       setMapReady(false);

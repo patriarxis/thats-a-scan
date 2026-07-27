@@ -5,6 +5,34 @@ $font-primary:
   BlinkMacSystemFont,
   sans-serif;
 
+$font-handwritten:
+  var(--font-caveat),
+  "Segoe Script",
+  "Bradley Hand",
+  cursive;
+
+$font-archive:
+  var(--font-archive),
+  "Courier New",
+  Courier,
+  monospace;
+
+// Dark neutral archive palette (orange accent via $brand-primary-*)
+$kraft-dark: #121212;
+$kraft-mid: #1c1c1c;
+$kraft-light: #2a2a2a;
+$kraft-edge: #0a0a0a;
+$paper-cream: #ececec;
+$paper-warm: #e2e2e2;
+$paper-aged: #b8b8b8;
+$ink-dark: #0f0f0f;
+$ink-muted: #8a8a8a;
+$ink-faded: #6e6e6e;
+$stamp-red: #c45a3a;
+$stamp-faded: rgba(196, 90, 58, 0.55);
+$tape-yellow: rgba(255, 133, 0, 0.45);
+$pencil-line: rgba(255, 255, 255, 0.06);
+
 // Brand Colors
 $brand-primary-1: #331b00;
 $brand-primary-2: #863500;
@@ -15,61 +43,6 @@ $brand-primary-6: #ff9d33;
 $brand-primary-7: #ffb666;
 $brand-primary-8: #ffce99;
 $brand-primary-9: #ffe7cc;
-
-// FlexOne Colors
-$flexone-primary-1: #201023;
-$flexone-primary-2: #402145;
-$flexone-primary-3: #603168;
-$flexone-primary-4: #8f499c;
-$flexone-primary-5: #9f51ae;
-$flexone-primary-6: #b274be;
-$flexone-primary-7: #c697ce;
-$flexone-primary-8: #d9bade;
-$flexone-primary-9: #ecdcef;
-
-// FlexOne Secondary
-$flexone-secondary-1: #071e2c;
-$flexone-secondary-2: #0f3d57;
-$flexone-secondary-3: #165b83;
-$flexone-secondary-4: #1d79af;
-$flexone-secondary-5: #2598da;
-$flexone-secondary-6: #58b0e3;
-$flexone-secondary-7: #7cc1e9;
-$flexone-secondary-8: #a8d6f0;
-$flexone-secondary-9: #d3eaf8;
-
-// Fitpass
-$fitpass-primary-1: #2e0d05;
-$fitpass-primary-2: #5c190a;
-$fitpass-primary-3: #8a260f;
-$fitpass-primary-4: #b83314;
-$fitpass-primary-5: #e6441f;
-$fitpass-primary-6: #eb6647;
-$fitpass-primary-7: #f08c75;
-$fitpass-primary-8: #f5b2a3;
-$fitpass-primary-9: #fad9d1;
-
-// Gift
-$gift-primary-1: #171c1c;
-$gift-primary-2: #2e3837;
-$gift-primary-3: #485756;
-$gift-primary-4: #5c706e;
-$gift-primary-5: #738c8a;
-$gift-primary-6: #8fa3a1;
-$gift-primary-7: #abbab9;
-$gift-primary-8: #c7d1d0;
-$gift-primary-9: #e3e8e8;
-
-// Expense
-$expense-primary-1: #011732;
-$expense-primary-2: #032e63;
-$expense-primary-3: #054da7;
-$expense-primary-4: #065bc6;
-$expense-primary-5: #0772f8;
-$expense-primary-6: #398ef9;
-$expense-primary-7: #6aaafb;
-$expense-primary-8: #9cc7fc;
-$expense-primary-9: #cde3fe;
 
 // Neutrals
 $neutral-1: #000000;
@@ -121,42 +94,7 @@ $danger-1: #7f1d1d;
 $success: #10b981;
 $success-bg: rgba(16, 185, 129, 0.1);
 
-// Up Coop - Product Families
-$up-coop-eat: #f59100;
-$up-coop-gift: #c50e1f;
-$up-coop-employees: #009ee3;
-$up-coop-cheque-lire: #0070b8;
-$up-coop-culture: #c5007b;
-
-// Up Coop - Content Pillars
-$content-economic: #51487e;
-$content-environmental: #01b19e;
-$content-social: #79bae3;
-$content-passpartout-1: #f2c023;
-$content-passpartout-2: #ea5e54;
-
-// Product Gradients
-$gradient-brand-all: linear-gradient(
-  to right,
-  $brand-primary-5,
-  $brand-primary-3
-);
-$gradient-flexone: linear-gradient(
-  to right,
-  $flexone-primary-4,
-  $flexone-primary-6
-);
-$gradient-fitpass: linear-gradient(
-  to right,
-  $fitpass-primary-5,
-  $fitpass-primary-3
-);
-$gradient-gift: linear-gradient(135deg, $gift-primary-3, $gift-primary-5);
-$gradient-expense: linear-gradient(
-  to right,
-  $expense-primary-3,
-  $expense-primary-5
-);
+$gradient-brand: linear-gradient(to right, $brand-primary-5, $brand-primary-3);
 
 // Spacing Scale
 $spacing-xs: 0.25rem;

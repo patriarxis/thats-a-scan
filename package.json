@@ -1,31 +1,59 @@
 {
-  "name": "uphellas-merchants-map",
+  "name": "textures-atlas",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "export:up-hellas": "node scripts/export-up-hellas-data.mjs",
-    "test:categorization": "npx --yes tsx scripts/validate-categorization-fixtures.ts"
+    "generate:importmap": "node --experimental-strip-types ./node_modules/payload/bin.js --disable-transpile generate:importmap",
+    "generate:types": "node --experimental-strip-types ./node_modules/payload/bin.js --disable-transpile generate:types",
+    "payload": "node --experimental-strip-types ./node_modules/payload/bin.js --disable-transpile",
+    "payload:check": "node --experimental-strip-types --env-file=.env.local scripts/check-payload.ts",
+    "migrate:geojson": "node --experimental-strip-types --env-file=.env.local scripts/migrate-geojson-to-payload.ts",
+    "migrate:tags": "node --experimental-strip-types --env-file=.env.local scripts/migrate-tags-to-taxonomy.ts"
   },
   "dependencies": {
+    "@payloadcms/db-postgres": "3.86.0",
+    "@payloadcms/next": "3.86.0",
+    "@payloadcms/richtext-lexical": "3.86.0",
+    "@payloadcms/storage-s3": "3.86.0",
     "@phosphor-icons/react": "^2.1.10",
     "embla-carousel-react": "^8.6.0",
-    "mapbox-gl": "^3.9.0",
-    "next": "^15.1.0",
+    "graphql": "^16.14.2",
+    "maplibre-gl": "^5.6.0",
+    "next": "16.2.12",
+    "payload": "3.86.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-window": "^2.2.7"
+    "server-only": "^0.0.1",
+    "sharp": "^0.35.1"
   },
   "devDependencies": {
+    "@swc-node/register": "^1.11.1",
+    "@swc/core": "^1.15.41",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.17.0",
-    "eslint-config-next": "^15.1.0",
+    "eslint-config-next": "16.2.12",
     "sass": "^1.93.0",
+    "tsx": "^4.22.4",
     "typescript": "^5.7.0"
+  },
+  "overrides": {
+    "brace-expansion": "^5.0.8",
+    "dompurify": "^3.4.12",
+    "esbuild": "^0.25.0",
+    "fast-uri": "^3.1.4",
+    "immutable": "^5.1.8",
+    "js-yaml": "^4.3.0",
+    "postcss": "^8.5.18",
+    "sharp": "^0.35.1"
   }
 }

@@ -4,9 +4,160 @@
   position: relative;
   height: 100%;
   width: 100%;
+  background: $kraft-dark;
 }
 
 .mapContainer {
   height: 100%;
   width: 100%;
+}
+
+.mapSurface {
+  height: 100%;
+  width: 100%;
+}
+
+.mapOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(
+      ellipse 100% 90% at 50% 50%,
+      transparent 55%,
+      rgba($kraft-edge, 0.45) 100%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(255, 255, 255, 0.012) 3px,
+      rgba(255, 255, 255, 0.012) 4px
+    );
+  mix-blend-mode: soft-light;
+  opacity: 0.35;
+}
+
+.wrapper :global(.maplibregl-ctrl-bottom-left),
+.wrapper :global(.maplibregl-ctrl-bottom-right) {
+  margin: 0 10px 10px;
+}
+
+.wrapper :global(.maplibregl-ctrl-group) {
+  background: rgba($kraft-mid, 0.94) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.wrapper :global(.maplibregl-ctrl-group button) {
+  filter: invert(1) !important;
+  background-color: transparent !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+
+  &:hover {
+    background-color: rgba($brand-primary-5, 0.22) !important;
+  }
+
+  &:active {
+    background-color: rgba($brand-primary-5, 0.32) !important;
+  }
+}
+
+.wrapper :global(.maplibregl-ctrl-group button .maplibregl-ctrl-icon) {
+  opacity: 0.9;
+}
+
+.wrapper :global(.maplibregl-ctrl-compass) {
+  background: rgba($kraft-mid, 0.94) !important;
+}
+
+.wrapper :global(.maplibregl-ctrl-scale) {
+  background: rgba($kraft-mid, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+  color: $paper-aged !important;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: $font-archive;
+  font-size: 10px;
+}
+
+.wrapper :global(.maplibregl-ctrl-attrib) {
+  background: rgba($kraft-mid, 0.92) !important;
+  color: $paper-aged !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(4px);
+}
+
+.wrapper :global(.maplibregl-ctrl-attrib a) {
+  color: $brand-primary-6 !important;
+}
+
+.wrapper :global(.maplibregl-ctrl-attrib-button) {
+  background-color: transparent !important;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%23ffffff' fill-rule='evenodd' viewBox='0 0 20 20'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E") !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.55) !important;
+  border-radius: 50% !important;
+  outline: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+.wrapper :global(.maplibregl-ctrl-attrib.maplibregl-compact),
+.wrapper :global(.maplibregl-ctrl-attrib.maplibregl-compact-show) {
+  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: rgba($kraft-mid, 0.92) !important;
+  color: $paper-aged !important;
+}
+
+.wrapper :global(.maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-button) {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.wrapper :global(.maplibregl-ctrl-geolocate) {
+  &:global(.maplibregl-ctrl-geolocate-active) {
+    background-color: rgba($brand-primary-5, 0.22) !important;
+  }
+
+  &:global(.maplibregl-ctrl-geolocate-active-error) {
+    background-color: rgba($stamp-red, 0.2) !important;
+  }
+}
+
+.locateStatus {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  bottom: 1.25rem;
+  z-index: 5;
+  transform: translateX(-50%);
+  max-width: min(28rem, calc(100% - 2rem));
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+  backdrop-filter: blur(8px);
+  box-shadow: none;
+}
+
+.locateStatusNeutral {
+  background: rgba($kraft-mid, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: $paper-cream;
+}
+
+.locateStatusError {
+  background: rgba(#2a1210, 0.94);
+  border: 1px solid rgba($brand-primary-5, 0.45);
+  color: $paper-cream;
 }

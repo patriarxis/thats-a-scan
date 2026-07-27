@@ -1,10 +1,8 @@
 @use "../abstracts/variables" as *;
 
 :root {
-  // Typography
   --font-primary: #{$font-primary};
 
-  // Brand Primary
   --brand-primary-1: #{$brand-primary-1};
   --brand-primary-2: #{$brand-primary-2};
   --brand-primary-3: #{$brand-primary-3};
@@ -15,62 +13,13 @@
   --brand-primary-8: #{$brand-primary-8};
   --brand-primary-9: #{$brand-primary-9};
 
-  // FlexOne Primary (Purple)
-  --flexone-primary-1: #{$flexone-primary-1};
-  --flexone-primary-2: #{$flexone-primary-2};
-  --flexone-primary-3: #{$flexone-primary-3};
-  --flexone-primary-4: #{$flexone-primary-4};
-  --flexone-primary-5: #{$flexone-primary-5};
-  --flexone-primary-6: #{$flexone-primary-6};
-  --flexone-primary-7: #{$flexone-primary-7};
-  --flexone-primary-8: #{$flexone-primary-8};
-  --flexone-primary-9: #{$flexone-primary-9};
+  --kraft-dark: #{$kraft-dark};
+  --kraft-mid: #{$kraft-mid};
+  --paper-cream: #{$paper-cream};
+  --paper-aged: #{$paper-aged};
+  --ink-dark: #{$ink-dark};
+  --ink-muted: #{$ink-muted};
 
-  // FlexOne Secondary (Blue)
-  --flexone-secondary-1: #{$flexone-secondary-1};
-  --flexone-secondary-2: #{$flexone-secondary-2};
-  --flexone-secondary-3: #{$flexone-secondary-3};
-  --flexone-secondary-4: #{$flexone-secondary-4};
-  --flexone-secondary-5: #{$flexone-secondary-5};
-  --flexone-secondary-6: #{$flexone-secondary-6};
-  --flexone-secondary-7: #{$flexone-secondary-7};
-  --flexone-secondary-8: #{$flexone-secondary-8};
-  --flexone-secondary-9: #{$flexone-secondary-9};
-
-  // Fitpass
-  --fitpass-primary-1: #{$fitpass-primary-1};
-  --fitpass-primary-2: #{$fitpass-primary-2};
-  --fitpass-primary-3: #{$fitpass-primary-3};
-  --fitpass-primary-4: #{$fitpass-primary-4};
-  --fitpass-primary-5: #{$fitpass-primary-5};
-  --fitpass-primary-6: #{$fitpass-primary-6};
-  --fitpass-primary-7: #{$fitpass-primary-7};
-  --fitpass-primary-8: #{$fitpass-primary-8};
-  --fitpass-primary-9: #{$fitpass-primary-9};
-
-  // Gift
-  --gift-primary-1: #{$gift-primary-1};
-  --gift-primary-2: #{$gift-primary-2};
-  --gift-primary-3: #{$gift-primary-3};
-  --gift-primary-4: #{$gift-primary-4};
-  --gift-primary-5: #{$gift-primary-5};
-  --gift-primary-6: #{$gift-primary-6};
-  --gift-primary-7: #{$gift-primary-7};
-  --gift-primary-8: #{$gift-primary-8};
-  --gift-primary-9: #{$gift-primary-9};
-
-  // Expense
-  --expense-primary-1: #{$expense-primary-1};
-  --expense-primary-2: #{$expense-primary-2};
-  --expense-primary-3: #{$expense-primary-3};
-  --expense-primary-4: #{$expense-primary-4};
-  --expense-primary-5: #{$expense-primary-5};
-  --expense-primary-6: #{$expense-primary-6};
-  --expense-primary-7: #{$expense-primary-7};
-  --expense-primary-8: #{$expense-primary-8};
-  --expense-primary-9: #{$expense-primary-9};
-
-  // Neutrals
   --neutral-1: #{$neutral-1};
   --neutral-2: #{$neutral-2};
   --neutral-3: #{$neutral-3};
@@ -84,7 +33,6 @@
   --white: #{$white};
   --black: #{$black};
 
-  // Opacity Variants (White)
   --white-95: #{$white-95};
   --white-90: #{$white-90};
   --white-80: #{$white-80};
@@ -98,7 +46,6 @@
   --white-05: #{$white-05};
   --white-03: #{$white-03};
 
-  // Opacity Variants (Black)
   --black-95: #{$black-95};
   --black-90: #{$black-90};
   --black-80: #{$black-80};
@@ -112,7 +59,6 @@
   --black-05: #{$black-05};
   --black-03: #{$black-03};
 
-  // Semantic Colors
   --danger: #{$danger};
   --danger-hover: #{$danger-hover};
   --danger-bg: #{$danger-bg};
@@ -120,44 +66,8 @@
   --success: #{$success};
   --success-bg: #{$success-bg};
 
-  // Up Coop Product Families
-  --up-coop-eat: #{$up-coop-eat};
-  --up-coop-gift: #{$up-coop-gift};
-  --up-coop-employees: #{$up-coop-employees};
-  --up-coop-cheque-lire: #{$up-coop-cheque-lire};
-  --up-coop-culture: #{$up-coop-culture};
+  --gradient-brand: #{$gradient-brand};
 
-  // Content Pillars
-  --content-economic: #{$content-economic};
-  --content-environmental: #{$content-environmental};
-  --content-social: #{$content-social};
-  --content-passpartout-1: #{$content-passpartout-1};
-  --content-passpartout-2: #{$content-passpartout-2};
-
-  // Product Gradients
-  --gradient-brand-all: linear-gradient(
-    to right,
-    #{$brand-primary-5},
-    #{$brand-primary-3}
-  );
-  --gradient-flexone: linear-gradient(
-    to right,
-    #{$flexone-primary-4},
-    #{$flexone-primary-6}
-  );
-  --gradient-fitpass: linear-gradient(
-    to right,
-    #{$fitpass-primary-5},
-    #{$fitpass-primary-3}
-  );
-  --gradient-gift: linear-gradient(135deg, #{$gift-primary-3}, #{$gift-primary-5});
-  --gradient-expense: linear-gradient(
-    to right,
-    #{$expense-primary-3},
-    #{$expense-primary-5}
-  );
-
-  // Spacing Scale
   --spacing-xs: #{$spacing-xs};
   --spacing-sm: #{$spacing-sm};
   --spacing-md: #{$spacing-md};
@@ -167,7 +77,6 @@
   --spacing-3xl: #{$spacing-3xl};
   --spacing-4xl: #{$spacing-4xl};
 
-  // Typography Scale
   --font-size-xs: #{$font-size-xs};
   --font-size-sm: #{$font-size-sm};
   --font-size-base: #{$font-size-base};
@@ -178,7 +87,6 @@
   --font-size-4xl: #{$font-size-4xl};
   --font-size-5xl: #{$font-size-5xl};
 
-  // Font Weights
   --font-weight-light: #{$font-weight-light};
   --font-weight-normal: #{$font-weight-normal};
   --font-weight-medium: #{$font-weight-medium};
@@ -186,12 +94,10 @@
   --font-weight-bold: #{$font-weight-bold};
   --font-weight-extrabold: #{$font-weight-extrabold};
 
-  // Line Heights
   --line-height-tight: #{$line-height-tight};
   --line-height-normal: #{$line-height-normal};
   --line-height-relaxed: #{$line-height-relaxed};
 
-  // Border Radius
   --border-radius-sm: #{$border-radius-sm};
   --border-radius-md: #{$border-radius-md};
   --border-radius-lg: #{$border-radius-lg};
@@ -200,30 +106,25 @@
   --border-radius-3xl: #{$border-radius-3xl};
   --border-radius-full: #{$border-radius-full};
 
-  // Container Max Widths
   --container-sm: #{$container-sm};
   --container-md: #{$container-md};
   --container-lg: #{$container-lg};
   --container-xl: #{$container-xl};
 
-  // Shadows
   --shadow-sm: #{$shadow-sm};
   --shadow-md: #{$shadow-md};
   --shadow-lg: #{$shadow-lg};
   --shadow-xl: #{$shadow-xl};
 
-  // Transitions
   --transition-fast: #{$transition-fast};
   --transition-normal: #{$transition-normal};
   --transition-slow: #{$transition-slow};
 
-  // Focus styles
-  --focus-outline: 2px solid var(--flexone-primary-4);
+  --focus-outline: 2px solid #{$brand-primary-5};
   --focus-offset: 2px;
 
-  // Semantic Aliases (for easier usage)
-  --color-primary: #{$flexone-primary-4};
-  --color-secondary: #{$flexone-secondary-6};
+  --color-primary: #{$brand-primary-5};
+  --color-secondary: #{$brand-primary-3};
   --color-accent: #{$brand-primary-5};
   --color-success: #{$success};
   --color-warning: #f59e0b;

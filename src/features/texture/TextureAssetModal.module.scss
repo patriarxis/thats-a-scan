@@ -1,0 +1,476 @@
+@use "../../styles/abstracts" as *;
+
+$modal-height: min(88vh, 860px);
+$preview-height: 400px;
+$preview-meta-height: 200px;
+
+.backdropContent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-md;
+  min-height: 100%;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  width: min(1120px, 100%);
+  height: $modal-height;
+  max-height: $modal-height;
+  border-radius: $border-radius-md;
+  @include kraft-surface;
+  border: 2px solid $kraft-edge;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: $spacing-xl $spacing-xl $spacing-lg;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent);
+}
+
+.headerText {
+  min-width: 0;
+}
+
+.headerArchiveRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+.specimenStamp {
+  @include archive-stamp(-2deg);
+}
+
+.fieldLogTag {
+  @include font-archive(0.65rem, 500);
+  color: $ink-faded;
+  letter-spacing: 0.14em;
+}
+
+.eyebrow {
+  @include font-handwritten(1.65rem, 700);
+  color: $brand-primary-7;
+  margin: 0 0 $spacing-xs;
+}
+
+.title {
+  @include h2;
+  color: $paper-cream;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  @include font-handwritten(1.15rem, 500);
+  color: $paper-aged;
+  margin: $spacing-sm 0 0;
+  opacity: 0.92;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+.shareBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-sm;
+  background: rgba($paper-cream, 0.08);
+  border: 1px dashed rgba($paper-cream, 0.2);
+  color: $paper-cream;
+  font-size: $font-size-sm;
+  cursor: pointer;
+  transition: background $transition-normal;
+
+  &:hover {
+    background: rgba($paper-cream, 0.14);
+  }
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+
+  @include mobile-only {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow-y: auto;
+  }
+}
+
+.previewPanel {
+  display: grid;
+  grid-template-rows: $preview-height $preview-meta-height;
+  min-height: 0;
+  overflow: hidden;
+  border-right: 1px dashed rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.08);
+
+  @include mobile-only {
+    grid-template-rows: 260px $preview-meta-height;
+    border-right: none;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+  }
+}
+
+.previewFrame {
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+  overflow: hidden;
+}
+
+.scannedSheet {
+  position: relative;
+  width: min(100%, 560px);
+  height: calc(100% - #{$spacing-md});
+  padding: $spacing-md;
+  border-radius: 3px;
+  transform: rotate(-0.6deg);
+  @include scanned-sheet;
+  @include tape-strip(64px, -3deg);
+}
+
+.previewCanvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  overflow: hidden;
+  background:
+    repeating-conic-gradient(#e8e8e8 0% 25%, #f4f4f4 0% 50%) 50% / 14px 14px,
+    linear-gradient($ink-faded, $ink-faded) 8px 8px / 8px 1px no-repeat,
+    linear-gradient($ink-faded, $ink-faded) 8px 8px / 1px 8px no-repeat,
+    linear-gradient($ink-faded, $ink-faded) calc(100% - 8px) 8px / 8px 1px no-repeat,
+    linear-gradient($ink-faded, $ink-faded) calc(100% - 8px) 8px / 1px 8px no-repeat,
+    linear-gradient($ink-faded, $ink-faded) 8px calc(100% - 8px) / 8px 1px no-repeat,
+    linear-gradient($ink-faded, $ink-faded) 8px calc(100% - 8px) / 1px 8px no-repeat,
+    linear-gradient($ink-faded, $ink-faded) calc(100% - 8px) calc(100% - 8px) / 8px 1px no-repeat,
+    linear-gradient($ink-faded, $ink-faded) calc(100% - 8px) calc(100% - 8px) / 1px 8px no-repeat;
+}
+
+.previewImageWrap {
+  position: absolute;
+  inset: $spacing-lg;
+}
+
+.previewImage {
+  object-fit: contain;
+}
+
+.scanLabel {
+  position: absolute;
+  right: $spacing-md;
+  bottom: $spacing-sm;
+  @include font-archive(0.6rem, 500);
+  color: rgba($paper-cream, 0.35);
+  letter-spacing: 0.12em;
+  pointer-events: none;
+}
+
+.previewMeta {
+  min-height: 0;
+  height: $preview-meta-height;
+  padding: $spacing-md $spacing-xl $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.assetTitle {
+  @include font-handwritten(1.35rem, 600);
+  color: $paper-cream;
+  margin: 0 0 $spacing-xs;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.assetDescription {
+  @include p-sm;
+  color: $paper-aged;
+  margin: 0 0 $spacing-sm;
+  line-height: 1.45;
+  flex-shrink: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  opacity: 0.85;
+}
+
+.assetStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm $spacing-lg;
+  margin: 0 0 $spacing-md;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.assetStat {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-xs;
+
+  dt {
+    @include font-archive(0.62rem, 500);
+    color: $ink-faded;
+    margin: 0;
+  }
+
+  dd {
+    @include p-sm;
+    color: $paper-warm;
+    font-weight: $font-weight-medium;
+    margin: 0;
+  }
+}
+
+.previewActions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.assetsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  min-height: 0;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.assetsHeadingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  flex-shrink: 0;
+}
+
+.assetsHeading {
+  @include font-handwritten(1.25rem, 600);
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  color: $paper-cream;
+  margin: 0;
+  min-width: 0;
+}
+
+.assetCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 $spacing-xs;
+  border-radius: $border-radius-sm;
+  background: rgba($paper-cream, 0.1);
+  color: $paper-aged;
+  @include font-archive(0.65rem, 600);
+}
+
+.assetGrid {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  flex-shrink: 0;
+}
+
+.assetCard {
+  display: flex;
+  align-items: stretch;
+  border-radius: $border-radius-sm;
+  border: 1px dashed rgba($paper-cream, 0.12);
+  background: rgba($paper-cream, 0.04);
+  overflow: visible;
+  transition: border-color $transition-normal, background $transition-normal;
+}
+
+.assetCardSelected {
+  border-color: rgba($brand-primary-6, 0.55);
+  background: rgba($brand-primary-5, 0.08);
+}
+
+.assetSelectBtn {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  flex: 1;
+  padding: $spacing-sm $spacing-sm $spacing-sm $spacing-md;
+  text-align: left;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: inherit;
+  min-width: 0;
+}
+
+.assetThumb {
+  position: relative;
+  width: 62px;
+  height: 72px;
+  flex-shrink: 0;
+  @include polaroid-frame;
+  transform: rotate(-2deg);
+  transition: transform $transition-normal;
+
+  .assetCardSelected & {
+    transform: rotate(0deg);
+  }
+}
+
+.assetThumbImg {
+  object-fit: cover;
+  border-radius: 1px;
+}
+
+.assetCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-top: $spacing-xs;
+}
+
+.assetCardLabel {
+  @include font-handwritten(1.05rem, 600);
+  color: $paper-cream;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assetCardMeta {
+  @include font-archive(0.62rem, 500);
+  color: $ink-faded;
+}
+
+.infoBlock {
+  padding: $spacing-md;
+  border-radius: $border-radius-sm;
+  border: 1px dashed rgba($paper-cream, 0.12);
+  background: rgba($paper-cream, 0.04);
+  flex-shrink: 0;
+  @include notebook-rules;
+}
+
+.infoLabel {
+  @include font-archive(0.62rem, 600);
+  color: $ink-faded;
+  margin: 0 0 $spacing-sm;
+}
+
+.infoText {
+  @include p-sm;
+  color: $paper-warm;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.fieldNoteBlock {
+  padding: $spacing-md $spacing-md $spacing-md $spacing-lg;
+  border-left: 3px solid rgba($brand-primary-6, 0.45);
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 0 $border-radius-sm $border-radius-sm 0;
+  flex-shrink: 0;
+}
+
+.fieldNoteLabel {
+  @include font-archive(0.62rem, 600);
+  color: $brand-primary-7;
+  margin: 0 0 $spacing-xs;
+}
+
+.fieldNoteText {
+  @include font-handwritten(1.2rem, 500);
+  color: $paper-cream;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.metaList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  margin: 0;
+  padding-top: $spacing-xs;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.metaRow {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: $spacing-sm;
+
+  dt {
+    @include font-archive(0.62rem, 500);
+    color: $ink-faded;
+    margin: 0;
+  }
+
+  dd {
+    @include p-sm;
+    color: $paper-warm;
+    margin: 0;
+    text-align: right;
+  }
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  padding-top: $spacing-xs;
+  flex-shrink: 0;
+}
+
+.tag {
+  @include font-handwritten(0.95rem, 600);
+  padding: 0.15rem 0.6rem;
+  border-radius: 2px;
+  background: rgba($paper-cream, 0.1);
+  border: 1px solid rgba($paper-cream, 0.15);
+  color: $paper-aged;
+  transform: rotate(-1deg);
+
+  &:nth-child(even) {
+    transform: rotate(1.5deg);
+  }
+}

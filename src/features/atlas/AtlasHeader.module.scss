@@ -1,0 +1,64 @@
+@use "../../styles/abstracts" as *;
+
+.header {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: $z-header;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: $spacing-lg;
+
+  @include mobile-only {
+    display: none;
+  }
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+.brandTag {
+  position: relative;
+  padding: $spacing-sm $spacing-lg $spacing-md;
+  border-radius: 2px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: none;
+  transform: rotate(-1.5deg);
+  @include tape-strip(52px, 2deg);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.brandMark {
+  font-size: 1.35rem;
+  color: $brand-primary-5;
+  line-height: 1;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brandName {
+  @include h5;
+  color: $ink-dark;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.brandSubtitle {
+  @include font-handwritten(1rem, 600);
+  color: $ink-muted;
+  line-height: 1;
+}

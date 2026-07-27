@@ -1,15 +1,3 @@
-export * from "./LocatorPage/LocatorPage";
-export * from "./SearchBar/SearchBar";
-export * from "./PartnerResultsPanel/PartnerResultsPanel";
-export * from "./PartnerCard/PartnerCard";
-export * from "./QuickFilterChips/QuickFilterChips";
-export * from "./FiltersModal/FiltersModal";
-export * from "./MapView/MapView";
-export * from "./PartnerDetailSheet/PartnerDetailSheet";
-export * from "./DesktopSideSheet/DesktopSideSheet";
-export * from "./MobileBottomDrawer/MobileBottomDrawer";
-export * from "./PartnerDetailContent/PartnerDetailContent";
-export * from "./ErrorBoundary/ErrorBoundary";
-export * from "./LocatorHeader/LocatorHeader";
-export * from "./LocatorFooter/LocatorFooter";
-export * from "./ui";
+export { AtlasPage } from "@/features/atlas/AtlasPage";
+export { MapView } from "@/components/MapView/MapView";
+export { ErrorBoundary } from "@/components/ErrorBoundary/ErrorBoundary";

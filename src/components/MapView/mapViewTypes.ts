@@ -1,4 +1,4 @@
-import type { PaddingOptions } from "mapbox-gl";
+import type { PaddingOptions } from "maplibre-gl";
 
 export type MapViewHandle = {
   flyTo: (

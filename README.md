@@ -1,63 +1,45 @@
-## Up Hellas Store Locator
+# Textures Atlas
 
-Dark, premium store locator experience for Up Hellas, showing partner merchants on a clustered Mapbox GL map with a searchable, localized list.
+Interactive map of Athens surface textures — graffiti, marble, rust, tile, and more — with an archive-style asset modal and Payload CMS backend.
 
-### What this app does
+## Stack
 
-- **Viewport-based store loading**: Merchants are fetched through the existing `/api/merchants-geojson` proxy only for the current map bounding box (no backend changes).
-- **Modern map experience**: Dark Mapbox / CARTO basemap locked to Greece, with **purple pins and clusters**, smooth zoom, and drill‑in clustering.
-- **Search-first UX**: Centered autocomplete search bar that works with:
-  - **Merchant data** already loaded on the client, and
-  - **Mapbox geocoding** for free‑text places.
-- **Map + list layout**:
-  - Desktop: map on the left, virtualized store list and detail panel on the right.
-  - Mobile: fullscreen map with a Map/List toggle and bottom sheet details.
-- **Localization**: Full Greek/English UI via `LocaleProvider` plus locale‑aware merchant name/address helpers.
+- **Next.js 16** (App Router, TypeScript)
+- **MapLibre GL** with custom archive basemap styling
+- **Payload 3** + **Neon Postgres** + optional **Cloudflare R2** media storage
 
-### Tech stack
+## Local setup
 
-- **Next.js** (App Router, TypeScript)
-- **Tailwind CSS** with custom Up‑style dark theme (black/dark‑grey background, purple accents)
-- **Mapbox GL JS** directly (no `react-map-gl`)
-- **react-window** for list virtualization
+1. Copy env template and fill in values:
 
-### Running locally
+```bash
+cp .env.example .env.local
+```
 
-1. Install dependencies:
+2. Install and run:
 
 ```bash
 npm install
-```
-
-2. Add your Mapbox token in `.env.local`:
-
-```bash
-NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_public_token_here
-```
-
-3. Start the dev server:
-
-```bash
+npm run generate:importmap
 npm run dev
 ```
 
-Open `http://localhost:3000` in the browser.
+3. Open [http://localhost:3000](http://localhost:3000) for the map and [http://localhost:3000/admin](http://localhost:3000/admin) for Payload.
 
-### Merchants API
+4. On first run after schema changes, start dev once and accept Payload’s DB prompts (creates the `tags` table). Then optionally run `npm run migrate:tags` to move old inline tags into the taxonomy.
 
-The frontend talks only to a Next.js proxy:
+## Data
 
-- **Route**: `/api/merchants-geojson`
-- **Upstream**:
+- Textures are managed in Payload (`textures` collection).
+- Optional one-time GeoJSON import: `npm run migrate:geojson`
+- Public API: `GET /api/textures?bounds=...`
 
-```text
-POST https://merchants-map.uphellas.gr/geojson/search
-```
+## Project layout
 
-The request body contains a bounding box (`north_west` / `south_east`), so the backend only returns stores inside the current viewport.
-
-### Customization
-
-- **Colours / theme**: Edit `tailwind.config.ts` (see `background`, `foreground`, `primary`, `secondary`) and high‑level layout styles in `LocatorExperience.tsx`.
-- **Map behaviour**: Edit `MapView.tsx` and the hooks in `src/components/map/hooks.ts` (zoom limits, clustering, viewport query rules).
-
+| Path | Purpose |
+|------|---------|
+| `src/app/(frontend)/` | Map app |
+| `src/app/(payload)/` | Payload admin + API |
+| `src/features/` | Atlas + texture UI |
+| `src/domain/textures/` | Business logic + GeoJSON mapping |
+| `src/payload/` | CMS collections |

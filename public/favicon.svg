@@ -1,12 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="512" height="512"><svg id="SvgjsSvg1008" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <style>
-      .cls-1 {
-        fill: #ff8500;
-      }
-    </style>
-  </defs>
-  <path class="cls-1" d="M512,256c0,78.32-66.01,142.03-147.15,142.03-28.69,0-56.49-7.98-80.41-23.06-17.53-11.06-39.31-11.06-56.86,0-23.93,15.09-51.72,23.06-80.41,23.06C66.02,398.03.01,334.32.01,256S66.02,113.97,147.16,113.97c28.69,0,56.49,7.98,80.41,23.06,17.53,11.06,39.31,11.06,56.86,0,23.93-15.09,51.72-23.06,80.41-23.06,81.14,0,147.15,63.72,147.15,142.03h0ZM450.4,256c0-44.36-38.38-80.43-85.55-80.43-17.04,0-33.47,4.69-47.54,13.57-37.81,23.85-84.79,23.85-122.58,0-14.06-8.87-30.5-13.57-47.54-13.57-47.17,0-85.55,36.08-85.55,80.43s38.38,80.43,85.55,80.43c17.04,0,33.47-4.69,47.54-13.57,37.81-23.85,84.79-23.85,122.58,0,14.06,8.87,30.5,13.57,47.54,13.57,47.17,0,85.55-36.08,85.55-80.43h0Z"></path>
-</svg><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
-@media (prefers-color-scheme: dark) { :root { filter: none; } }
-</style></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Textures Atlas">
+  <rect width="512" height="512" rx="96" fill="#2a231c"/>
+  <rect x="96" y="96" width="320" height="320" rx="24" fill="#3a3228" stroke="#ff8500" stroke-width="12"/>
+  <rect x="136" y="136" width="120" height="120" rx="8" fill="#ff8500" opacity="0.9"/>
+  <rect x="276" y="136" width="100" height="100" rx="8" fill="#6b6156"/>
+  <rect x="136" y="276" width="100" height="100" rx="8" fill="#9a9084"/>
+  <rect x="256" y="256" width="120" height="120" rx="8" fill="#ddd4c0"/>
+</svg>

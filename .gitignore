@@ -34,6 +34,9 @@ yarn-error.log*
 # Local env files
 .env*.local
 
+# Payload local media uploads (when R2 is not configured)
+/media/
+
 # IDE
 .vscode/
 .idea/

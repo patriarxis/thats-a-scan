@@ -1,54 +1,37 @@
-import { LOCALE } from "@/enums";
-import { createTranslator } from "@/lib/i18n";
+import { formatString, strings } from "@/content/strings";
 
-const interpolate = (template: string, vars: Record<string, string>): string =>
-  Object.entries(vars).reduce(
-    (acc, [key, value]) => acc.replaceAll(`{{${key}}}`, value),
-    template,
-  );
-
-export const getSeoDefaults = (locale: LOCALE) => {
-  const { t } = createTranslator(locale);
-  const keywords = t("seoDefaultKeywords")
+export const getSeoDefaults = () => ({
+  title: strings.seoDefaultTitle,
+  description: strings.seoDefaultDescription,
+  keywords: strings.seoDefaultKeywords
     .split(",")
     .map((entry) => entry.trim())
-    .filter(Boolean);
+    .filter(Boolean),
+});
 
-  return {
-    title: t("seoDefaultTitle"),
-    description: t("seoDefaultDescription"),
-    keywords,
-  };
-};
+export const getHomeSeo = () => ({
+  title: strings.seoHomeTitle,
+  description: strings.seoHomeDescription,
+});
 
-export const getHomeSeo = (locale: LOCALE) => {
-  const { t } = createTranslator(locale);
-  return {
-    title: t("seoHomeTitle"),
-    description: t("seoHomeDescription"),
-  };
-};
-
-export const getStoreSeoText = (
-  locale: LOCALE,
-  storeId: string,
-  storeName: string,
-  storeAddress: string,
+export const getTextureSeoText = (
+  textureId: string,
+  textureName: string,
+  textureAddress: string,
 ) => {
-  const { t } = createTranslator(locale);
-  const titleSuffix = t("seoStoreTitleSuffix");
-  const titleBase = storeName || `${t("seoStoreFallbackTitlePrefix")} ${storeId}`;
-  const title = `${titleBase} | ${titleSuffix}`;
+  const titleBase =
+    textureName || `${strings.seoTextureFallbackTitlePrefix} ${textureId}`;
+  const title = `${titleBase} | ${strings.seoTextureTitleSuffix}`;
 
-  const description = storeAddress
-    ? interpolate(t("seoStoreDescriptionWithAddress"), { address: storeAddress })
-    : interpolate(t("seoStoreDescriptionWithoutAddress"), { name: titleBase });
+  const description = textureAddress
+    ? formatString(strings.seoTextureDescriptionWithAddress, { address: textureAddress })
+    : formatString(strings.seoTextureDescriptionWithoutAddress, { name: titleBase });
 
   return {
     title,
     description,
-    fallbackTitlePrefix: t("seoStoreFallbackTitlePrefix"),
-    fallbackDescription: t("seoStoreFallbackDescription"),
-    titleSuffix,
+    fallbackTitlePrefix: strings.seoTextureFallbackTitlePrefix,
+    fallbackDescription: strings.seoTextureFallbackDescription,
+    titleSuffix: strings.seoTextureTitleSuffix,
   };
 };

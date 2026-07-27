@@ -1,21 +1,29 @@
 {
-  "name": "Up Hellas | Map",
-  "short_name": "Up Hellas | Map",
+  "name": "Textures Atlas",
+  "short_name": "Textures",
+  "description": "Athens street-captured texture library on a map",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2a231c",
+  "theme_color": "#2a231c",
   "icons": [
     {
-      "src": "/web-app-manifest-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     },
     {
       "src": "/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
-  "display": "standalone"
+  ]
 }

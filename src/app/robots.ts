@@ -57,7 +57,7 @@ export default function robots(): MetadataRoute.Robots {
       ...blockedRules,
       {
         userAgent: "*",
-        allow: ["/", "/api/og/"],
+        allow: ["/"],
         disallow: [
           "/*?utm_*",
           "/*?fbclid=*",

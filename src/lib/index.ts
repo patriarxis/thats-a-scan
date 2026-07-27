@@ -1,5 +1,7 @@
-export * from "../enums";
-export * from "./i18n";
-export * from "./useLocaleDetection";
-export * from "./LocaleContext";
-export * from "./useMap";
+export { useViewportTextureQuery } from "@/features/map/hooks/useViewportTextures";
+export {
+  UserLocationProvider,
+  useUserLocation,
+  type UserLocation,
+  type UserLocationPermission,
+} from "@/shared/hooks/useUserLocation";

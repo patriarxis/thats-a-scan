@@ -1,9 +1,12 @@
+import { withPayload } from "@payloadcms/next/withPayload";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
   compress: true,
+  reactCompiler: false,
   async headers() {
     if (process.env.NODE_ENV !== "production") return [];
 
@@ -22,5 +25,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
-
+export default withPayload(nextConfig);

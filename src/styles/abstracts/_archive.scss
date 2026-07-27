@@ -1,0 +1,149 @@
+@use "variables" as *;
+
+@mixin font-handwritten($size: 1.25rem, $weight: 600) {
+  font-family: $font-handwritten;
+  font-size: $size;
+  font-weight: $weight;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+@mixin font-archive($size: 0.75rem, $weight: 500) {
+  font-family: $font-archive;
+  font-size: $size;
+  font-weight: $weight;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@mixin paper-grain {
+  background-color: $kraft-mid;
+  background-image:
+    radial-gradient(ellipse 120% 80% at 10% 20%, rgba(255, 255, 255, 0.05), transparent 55%),
+    radial-gradient(ellipse 90% 70% at 90% 80%, rgba(0, 0, 0, 0.35), transparent 50%),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      transparent 40%,
+      rgba(0, 0, 0, 0.2) 100%
+    );
+}
+
+@mixin kraft-surface {
+  background-color: $kraft-dark;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.012) 2px,
+      rgba(255, 255, 255, 0.012) 3px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0, 0, 0, 0.18) 3px,
+      rgba(0, 0, 0, 0.18) 4px
+    ),
+    radial-gradient(ellipse at 30% 0%, rgba(255, 255, 255, 0.035), transparent 55%);
+}
+
+@mixin scan-lines($opacity: 0.04) {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, $opacity) 2px,
+      rgba(255, 255, 255, $opacity) 3px
+    );
+    mix-blend-mode: soft-light;
+  }
+}
+
+@mixin scanned-sheet {
+  position: relative;
+  @include paper-grain;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.2),
+    0 6px 20px rgba(0, 0, 0, 0.4),
+    inset 0 0 60px rgba(0, 0, 0, 0.25);
+  @include scan-lines(0.03);
+}
+
+@mixin registration-marks($inset: 12px, $size: 10px) {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: $inset;
+    pointer-events: none;
+    border-radius: 1px;
+    background:
+      linear-gradient($ink-faded, $ink-faded) left top / #{$size} 1px no-repeat,
+      linear-gradient($ink-faded, $ink-faded) left top / 1px #{$size} no-repeat,
+      linear-gradient($ink-faded, $ink-faded) right top / #{$size} 1px no-repeat,
+      linear-gradient($ink-faded, $ink-faded) right top / 1px #{$size} no-repeat,
+      linear-gradient($ink-faded, $ink-faded) left bottom / #{$size} 1px no-repeat,
+      linear-gradient($ink-faded, $ink-faded) left bottom / 1px #{$size} no-repeat,
+      linear-gradient($ink-faded, $ink-faded) right bottom / #{$size} 1px no-repeat,
+      linear-gradient($ink-faded, $ink-faded) right bottom / 1px #{$size} no-repeat;
+    opacity: 0.45;
+  }
+}
+
+@mixin archive-stamp($rotation: -3deg) {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border: 2px solid $brand-primary-5;
+  border-radius: 2px;
+  color: $brand-primary-6;
+  transform: rotate($rotation);
+  opacity: 0.9;
+  @include font-archive(0.7rem, 600);
+}
+
+@mixin tape-strip($width: 56px, $rotation: -4deg) {
+  &::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    width: $width;
+    height: 18px;
+    margin-left: calc($width / -2);
+    background: $tape-yellow;
+    transform: rotate($rotation);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    opacity: 0.85;
+    pointer-events: none;
+    z-index: 2;
+  }
+}
+
+@mixin notebook-rules {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 27px,
+    $pencil-line 27px,
+    $pencil-line 28px
+  );
+  background-position: 0 8px;
+}
+
+@mixin polaroid-frame {
+  background: $kraft-light;
+  padding: 5px 5px 18px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}

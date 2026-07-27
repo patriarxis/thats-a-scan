@@ -1,0 +1,199 @@
+@use "../../styles/abstracts" as *;
+
+.root {
+  position: relative;
+  display: inline-flex;
+}
+
+.root_icon {
+  display: flex;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background $transition-normal, color $transition-normal, border-color $transition-normal;
+}
+
+.trigger_primary {
+  padding: $spacing-sm $spacing-lg;
+  border-radius: $border-radius-sm;
+  background: $brand-primary-5;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: $paper-cream;
+  font-weight: $font-weight-semibold;
+  font-size: $font-size-base;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    background: $brand-primary-6;
+  }
+
+  .chevron {
+    width: 0.75rem;
+    height: 0.75rem;
+    opacity: 0.85;
+    margin-left: -$spacing-xs;
+  }
+}
+
+.trigger_compact {
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-sm;
+  background: rgba($paper-cream, 0.08);
+  border: 1px dashed rgba($paper-cream, 0.2);
+  color: $paper-warm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
+  &:hover {
+    background: rgba($paper-cream, 0.14);
+    color: $paper-cream;
+  }
+
+  .chevron {
+    width: 0.65rem;
+    height: 0.65rem;
+    opacity: 0.7;
+  }
+}
+
+.trigger_icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 100%;
+  min-height: 2.75rem;
+  padding: 0;
+  background: transparent;
+  color: $paper-aged;
+  border-radius: 0;
+
+  &:hover {
+    color: $paper-cream;
+    background: rgba($paper-cream, 0.08);
+  }
+
+  .triggerIcon {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+}
+
+.rootOpen .trigger_primary,
+.rootOpen .trigger_compact {
+  background: $brand-primary-6;
+}
+
+.menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + $spacing-xs);
+  min-width: 240px;
+  max-width: min(320px, 90vw);
+  padding: $spacing-xs;
+  border-radius: $border-radius-sm;
+  @include paper-grain;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+
+.menu_start {
+  left: 0;
+}
+
+.menu_end {
+  right: 0;
+}
+
+.downloadAllItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: rgba($brand-primary-5, 0.14);
+  color: $paper-cream;
+  font-family: inherit;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  text-align: left;
+  transition: background $transition-normal;
+
+  &:hover {
+    background: rgba($brand-primary-5, 0.24);
+  }
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: $brand-primary-6;
+  }
+}
+
+.downloadAllLabel {
+  flex: 1;
+  @include font-handwritten(1rem, 600);
+}
+
+.downloadAllCount {
+  @include font-archive(0.62rem, 600);
+  padding: 0.1rem 0.45rem;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  color: $paper-aged;
+}
+
+.divider {
+  height: 1px;
+  margin: $spacing-xs 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.optionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.optionItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: transparent;
+  color: $paper-cream;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background $transition-normal;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.optionLabel {
+  @include font-handwritten(1rem, 600);
+  color: $paper-cream;
+}
+
+.optionMeta {
+  @include font-archive(0.62rem, 500);
+  color: $ink-muted;
+}

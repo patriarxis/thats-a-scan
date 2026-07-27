@@ -1,4 +1,4 @@
-import type { LngLatBounds, Map as MapboxMap } from "mapbox-gl";
+import type { LngLatBounds, Map as MapLibreMap } from "maplibre-gl";
 
 /** Align with `mapViewConstants` — minimum zoom for throttled pan updates. */
 export const MAP_MOVE_UPDATE_MIN_ZOOM = 13;
@@ -61,7 +61,7 @@ export const pointInBoundsBox = (lng: number, lat: number, box: MapBoundsBox): b
   lat <= box.north && lat >= box.south && lng >= box.west && lng <= box.east;
 
 export const getBufferedBoundsBox = (
-  map: MapboxMap,
+  map: MapLibreMap,
   zoom: number = map.getZoom(),
 ): MapBoundsBox | null => {
   const bounds = map.getBounds();
@@ -79,7 +79,7 @@ export const declutterDebounceMsForZoom = (zoom: number): number =>
 export const shouldUpdateViewportOnMove = (zoom: number): boolean =>
   zoom >= MAP_MOVE_UPDATE_MIN_ZOOM;
 
-export const mapCenter = (map: MapboxMap): { lat: number; lng: number } | null => {
+export const mapCenter = (map: MapLibreMap): { lat: number; lng: number } | null => {
   const center = map.getCenter();
   if (!center) return null;
   return { lat: center.lat, lng: center.lng };

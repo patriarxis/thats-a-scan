@@ -1,4 +1,4 @@
-const DEFAULT_SITE_URL = "https://map.uphellas.gr";
+const DEFAULT_SITE_URL = "http://localhost:3000";
 
 export const getSiteUrl = (): URL => {
   if (process.env.NEXT_PUBLIC_SITE_URL) {

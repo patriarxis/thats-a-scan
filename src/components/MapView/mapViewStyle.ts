@@ -1,4 +1,3 @@
-import { CARTO_DARK_STYLE, MAPBOX_DARK_STYLE_URL } from "./mapViewConstants";
+import { buildArchiveMapStyle } from "./buildArchiveMapStyle";
 
-export const resolveMapStyle = (hasToken: boolean) =>
-  hasToken ? MAPBOX_DARK_STYLE_URL : CARTO_DARK_STYLE;
+export const resolveMapStyle = () => buildArchiveMapStyle();

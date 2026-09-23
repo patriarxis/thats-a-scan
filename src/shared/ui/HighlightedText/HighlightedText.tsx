@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { normalizeStr } from "@/lib/stringUtils";
+import { foldForMatch } from "@/lib/utils/string";
 import styles from "./HighlightedText.module.scss";
 
 type HighlightedTextProps = {
@@ -9,10 +9,11 @@ type HighlightedTextProps = {
 
 export const HighlightedText = ({ text, query }: HighlightedTextProps) => {
   const parts = useMemo(() => {
-    const normalizedQuery = normalizeStr(query.trim());
+    const normalizedQuery = foldForMatch(query.trim());
     if (!normalizedQuery) return [<span key="0">{text}</span>];
 
-    const normalizedText = normalizeStr(text);
+    // Folded, not trimmed — these indices are used against `text` directly.
+    const normalizedText = foldForMatch(text);
     const result: React.ReactNode[] = [];
     let currentIndex = 0;
 

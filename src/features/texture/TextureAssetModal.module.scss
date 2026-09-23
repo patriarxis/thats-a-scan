@@ -186,6 +186,27 @@ $preview-meta-height: 200px;
   object-fit: contain;
 }
 
+/* Shown when an asset's media relation is unpopulated, so there is no URL. */
+.previewPlaceholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba($paper-cream, 0.05) 0 8px,
+    rgba($paper-cream, 0.02) 8px 16px
+  );
+  border: 1px dashed rgba($paper-cream, 0.18);
+
+  span {
+    @include font-archive(0.65rem, 600);
+    color: rgba($paper-cream, 0.45);
+    letter-spacing: 0.14em;
+  }
+}
+
 .scanLabel {
   position: absolute;
   right: $spacing-md;

@@ -1,13 +1,17 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { MapViewHandle } from "@/components/MapView/MapView";
 import { AtlasHeader } from "@/features/atlas/AtlasHeader";
 import { useAtlasUrl, useTextureFromUrl } from "@/features/atlas/hooks/useAtlasUrl";
 import {
+  collectFilterOptions,
+  EMPTY_TEXTURE_FILTERS,
   getTextureId,
+  type TextureCategory,
   type TextureFeature,
+  type TextureFilterState,
   type VisibleTexturesPayload,
 } from "@/domain/textures";
 import { UserLocationProvider } from "@/shared/hooks/useUserLocation";
@@ -30,6 +34,11 @@ function AtlasPageContent() {
 
   const [allKnownById, setAllKnownById] = useState<Record<string, TextureFeature>>({});
   const [selectedTexture, setSelectedTexture] = useState<TextureFeature | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<TextureFilterState>(EMPTY_TEXTURE_FILTERS);
+  const [searchPinnedIds, setSearchPinnedIds] = useState<ReadonlySet<string>>(
+    () => new Set<string>(),
+  );
 
   const handleVisibleTexturesChange = useCallback((payload: VisibleTexturesPayload) => {
     setAllKnownById((prev) => {
@@ -39,6 +48,29 @@ function AtlasPageContent() {
       }
       return next;
     });
+  }, []);
+
+  // Option lists come from what has actually loaded, never a hardcoded table.
+  const filterOptions = useMemo(
+    () => collectFilterOptions(Object.values(allKnownById)),
+    [allKnownById],
+  );
+
+  const handleSearchResultsChange = useCallback((results: TextureFeature[]) => {
+    setSearchPinnedIds(new Set(results.map(getTextureId)));
+    setAllKnownById((prev) => {
+      const next = { ...prev };
+      for (const texture of results) next[getTextureId(texture)] = texture;
+      return next;
+    });
+  }, []);
+
+  const handleSelectCategory = useCallback((category: TextureCategory) => {
+    setFilters((prev) =>
+      prev.categories.includes(category)
+        ? prev
+        : { ...prev, categories: [...prev.categories, category] },
+    );
   }, []);
 
   const openTexture = useCallback(
@@ -78,12 +110,24 @@ function AtlasPageContent() {
         ref={mapRef}
         className={styles.map}
         selectedTextureId={selectedTexture ? getTextureId(selectedTexture) : null}
+        filters={filters}
+        searchQuery={searchQuery}
+        searchPinnedIds={searchPinnedIds}
         onVisibleTexturesChange={handleVisibleTexturesChange}
         onTextureSelect={openTexture}
         onMapClick={closeTexture}
       />
 
-      <AtlasHeader />
+      <AtlasHeader
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        onSearchResultsChange={handleSearchResultsChange}
+        onSelectTexture={openTexture}
+        onSelectCategory={handleSelectCategory}
+        filters={filters}
+        filterOptions={filterOptions}
+        onFiltersChange={setFilters}
+      />
 
       <TextureAssetModal texture={selectedTexture} onClose={closeTexture} />
     </div>

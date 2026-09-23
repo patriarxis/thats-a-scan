@@ -6,6 +6,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { getPayload } from "payload";
 import config from "../payload.config.ts";
+import { slugify } from "../src/payload/slug.ts";
 
 type GeoFeature = {
   properties: {
@@ -18,11 +19,7 @@ async function findOrCreateTag(
   payload: Awaited<ReturnType<typeof getPayload>>,
   label: string,
 ): Promise<number> {
-  const slug = label
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+  const slug = slugify(label);
 
   const existing = await payload.find({
     collection: "tags",

@@ -48,59 +48,107 @@ function formatDimensions(asset: TextureAsset): string | null {
   return `${asset.dimensions.width} × ${asset.dimensions.height}px`;
 }
 
-export function TextureAssetModal({ texture, onClose }: TextureAssetModalProps) {
-  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+/**
+ * `resolveMediaUrl` returns "" for an unpopulated relation and `next/image`
+ * throws on an empty `src`, so render a placeholder block instead.
+ */
+function AssetImage({
+  asset,
+  className,
+  sizes,
+  priority,
+}: {
+  asset: TextureAsset;
+  className: string;
+  sizes: string;
+  priority?: boolean;
+}) {
+  if (!asset.previewUrl) {
+    return (
+      <div className={styles.previewPlaceholder} aria-hidden>
+        <span>{asset.format.toUpperCase()}</span>
+      </div>
+    );
+  }
 
-  const assets = texture ? getTextureAssets(texture) : [];
+  return (
+    <Image
+      src={asset.previewUrl}
+      alt={asset.label}
+      fill
+      className={className}
+      unoptimized
+      sizes={sizes}
+      priority={priority}
+    />
+  );
+}
+
+export function TextureAssetModal({ texture, onClose }: TextureAssetModalProps) {
+  const [copied, setCopied] = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  /**
+   * The last texture that was open. The parent clears `texture` the instant the
+   * modal closes, so without this there is nothing left to render during the
+   * exit animation and the modal vanishes rather than fading.
+   */
+  const [heldTexture, setHeldTexture] = useState<TextureFeature | null>(texture);
+
+  // Adjusting state during render rather than in an effect: React re-renders
+  // immediately, so the new texture's first frame already shows its own asset.
+  if (texture && texture !== heldTexture) {
+    setHeldTexture(texture);
+    setSelectedAssetId(null);
+  }
+
+  const isOpen = texture !== null;
+  const displayTexture = texture ?? heldTexture;
+
+  const assets = displayTexture ? getTextureAssets(displayTexture) : [];
   const selectedAsset =
     assets.find((a) => a.id === selectedAssetId) ?? assets[0] ?? null;
-  const allDownloadOptions = texture ? getTextureDownloadOptions(texture) : [];
+  const allDownloadOptions = displayTexture ? getTextureDownloadOptions(displayTexture) : [];
   const selectedDownloadOptions =
-    texture && selectedAsset
-      ? getSelectedAssetDownloadOptions(texture, selectedAsset)
+    displayTexture && selectedAsset
+      ? getSelectedAssetDownloadOptions(displayTexture, selectedAsset)
       : [];
 
   useEffect(() => {
-    if (!texture) {
-      setSelectedAssetId(null);
-      return;
-    }
-    const nextAssets = getTextureAssets(texture);
-    setSelectedAssetId(nextAssets[0]?.id ?? null);
-  }, [texture]);
-
-  useEffect(() => {
-    if (!texture) return;
+    if (!isOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose, texture]);
+  }, [isOpen, onClose]);
 
   const handleShare = useCallback(async () => {
-    if (!texture) return;
+    if (!displayTexture) return;
     try {
-      await navigator.clipboard.writeText(buildTextureShareUrlFromFeature(texture));
+      await navigator.clipboard.writeText(buildTextureShareUrlFromFeature(displayTexture));
       setCopied(true);
       setTimeout(() => setCopied(false), COPIED_FEEDBACK_DURATION_MS);
     } catch {
       /* clipboard unavailable */
     }
-  }, [texture]);
+  }, [displayTexture]);
 
-  if (!texture || !selectedAsset) return null;
+  if (!displayTexture || !selectedAsset) return null;
 
-  const title = getTextureTitle(texture);
-  const description = getTextureDescription(texture);
-  const surfaceType = getCategoryGroupLabel(texture.properties.category);
-  const specimenId = getTextureSpecimenId(texture);
-  const locationLine = formatTextureAddress(texture) || modalLabels.noAddress;
+  const title = getTextureTitle(displayTexture);
+  const description = getTextureDescription(displayTexture);
+  const surfaceType = getCategoryGroupLabel(displayTexture.properties.category);
+  const specimenId = getTextureSpecimenId(displayTexture);
+  const locationLine = formatTextureAddress(displayTexture) || modalLabels.noAddress;
   const assetDimensions = formatDimensions(selectedAsset);
 
   return (
-    <Backdrop isOpen tone="strong" onClick={onClose} contentClassName={styles.backdropContent}>
+    <Backdrop
+      isOpen={isOpen}
+      tone="strong"
+      onClick={onClose}
+      contentClassName={styles.backdropContent}
+    >
       <div
         className={styles.modal}
         role="dialog"
@@ -135,12 +183,9 @@ export function TextureAssetModal({ texture, onClose }: TextureAssetModalProps) 
               <div className={styles.scannedSheet}>
                 <div className={styles.previewCanvas}>
                   <div className={styles.previewImageWrap}>
-                    <Image
-                      src={selectedAsset.previewUrl}
-                      alt={selectedAsset.label}
-                      fill
+                    <AssetImage
+                      asset={selectedAsset}
                       className={styles.previewImage}
-                      unoptimized
                       sizes="(max-width: 768px) 100vw, 640px"
                       priority
                     />
@@ -169,10 +214,10 @@ export function TextureAssetModal({ texture, onClose }: TextureAssetModalProps) 
                     <dd>{assetDimensions}</dd>
                   </div>
                 )}
-                {texture.properties.dpi && (
+                {displayTexture.properties.dpi && (
                   <div className={styles.assetStat}>
                     <dt>{modalLabels.dpi}</dt>
-                    <dd>{texture.properties.dpi}</dd>
+                    <dd>{displayTexture.properties.dpi}</dd>
                   </div>
                 )}
               </dl>
@@ -200,6 +245,7 @@ export function TextureAssetModal({ texture, onClose }: TextureAssetModalProps) 
                 <AssetCard
                   key={asset.id}
                   asset={asset}
+                  textureId={displayTexture.properties.id}
                   isSelected={asset.id === selectedAsset.id}
                   onSelect={() => setSelectedAssetId(asset.id)}
                 />
@@ -213,27 +259,27 @@ export function TextureAssetModal({ texture, onClose }: TextureAssetModalProps) 
               </div>
             )}
 
-            {texture.properties.locationNote && (
+            {displayTexture.properties.locationNote && (
               <div className={styles.fieldNoteBlock}>
                 <h4 className={styles.fieldNoteLabel}>{modalLabels.locationNote}</h4>
-                <p className={styles.fieldNoteText}>{texture.properties.locationNote}</p>
+                <p className={styles.fieldNoteText}>{displayTexture.properties.locationNote}</p>
               </div>
             )}
 
             <dl className={styles.metaList}>
               <div className={styles.metaRow}>
                 <dt>{modalLabels.license}</dt>
-                <dd>{licenseLabel(texture.properties.license)}</dd>
+                <dd>{licenseLabel(displayTexture.properties.license)}</dd>
               </div>
               <div className={styles.metaRow}>
                 <dt>{modalLabels.scannedBy}</dt>
-                <dd>{texture.properties.scannedBy}</dd>
+                <dd>{displayTexture.properties.scannedBy}</dd>
               </div>
             </dl>
 
-            {texture.properties.tags.length > 0 && (
+            {displayTexture.properties.tags.length > 0 && (
               <div className={styles.tagList}>
-                {texture.properties.tags.map((tag) => (
+                {displayTexture.properties.tags.map((tag) => (
                   <span key={tag} className={styles.tag}>
                     {tag}
                   </span>
@@ -249,10 +295,12 @@ export function TextureAssetModal({ texture, onClose }: TextureAssetModalProps) 
 
 function AssetCard({
   asset,
+  textureId,
   isSelected,
   onSelect,
 }: {
   asset: TextureAsset;
+  textureId: string;
   isSelected: boolean;
   onSelect: () => void;
 }) {
@@ -262,14 +310,7 @@ function AssetCard({
     >
       <button type="button" className={styles.assetSelectBtn} onClick={onSelect}>
         <div className={styles.assetThumb}>
-          <Image
-            src={asset.previewUrl}
-            alt=""
-            fill
-            className={styles.assetThumbImg}
-            unoptimized
-            sizes="120px"
-          />
+          <AssetImage asset={asset} className={styles.assetThumbImg} sizes="120px" />
         </div>
         <div className={styles.assetCardBody}>
           <span className={styles.assetCardLabel}>{asset.label}</span>
@@ -279,7 +320,7 @@ function AssetCard({
         </div>
       </button>
       <DownloadMenu
-        options={getAssetDownloadOptions(asset)}
+        options={getAssetDownloadOptions(asset, textureId)}
         variant="icon"
         align="end"
         ariaLabel={`${modalLabels.download} ${asset.label}`}

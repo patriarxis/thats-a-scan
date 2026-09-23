@@ -175,7 +175,7 @@ export interface Tag {
   id: number;
   label: string;
   /**
-   * Lowercase identifier (e.g. peeling, blue-tile)
+   * Lowercase identifier (e.g. peeling, blue-tile). Derived from the label when left blank.
    */
   slug: string;
   updatedAt: string;

@@ -4,6 +4,7 @@ import { existsSync } from "fs";
 import { getPayload } from "payload";
 import config from "../payload.config.ts";
 import type { TextureFeatureCollection } from "../src/domain/textures/types.ts";
+import { slugify } from "../src/payload/slug.ts";
 
 type GeoJsonFeature = TextureFeatureCollection["features"][number] & {
   properties: {
@@ -32,6 +33,14 @@ type GeoJsonFeature = TextureFeatureCollection["features"][number] & {
 
 const mediaCache = new Map<string, number>();
 
+/**
+ * Every primary file that was not on disk. A migration that reports success
+ * while quietly uploading placeholder art is worse than one that fails, so
+ * these are surfaced individually and make the run exit non-zero.
+ */
+const fallbacks: Array<{ missing: string; substituted: string }> = [];
+const missingEntirely: string[] = [];
+
 function resolvePublicFile(urlPath: string): string | null {
   if (!urlPath.startsWith("/")) return null;
   const absolute = join(process.cwd(), "public", urlPath.replace(/^\//, ""));
@@ -46,10 +55,7 @@ async function uploadMedia(
   if (mediaCache.has(urlPath)) return mediaCache.get(urlPath)!;
 
   const filePath = resolvePublicFile(urlPath);
-  if (!filePath) {
-    console.warn(`  skip missing file: ${urlPath}`);
-    return null;
-  }
+  if (!filePath) return null;
 
   const doc = await payload.create({
     collection: "media",
@@ -69,18 +75,24 @@ async function uploadWithFallback(
 ): Promise<number | null> {
   const primary = await uploadMedia(payload, primaryPath, alt);
   if (primary) return primary;
-  return uploadMedia(payload, fallbackPath, alt);
+
+  const substitute = await uploadMedia(payload, fallbackPath, alt);
+  if (substitute) {
+    console.warn(`  WARN MISSING ${primaryPath} — substituting ${fallbackPath}`);
+    fallbacks.push({ missing: primaryPath, substituted: fallbackPath });
+    return substitute;
+  }
+
+  console.warn(`  WARN MISSING ${primaryPath} — fallback ${fallbackPath} is missing too`);
+  missingEntirely.push(primaryPath);
+  return null;
 }
 
 async function findOrCreateTag(
   payload: Awaited<ReturnType<typeof getPayload>>,
   label: string,
 ): Promise<number> {
-  const slug = label
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+  const slug = slugify(label);
 
   const existing = await payload.find({
     collection: "tags",
@@ -124,8 +136,8 @@ async function main() {
       continue;
     }
 
-    const thumbPath = props.thumbnailUrl ?? `/textures/${textureId}/thumb.svg`;
-    const previewPath = props.previewUrl ?? `/textures/${textureId}/preview.svg`;
+    const thumbPath = props.thumbnailUrl ?? `/textures/${textureId}/thumb.png`;
+    const previewPath = props.previewUrl ?? `/textures/${textureId}/preview.png`;
 
     const thumbnailId = await uploadWithFallback(payload, thumbPath, previewPath, `${props.title} thumb`);
     const previewId = await uploadWithFallback(payload, previewPath, thumbPath, `${props.title} preview`);
@@ -209,7 +221,23 @@ async function main() {
   }
 
   await payload.destroy();
-  console.log("Done.");
+
+  if (fallbacks.length === 0 && missingEntirely.length === 0) {
+    console.log("Done — 0 fallbacks.");
+    return;
+  }
+
+  console.error(
+    `\nDone with problems: ${fallbacks.length} substituted, ${missingEntirely.length} unresolvable.`,
+  );
+  for (const { missing, substituted } of fallbacks) {
+    console.error(`  substituted  ${missing}  ->  ${substituted}`);
+  }
+  for (const missing of missingEntirely) {
+    console.error(`  unresolvable ${missing}`);
+  }
+  console.error("Run `npm run generate:dummy-assets` and re-run this migration.");
+  process.exitCode = 1;
 }
 
 main().catch((err) => {

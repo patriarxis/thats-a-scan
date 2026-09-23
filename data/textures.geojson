@@ -3,69 +3,104 @@
   "features": [
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [23.7378, 37.9882] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.7378,
+          37.9882
+        ]
+      },
       "properties": {
         "id": "tex_001",
         "slug": "exarchia-wild-style-graffiti",
         "title": "Wild Style Graffiti — Exarchia Wall",
-        "titleEl": "Γκράφιτι Wild Style — Τοίχος Εξαρχείων",
         "description": "Large colorful wild style piece on a residential wall near Exarchia Square. Multiple layers visible.",
-        "descriptionEl": "Μεγάλο πολύχρωμο wild style γκράφιτι σε τοίχο κατοικίας κοντά στην πλατεία Εξαρχείων.",
         "category": "graffiti",
-        "tags": ["graffiti", "wild-style", "colorful", "exarchia", "street-art"],
+        "tags": [
+          "graffiti",
+          "wild-style",
+          "colorful",
+          "exarchia",
+          "street-art"
+        ],
         "neighborhood": "Exarchia",
         "color": "#E84420",
         "files": [
-          { "format": "png", "url": "/textures/tex_001/full.png", "sizeBytes": 4500000, "label": "4K PNG" },
-          { "format": "jpg", "url": "/textures/tex_001/full.jpg", "sizeBytes": 2100000, "label": "4K JPG" }
+          {
+            "format": "png",
+            "url": "/textures/tex_001/full.png",
+            "sizeBytes": 6722030,
+            "label": "4K PNG"
+          },
+          {
+            "format": "jpg",
+            "url": "/textures/tex_001/full.jpg",
+            "sizeBytes": 1994416,
+            "label": "4K JPG"
+          }
         ],
         "assets": [
           {
             "id": "tex_001-full",
             "label": "Full wall scan",
             "description": "Complete wild style piece — 4000 × 3000px",
-            "previewUrl": "/textures/tex_001/preview.svg",
+            "previewUrl": "/textures/tex_001/preview.png",
             "format": "png",
             "downloadUrl": "/textures/tex_001/full.png",
-            "sizeBytes": 4500000,
-            "dimensions": { "width": 4000, "height": 3000 }
+            "sizeBytes": 6722030,
+            "dimensions": {
+              "width": 4000,
+              "height": 3000
+            }
           },
           {
             "id": "tex_001-detail-center",
             "label": "Center detail crop",
             "description": "Tight crop on the main letter forms",
-            "previewUrl": "/textures/tex_001/preview.svg",
+            "previewUrl": "/textures/tex_001/preview.png",
             "format": "png",
-            "downloadUrl": "/textures/tex_001/full.png",
-            "sizeBytes": 4500000,
-            "dimensions": { "width": 2000, "height": 2000 }
+            "downloadUrl": "/textures/tex_001/detail-center.png",
+            "sizeBytes": 2625857,
+            "dimensions": {
+              "width": 2000,
+              "height": 2000
+            }
           },
           {
             "id": "tex_001-jpg",
             "label": "Compressed JPG",
             "description": "Smaller file size for web use",
-            "previewUrl": "/textures/tex_001/preview.svg",
+            "previewUrl": "/textures/tex_001/preview.png",
             "format": "jpg",
             "downloadUrl": "/textures/tex_001/full.jpg",
-            "sizeBytes": 2100000,
-            "dimensions": { "width": 4000, "height": 3000 }
+            "sizeBytes": 1994416,
+            "dimensions": {
+              "width": 4000,
+              "height": 3000
+            }
           },
           {
             "id": "tex_001-layer-under",
             "label": "Underlying layer",
             "description": "Older tag visible beneath the top coat",
-            "previewUrl": "/textures/tex_001/thumb.svg",
+            "previewUrl": "/textures/tex_001/thumb.png",
             "format": "png",
-            "downloadUrl": "/textures/tex_001/full.png",
-            "sizeBytes": 4500000,
-            "dimensions": { "width": 4000, "height": 3000 }
+            "downloadUrl": "/textures/tex_001/layer-under.png",
+            "sizeBytes": 10979049,
+            "dimensions": {
+              "width": 4000,
+              "height": 3000
+            }
           }
         ],
-        "thumbnailUrl": "/textures/tex_001/thumb.svg",
-        "previewUrl": "/textures/tex_001/preview.svg",
+        "thumbnailUrl": "/textures/tex_001/thumb.png",
+        "previewUrl": "/textures/tex_001/preview.png",
         "scannedAt": "2026-06-10T14:30:00Z",
         "scannedBy": "fotis",
-        "dimensions": { "width": 4000, "height": 3000 },
+        "dimensions": {
+          "width": 4000,
+          "height": 3000
+        },
         "address": "Exarchion 28, Athens",
         "locationNote": "Wall facing the park, left side",
         "license": "cc-by"
@@ -73,52 +108,87 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [23.7325, 37.9795] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.7325,
+          37.9795
+        ]
+      },
       "properties": {
         "id": "tex_002",
         "slug": "panepistimiou-marble-facade",
         "title": "Neoclassical Marble Facade — Panepistimiou",
-        "titleEl": "Νεοκλασική Μαρμάρινη Πρόσοψη — Πανεπιστημίου",
         "description": "Weathered white marble with subtle veining from a neoclassical building facade.",
-        "descriptionEl": "Φθαρμένο λευκό μάρμαρο με λεπτές φλέβες από νεοκλασική πρόσοψη.",
         "category": "marble",
-        "tags": ["marble", "neoclassical", "white", "facade", "panepistimiou"],
+        "tags": [
+          "marble",
+          "neoclassical",
+          "white",
+          "facade",
+          "panepistimiou"
+        ],
         "neighborhood": "Omonia",
         "color": "#E8E4DC",
         "files": [
-          { "format": "jpg", "url": "/textures/tex_002/full.jpg", "sizeBytes": 3200000, "label": "4K JPG" }
+          {
+            "format": "jpg",
+            "url": "/textures/tex_002/full.jpg",
+            "sizeBytes": 905617,
+            "label": "4K JPG"
+          }
         ],
-        "thumbnailUrl": "/textures/tex_002/thumb.svg",
-        "previewUrl": "/textures/tex_002/preview.svg",
+        "thumbnailUrl": "/textures/tex_002/thumb.png",
+        "previewUrl": "/textures/tex_002/preview.png",
         "scannedAt": "2026-06-08T11:00:00Z",
         "scannedBy": "fotis",
-        "dimensions": { "width": 3840, "height": 2560 },
+        "dimensions": {
+          "width": 3840,
+          "height": 2560
+        },
         "address": "Panepistimiou 30, Athens",
         "license": "cc-by"
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [23.7255, 37.9768] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.7255,
+          37.9768
+        ]
+      },
       "properties": {
         "id": "tex_003",
         "slug": "psyrri-stencil-art",
         "title": "Stencil Art — Psyrri Alley",
-        "titleEl": "Stencil Art — Στενά Ψυρρή",
         "description": "Black and white stencil on rough plaster wall in a Psyrri side street.",
-        "descriptionEl": "Μαύρο-άσπρο stencil σε τραχύ γύψινο τοίχο σε παράλληλο δρόμο του Ψυρρή.",
         "category": "stencil",
-        "tags": ["stencil", "black-white", "psyrri", "street-art"],
+        "tags": [
+          "stencil",
+          "black-white",
+          "psyrri",
+          "street-art"
+        ],
         "neighborhood": "Psyrri",
         "color": "#1A1A1A",
         "files": [
-          { "format": "png", "url": "/textures/tex_003/full.png", "sizeBytes": 1800000, "label": "PNG with alpha" }
+          {
+            "format": "png",
+            "url": "/textures/tex_003/full.png",
+            "sizeBytes": 4057413,
+            "label": "PNG with alpha"
+          }
         ],
-        "thumbnailUrl": "/textures/tex_003/thumb.svg",
-        "previewUrl": "/textures/tex_003/preview.svg",
+        "thumbnailUrl": "/textures/tex_003/thumb.png",
+        "previewUrl": "/textures/tex_003/preview.png",
         "scannedAt": "2026-06-09T16:45:00Z",
         "scannedBy": "fotis",
-        "dimensions": { "width": 3000, "height": 3000 },
+        "dimensions": {
+          "width": 3000,
+          "height": 3000
+        },
         "address": "Aristofanous 12, Athens",
         "locationNote": "Alley behind the square",
         "license": "cc-by"
@@ -126,162 +196,263 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [23.7288, 37.9845] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.7288,
+          37.9845
+        ]
+      },
       "properties": {
         "id": "tex_004",
         "slug": "monastiraki-rusted-metal",
         "title": "Rusted Metal Panel — Monastiraki",
-        "titleEl": "Σκουριασμένο Μεταλλικό Panel — Μοναστηράκι",
         "description": "Heavily oxidized corrugated metal with orange rust patterns.",
-        "descriptionEl": "Βαριά οξειδωμένο κυματοειδές μέταλλο με πορτοκαλί σκουριές.",
         "category": "rust",
-        "tags": ["rust", "metal", "oxidized", "monastiraki", "industrial"],
+        "tags": [
+          "rust",
+          "metal",
+          "oxidized",
+          "monastiraki",
+          "industrial"
+        ],
         "neighborhood": "Monastiraki",
         "color": "#B45309",
         "files": [
-          { "format": "jpg", "url": "/textures/tex_004/full.jpg", "sizeBytes": 2800000, "label": "4K JPG" }
+          {
+            "format": "jpg",
+            "url": "/textures/tex_004/full.jpg",
+            "sizeBytes": 7072090,
+            "label": "4K JPG"
+          }
         ],
-        "thumbnailUrl": "/textures/tex_004/thumb.svg",
-        "previewUrl": "/textures/tex_004/preview.svg",
+        "thumbnailUrl": "/textures/tex_004/thumb.png",
+        "previewUrl": "/textures/tex_004/preview.png",
         "scannedAt": "2026-06-07T09:20:00Z",
         "scannedBy": "fotis",
-        "dimensions": { "width": 4000, "height": 2800 },
+        "dimensions": {
+          "width": 4000,
+          "height": 2800
+        },
         "address": "Ifestou 8, Athens",
         "license": "cc-by"
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [23.7412, 37.9855] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.7412,
+          37.9855
+        ]
+      },
       "properties": {
         "id": "tex_005",
         "slug": "kolonaki-peeling-poster",
         "title": "Layered Posters — Kolonaki",
-        "titleEl": "Στρώσεις Αφισών — Κολωνάκι",
         "description": "Multiple torn poster layers revealing colors and typography underneath.",
-        "descriptionEl": "Πολλαπλές στρώσεις σκισμένων αφισών με χρώματα και τυπογραφία από κάτω.",
         "category": "poster",
-        "tags": ["poster", "layers", "torn", "kolonaki", "typography"],
+        "tags": [
+          "poster",
+          "layers",
+          "torn",
+          "kolonaki",
+          "typography"
+        ],
         "neighborhood": "Kolonaki",
         "color": "#DC2626",
         "files": [
-          { "format": "png", "url": "/textures/tex_005/full.png", "sizeBytes": 5200000, "label": "4K PNG" },
-          { "format": "pdf", "url": "/textures/tex_005/print.pdf", "sizeBytes": 8900000, "label": "Print PDF" }
+          {
+            "format": "png",
+            "url": "/textures/tex_005/full.png",
+            "sizeBytes": 6601334,
+            "label": "4K PNG"
+          },
+          {
+            "format": "pdf",
+            "url": "/textures/tex_005/print.pdf",
+            "sizeBytes": 2146341,
+            "label": "Print PDF"
+          }
         ],
         "assets": [
           {
             "id": "tex_005-stack",
             "label": "Full poster stack",
             "description": "All torn layers visible — 4000 × 3200px",
-            "previewUrl": "/textures/tex_005/preview.svg",
+            "previewUrl": "/textures/tex_005/preview.png",
             "format": "png",
             "downloadUrl": "/textures/tex_005/full.png",
-            "sizeBytes": 5200000,
-            "dimensions": { "width": 4000, "height": 3200 }
+            "sizeBytes": 6601334,
+            "dimensions": {
+              "width": 4000,
+              "height": 3200
+            }
           },
           {
             "id": "tex_005-top-layer",
             "label": "Top layer only",
             "description": "Isolated top poster with typography",
-            "previewUrl": "/textures/tex_005/preview.svg",
+            "previewUrl": "/textures/tex_005/preview.png",
             "format": "png",
-            "downloadUrl": "/textures/tex_005/full.png",
-            "sizeBytes": 5200000,
-            "dimensions": { "width": 4000, "height": 3200 }
+            "downloadUrl": "/textures/tex_005/top-layer.png",
+            "sizeBytes": 3934569,
+            "dimensions": {
+              "width": 4000,
+              "height": 3200
+            }
           },
           {
             "id": "tex_005-print",
             "label": "Print-ready PDF",
             "description": "CMYK PDF for large format print",
-            "previewUrl": "/textures/tex_005/thumb.svg",
+            "previewUrl": "/textures/tex_005/thumb.png",
             "format": "pdf",
             "downloadUrl": "/textures/tex_005/print.pdf",
-            "sizeBytes": 8900000
+            "sizeBytes": 2146341
           }
         ],
-        "thumbnailUrl": "/textures/tex_005/thumb.svg",
-        "previewUrl": "/textures/tex_005/preview.svg",
+        "thumbnailUrl": "/textures/tex_005/thumb.png",
+        "previewUrl": "/textures/tex_005/preview.png",
         "scannedAt": "2026-06-11T13:15:00Z",
         "scannedBy": "fotis",
-        "dimensions": { "width": 4000, "height": 3200 },
+        "dimensions": {
+          "width": 4000,
+          "height": 3200
+        },
         "address": "Skoufa 45, Athens",
         "license": "cc-by"
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [23.7205, 37.9755] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.7205,
+          37.9755
+        ]
+      },
       "properties": {
         "id": "tex_006",
         "slug": "thiseio-cracked-concrete",
         "title": "Cracked Concrete — Thiseio",
-        "titleEl": "Σπασμένο Σκυρόδεμα — Θησείο",
         "description": "Weathered sidewalk concrete with fine crack network and moss patches.",
-        "descriptionEl": "Φθαρμένο πεζοδρόμιο με δίκτυο ρωγμών και βρύα.",
         "category": "concrete",
-        "tags": ["concrete", "cracks", "moss", "thiseio", "decay"],
+        "tags": [
+          "concrete",
+          "cracks",
+          "moss",
+          "thiseio",
+          "decay"
+        ],
         "neighborhood": "Thiseio",
         "color": "#78716C",
         "files": [
-          { "format": "jpg", "url": "/textures/tex_006/full.jpg", "sizeBytes": 2400000, "label": "4K JPG" }
+          {
+            "format": "jpg",
+            "url": "/textures/tex_006/full.jpg",
+            "sizeBytes": 1655057,
+            "label": "4K JPG"
+          }
         ],
-        "thumbnailUrl": "/textures/tex_006/thumb.svg",
-        "previewUrl": "/textures/tex_006/preview.svg",
+        "thumbnailUrl": "/textures/tex_006/thumb.png",
+        "previewUrl": "/textures/tex_006/preview.png",
         "scannedAt": "2026-06-06T10:30:00Z",
         "scannedBy": "fotis",
-        "dimensions": { "width": 3500, "height": 3500 },
+        "dimensions": {
+          "width": 3500,
+          "height": 3500
+        },
         "address": "Apostolou Pavlou, Athens",
         "license": "cc-by"
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [23.7340, 37.9720] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.734,
+          37.972
+        ]
+      },
       "properties": {
         "id": "tex_007",
         "slug": "plaka-hand-painted-sign",
         "title": "Hand-Painted Shop Sign — Plaka",
-        "titleEl": "Χειροποίητη Πινακίδα — Πλάκα",
         "description": "Faded hand-painted Greek lettering on weathered wood panel.",
-        "descriptionEl": "Ξεθωριασμένη χειροποίητη ελληνική γραφή σε φθαρμένο ξύλινο πάνελ.",
         "category": "signage",
-        "tags": ["signage", "hand-painted", "plaka", "typography", "wood"],
+        "tags": [
+          "signage",
+          "hand-painted",
+          "plaka",
+          "typography",
+          "wood"
+        ],
         "neighborhood": "Plaka",
         "color": "#1E3A5F",
         "files": [
-          { "format": "png", "url": "/textures/tex_007/full.png", "sizeBytes": 3100000, "label": "4K PNG" }
+          {
+            "format": "png",
+            "url": "/textures/tex_007/full.png",
+            "sizeBytes": 3412578,
+            "label": "4K PNG"
+          }
         ],
-        "thumbnailUrl": "/textures/tex_007/thumb.svg",
-        "previewUrl": "/textures/tex_007/preview.svg",
+        "thumbnailUrl": "/textures/tex_007/thumb.png",
+        "previewUrl": "/textures/tex_007/preview.png",
         "scannedAt": "2026-06-05T15:00:00Z",
         "scannedBy": "fotis",
-        "dimensions": { "width": 3200, "height": 2400 },
+        "dimensions": {
+          "width": 3200,
+          "height": 2400
+        },
         "address": "Adrianou 78, Athens",
         "license": "cc-by"
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [23.7460, 37.9900] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.746,
+          37.99
+        ]
+      },
       "properties": {
         "id": "tex_008",
         "slug": "kypseli-tile-pattern",
         "title": "Geometric Tile Pattern — Kypseli",
-        "titleEl": "Γεωμετρικό Μοτίβο Πλακιδίων — Κυψέλη",
         "description": "1920s hexagonal floor tiles with worn edges and patina.",
-        "descriptionEl": "Εξαγωνικά πλακάκια δαπέδου δεκαετίας 1920 με φθορά και πατίνα.",
         "category": "tile",
-        "tags": ["tile", "geometric", "1920s", "kypseli", "pattern"],
+        "tags": [
+          "tile",
+          "geometric",
+          "1920s",
+          "kypseli",
+          "pattern"
+        ],
         "neighborhood": "Kypseli",
         "color": "#059669",
         "files": [
-          { "format": "jpg", "url": "/textures/tex_008/full.jpg", "sizeBytes": 3600000, "label": "Seamless JPG" }
+          {
+            "format": "jpg",
+            "url": "/textures/tex_008/full.jpg",
+            "sizeBytes": 3168598,
+            "label": "Seamless JPG"
+          }
         ],
-        "thumbnailUrl": "/textures/tex_008/thumb.svg",
-        "previewUrl": "/textures/tex_008/preview.svg",
+        "thumbnailUrl": "/textures/tex_008/thumb.png",
+        "previewUrl": "/textures/tex_008/preview.png",
         "scannedAt": "2026-06-12T08:00:00Z",
         "scannedBy": "fotis",
-        "dimensions": { "width": 4000, "height": 4000 },
+        "dimensions": {
+          "width": 4000,
+          "height": 4000
+        },
         "address": "Fokionos Negri 55, Athens",
         "license": "cc-by"
       }

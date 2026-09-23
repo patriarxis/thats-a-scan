@@ -31,8 +31,24 @@ npm run dev
 ## Data
 
 - Textures are managed in Payload (`textures` collection).
-- Optional one-time GeoJSON import: `npm run migrate:geojson`
-- Public API: `GET /api/textures?bounds=...`
+- `data/textures.geojson` is the source of truth for the seed catalog — both the metadata and
+  the list of files each texture owns.
+- **Dummy assets.** No real scans exist yet. The binaries under `public/textures/` are generated
+  and gitignored, so on a fresh checkout run this **before** importing:
+
+```bash
+npm run generate:dummy-assets
+```
+
+  It is deterministic and idempotent — re-running overwrites cleanly — and writes the produced
+  byte sizes back into `data/textures.geojson` so the manifest can never disagree with what is
+  on disk.
+- One-time GeoJSON import: `npm run migrate:geojson`. It exits non-zero and names every file
+  it could not find, rather than silently substituting a placeholder.
+- Public API: `GET /api/atlas/textures` (full published set) and `POST /api/atlas/textures` with a
+  bounds body (viewport query). Atlas routes live under `/api/atlas/*` so they never shadow
+  Payload's REST handler at `/api/[...slug]`.
+- Search API: `GET /api/atlas/search?q=<query>&limit=<n>`
 
 ## Project layout
 

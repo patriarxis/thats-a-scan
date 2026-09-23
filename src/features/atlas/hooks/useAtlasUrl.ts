@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getTextureId, type TextureFeature } from "@/domain/textures";
+import { ATLAS_TEXTURES_API_PATH } from "@/config/map";
 
 export type UrlSelection = {
   textureId: string | null;
@@ -110,7 +111,7 @@ export function useTextureFromUrl(
     }
 
     let cancelled = false;
-    void fetch("/api/textures")
+    void fetch(ATLAS_TEXTURES_API_PATH)
       .then((r) => r.json())
       .then((data: { features?: TextureFeature[] }) => {
         if (cancelled) return;

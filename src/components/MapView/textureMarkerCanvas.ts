@@ -8,7 +8,44 @@ import {
 import { MARKER_ICON_DEFAULT_ID } from "./mapViewConstants";
 
 const MARKER_CANVAS_DISPLAY_PX = 36;
-const pendingLoads = new Map<string, Promise<void>>();
+
+type MarkerIconState = {
+  /** Icon ids whose slot currently holds a loaded preview, not the fallback. */
+  previewDrawn: Set<string>;
+  /** Icon id -> in-flight preview load. */
+  pending: Map<string, Promise<void>>;
+  /** Thumbnail URLs that failed, so a dead link is not re-fetched on every pan. */
+  failedUrls: Set<string>;
+};
+
+/**
+ * Per-map, because `ensureTextureMarkerIcons` runs on every data push, pan,
+ * zoom and selection change. Without this the fallback was redrawn each time
+ * and every loaded preview was wiped back to a coloured square.
+ */
+const stateByMap = new WeakMap<MapLibreMap, MarkerIconState>();
+
+const getMarkerIconState = (map: MapLibreMap): MarkerIconState => {
+  const existing = stateByMap.get(map);
+  if (existing) return existing;
+
+  const state: MarkerIconState = {
+    previewDrawn: new Set(),
+    pending: new Map(),
+    failedUrls: new Set(),
+  };
+  stateByMap.set(map, state);
+
+  // MapLibre drops every added image when the style reloads. Forget what we
+  // think we drew, or those icons stay permanently empty.
+  map.on("styledata", () => {
+    for (const iconId of [...state.previewDrawn]) {
+      if (!map.hasImage(iconId)) state.previewDrawn.delete(iconId);
+    }
+  });
+
+  return state;
+};
 
 const drawRoundedRect = (
   ctx: CanvasRenderingContext2D,
@@ -120,6 +157,7 @@ const loadPreviewMarkerIcons = async (
   texture: TextureFeature,
   thumbnailUrl: string,
   fallbackColor: string,
+  state: MarkerIconState,
 ) => {
   const textureId = getTextureId(texture);
   const iconId = buildMarkerIconId(textureId);
@@ -129,8 +167,15 @@ const loadPreviewMarkerIcons = async (
     const image = await loadImageElement(thumbnailUrl);
     drawPreviewMarkerIcon(map, iconId, image, false);
     drawPreviewMarkerIcon(map, activeIconId, image, true);
+    state.previewDrawn.add(iconId);
+    state.previewDrawn.add(activeIconId);
     map.triggerRepaint();
   } catch {
+    // Unreachable URL, or a tainted canvas because the bucket sent no CORS
+    // header. Either way the pin keeps its category-coloured square.
+    state.failedUrls.add(thumbnailUrl);
+    state.previewDrawn.delete(iconId);
+    state.previewDrawn.delete(activeIconId);
     drawFallbackMarkerIcon(map, iconId, fallbackColor, false);
     drawFallbackMarkerIcon(map, activeIconId, fallbackColor, true);
     map.triggerRepaint();
@@ -139,6 +184,7 @@ const loadPreviewMarkerIcons = async (
 
 export const ensureTextureMarkerIcons = (map: MapLibreMap, textures: TextureFeature[]) => {
   ensureDefaultMarkerIcon(map);
+  const state = getMarkerIconState(map);
 
   for (const texture of textures) {
     const textureId = getTextureId(texture);
@@ -146,15 +192,26 @@ export const ensureTextureMarkerIcons = (map: MapLibreMap, textures: TextureFeat
     const iconId = buildMarkerIconId(textureId);
     const activeIconId = buildActiveMarkerIconId(textureId);
 
-    drawFallbackMarkerIcon(map, iconId, color, false);
-    drawFallbackMarkerIcon(map, activeIconId, color, true);
+    // Only paint the placeholder into an empty slot. Redrawing unconditionally
+    // is what erased each preview moments after it loaded.
+    if (!map.hasImage(iconId)) drawFallbackMarkerIcon(map, iconId, color, false);
+    if (!map.hasImage(activeIconId)) drawFallbackMarkerIcon(map, activeIconId, color, true);
 
     const thumbnailUrl = texture.properties.thumbnailUrl || texture.properties.previewUrl;
-    if (!thumbnailUrl || pendingLoads.has(iconId)) continue;
+    if (!thumbnailUrl) continue;
+    if (state.failedUrls.has(thumbnailUrl)) continue;
+    if (state.pending.has(iconId)) continue;
+    if (state.previewDrawn.has(iconId) && map.hasImage(iconId)) continue;
 
-    const loadPromise = loadPreviewMarkerIcons(map, texture, thumbnailUrl, color).finally(() => {
-      pendingLoads.delete(iconId);
+    const loadPromise = loadPreviewMarkerIcons(
+      map,
+      texture,
+      thumbnailUrl,
+      color,
+      state,
+    ).finally(() => {
+      state.pending.delete(iconId);
     });
-    pendingLoads.set(iconId, loadPromise);
+    state.pending.set(iconId, loadPromise);
   }
 };

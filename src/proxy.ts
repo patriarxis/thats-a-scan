@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_ROOT_FILES = new Set([
-  "favicon.svg",
-  "og-image.svg",
-  "site.webmanifest",
-]);
+/**
+ * Any single-segment root path carrying a file extension is a static asset in
+ * `public/`. Matching on shape rather than an allowlist means new files added to
+ * `public/` cannot silently start serving the app's HTML.
+ */
+const PUBLIC_ROOT_ASSET = /^\/[^/]+\.[a-z0-9]+$/i;
 
 function normalizePathname(pathname: string): string {
   if (pathname !== "/" && pathname.endsWith("/")) {
@@ -26,9 +27,7 @@ function isValidAppPath(normalizedPathname: string): boolean {
 }
 
 function isPublicRootAsset(pathname: string): boolean {
-  const parts = pathname.split("/").filter(Boolean);
-  if (parts.length !== 1) return false;
-  return PUBLIC_ROOT_FILES.has(parts[0]!);
+  return PUBLIC_ROOT_ASSET.test(pathname);
 }
 
 export function proxy(request: NextRequest) {
@@ -40,12 +39,6 @@ export function proxy(request: NextRequest) {
 
   const normalized = normalizePathname(pathname);
 
-  if (normalized === "/en" || normalized.startsWith("/en/")) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = normalized === "/en" ? "/" : normalized.replace(/^\/en/, "") || "/";
-    redirectUrl.search = search;
-    return NextResponse.redirect(redirectUrl);
-  }
   if (!isValidAppPath(normalized)) {
     const rewriteUrl = new URL("/" + search, request.url);
     return NextResponse.rewrite(rewriteUrl);

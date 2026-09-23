@@ -150,6 +150,10 @@ export const Textures: CollectionConfig = {
       },
     },
     {
+      // `format`, `width` and `height` below are a denormalised cache of the
+      // uploaded media, refreshed by `enrichTextureFromMedia` on every save.
+      // The media record is authoritative — the domain layer reads these only
+      // when the relation is unpopulated (depth: 0).
       name: "assets",
       type: "array",
       admin: {

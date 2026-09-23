@@ -4,6 +4,8 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import maplibregl, { GeoJSONSource, Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { type TextureFeature, type VisibleTexturesPayload } from "@/domain/textures/types";
+import type { TextureFilterState } from "@/domain/textures/filters";
+import { strings } from "@/content/strings";
 import {
   declutterDebounceMsForZoom,
   MAP_MOVE_THROTTLE_MS,
@@ -44,6 +46,10 @@ const CLICK_LAYERS = [LAYER_ID, DOT_LAYER_ID, SELECTED_LAYER_ID] as const;
 type MapViewProps = {
   className?: string;
   selectedTextureId: string | null;
+  filters?: TextureFilterState;
+  searchQuery?: string;
+  /** Search hits — kept at full size through declutter. */
+  searchPinnedIds?: ReadonlySet<string>;
   onVisibleTexturesChange: (payload: VisibleTexturesPayload) => void;
   onTextureSelect: (texture: TextureFeature) => void;
   onMapClick?: () => void;
@@ -53,6 +59,9 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   {
     className,
     selectedTextureId,
+    filters,
+    searchQuery,
+    searchPinnedIds,
     onVisibleTexturesChange,
     onTextureSelect,
     onMapClick,
@@ -79,6 +88,8 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     viewportTooWide: false,
     error: null as string | null,
   });
+  const searchPinnedIdsRef = useRef<ReadonlySet<string>>(searchPinnedIds ?? new Set());
+  searchPinnedIdsRef.current = searchPinnedIds ?? new Set();
   const [mapReady, setMapReady] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   const [locateStatus, setLocateStatus] = useState<{ message: string; tone: "neutral" | "error" } | null>(
@@ -88,11 +99,12 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
   const { location: userLocation, onGeolocateSuccess, onGeolocateError } = useUserLocation();
   const onGeolocateSuccessRef = useRef(onGeolocateSuccess);
   const onGeolocateErrorRef = useRef(onGeolocateError);
-  const { textures, loading, updating, viewportTooWide, error } = useViewportTextureQuery(
-    mapRef,
-    userLocation,
-    mapReady,
-  );
+  const { textures, loading, updating, viewportTooWide, error, unfilteredCount } =
+    useViewportTextureQuery(mapRef, userLocation, mapReady, { filters, searchQuery });
+
+  // Something is in view, but nothing survived the active search/filters.
+  const showNoResults =
+    !loading && textures.length === 0 && unfilteredCount > 0 && !viewportTooWide;
 
   useEffect(() => {
     setIsLargeScreen(window.innerWidth > 1024);
@@ -148,19 +160,24 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     const selectedId = selectedTextureIdRef.current;
     if (selectedId) alwaysKeep.add(selectedId);
 
+    const searchPinned = searchPinnedIdsRef.current;
+
     const nextData = buildTexturesFeatureCollection(
       map,
       dedupeByTextureId(viewportItems),
       alwaysKeep,
       declutterStickyRef.current,
-      new Set(),
+      searchPinned,
       selectedId,
     );
 
     if (!markerFadeRef.current) {
       markerFadeRef.current = new TextureMarkerFadeAnimator();
     }
-    markerFadeRef.current.sync(nextData.features, applyFeatureCollectionToMap);
+    // Search hits must survive declutter fade-out as well as state assignment.
+    const neverFadeOut = new Set<string>(searchPinned);
+    if (selectedId) neverFadeOut.add(selectedId);
+    markerFadeRef.current.sync(nextData.features, applyFeatureCollectionToMap, neverFadeOut);
   }, [applyFeatureCollectionToMap]);
 
   const pushDataToMapRef = useRef(pushDataToMap);
@@ -336,6 +353,13 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
     scheduleReclutter();
   }, [textures, scheduleReclutter]);
 
+  // Pinning a new search hit changes marker states without changing the set.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    scheduleReclutter();
+  }, [searchPinnedIds, scheduleReclutter]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
@@ -428,6 +452,11 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>((
         className={[styles.mapSurface, className ?? styles.mapContainer].filter(Boolean).join(" ")}
       />
       <div className={styles.mapOverlay} aria-hidden />
+      {showNoResults ? (
+        <div className={styles.noResults} role="status">
+          {strings.noResults}
+        </div>
+      ) : null}
       {locateStatus ? (
         <div
           className={[

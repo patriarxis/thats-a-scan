@@ -1,0 +1,155 @@
+@use "../../styles/abstracts" as *;
+
+.root {
+  position: relative;
+}
+
+.quickRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.quickChip {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: 0.35rem 0.65rem;
+  border-radius: 2px;
+  background: rgba($kraft-mid, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: $paper-warm;
+  @include font-archive(0.68rem, 600);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition:
+    border-color $transition-normal,
+    background $transition-normal;
+
+  &:hover {
+    background: rgba($kraft-light, 0.94);
+  }
+}
+
+.quickChipActive {
+  background: rgba($kraft-light, 0.98);
+  color: $paper-cream;
+}
+
+.quickChipIcon {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.toggleBtn {
+  position: relative;
+  background: rgba($kraft-mid, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+}
+
+.toggleBtnActive {
+  border-color: rgba($brand-primary-5, 0.55);
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 1rem;
+  padding: 0 3px;
+  border-radius: $border-radius-full;
+  background: $brand-primary-5;
+  color: $ink-dark;
+  @include font-archive(0.58rem, 700);
+  line-height: 1rem;
+  text-align: center;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + #{$spacing-sm});
+  right: 0;
+  z-index: $z-search-overlay;
+  width: min(24rem, 80vw);
+  max-height: 26rem;
+  overflow-y: auto;
+  padding: $spacing-md;
+  border-radius: 2px;
+  background: rgba($kraft-mid, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.group {
+  & + & {
+    margin-top: $spacing-md;
+  }
+}
+
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin: 0 0 $spacing-sm;
+  @include font-archive(0.62rem, 600);
+  color: $ink-muted;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.groupTitleIcon {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.groupOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.chip {
+  padding: 0.3rem 0.6rem;
+  border-radius: 2px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: $paper-aged;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition:
+    border-color $transition-normal,
+    color $transition-normal,
+    background $transition-normal;
+
+  &:hover {
+    color: $paper-cream;
+  }
+}
+
+.chipActive {
+  background: rgba($brand-primary-5, 0.16);
+  border-color: rgba($brand-primary-5, 0.55);
+  color: $paper-cream;
+}
+
+.clearBtn {
+  width: 100%;
+  margin-top: $spacing-md;
+  padding: $spacing-sm;
+  border-radius: 2px;
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: $ink-muted;
+  @include font-archive(0.68rem, 600);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+
+  &:hover {
+    color: $paper-cream;
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+}

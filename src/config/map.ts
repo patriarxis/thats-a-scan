@@ -1,3 +1,12 @@
+/**
+ * Atlas API routes live under `/api/atlas/*` so they never shadow Payload's own
+ * REST handler at `/api/[...slug]` — a static segment always wins over the
+ * catch-all, which silently breaks admin bulk actions on that collection.
+ */
+export const ATLAS_TEXTURES_API_PATH = "/api/atlas/textures";
+export const ATLAS_SEARCH_API_PATH = "/api/atlas/search";
+export const ATLAS_DOWNLOAD_API_PATH = "/api/atlas/download";
+
 export const MAP_MAX_LAT_SPAN = 1.2;
 export const MAP_MAX_LNG_SPAN = 1.4;
 export const MAP_MIN_ZOOM = 8;

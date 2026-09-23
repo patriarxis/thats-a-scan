@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { getTextureId, type TextureFeature } from "@/domain/textures/types";
-import { INITIAL_FOCUS_ZOOM, MAP_MAX_LAT_SPAN, MAP_MAX_LNG_SPAN, isWithinAthensCatalog } from "@/config/map";
+import {
+  ATLAS_TEXTURES_API_PATH,
+  INITIAL_FOCUS_ZOOM,
+  MAP_MAX_LAT_SPAN,
+  MAP_MAX_LNG_SPAN,
+  isWithinAthensCatalog,
+} from "@/config/map";
 import {
   getBufferedBoundsBox,
   MAP_MOVE_THROTTLE_MS,
@@ -12,8 +18,12 @@ import {
   throttle,
 } from "@/lib/mapViewport";
 import type { UserLocation } from "@/shared/hooks/useUserLocation";
-
-const TEXTURES_API_PATH = "/api/textures";
+import {
+  EMPTY_TEXTURE_FILTERS,
+  textureMatchesFilters,
+  textureMatchesSearchQuery,
+  type TextureFilterState,
+} from "@/domain/textures/filters";
 
 type ViewportQueryState = {
   textures: TextureFeature[];
@@ -21,6 +31,13 @@ type ViewportQueryState = {
   updating: boolean;
   viewportTooWide: boolean;
   error: string | null;
+  /** Viewport matches before search and filters — drives the "no results" copy. */
+  unfilteredCount: number;
+};
+
+export type ViewportQueryOptions = {
+  filters?: TextureFilterState;
+  searchQuery?: string;
 };
 
 type BoundsPayload = {
@@ -32,6 +49,7 @@ export function useViewportTextureQuery(
   mapRef: MutableRefObject<MapLibreMap | null>,
   userLocation: UserLocation | null,
   mapReady: boolean,
+  options: ViewportQueryOptions = {},
 ) {
   const [state, setState] = useState<ViewportQueryState>({
     textures: [],
@@ -39,6 +57,7 @@ export function useViewportTextureQuery(
     updating: false,
     viewportTooWide: false,
     error: null,
+    unfilteredCount: 0,
   });
 
   const globalStoreRef = useRef<Map<string, TextureFeature>>(new Map());
@@ -46,6 +65,13 @@ export function useViewportTextureQuery(
   const inFlightRef = useRef<AbortController | null>(null);
   const moveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasAppliedLocationFlyRef = useRef(false);
+
+  // Filtering runs against the already-fetched store, so typing never costs a
+  // round trip. A ref keeps the main effect from re-subscribing per keystroke.
+  const filters = options.filters ?? EMPTY_TEXTURE_FILTERS;
+  const searchQuery = options.searchQuery ?? "";
+  const queryRef = useRef({ filters, searchQuery });
+  const recomputeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!mapReady) return;
@@ -66,7 +92,11 @@ export function useViewportTextureQuery(
     const computeVisible = () => {
       const bounds = map.getBounds();
       if (!bounds) {
-        return { textures: [] as TextureFeature[], viewportTooWide: false };
+        return {
+          textures: [] as TextureFeature[],
+          viewportTooWide: false,
+          unfilteredCount: 0,
+        };
       }
       const latSpan = Math.abs(bounds.getNorth() - bounds.getSouth());
       const lngSpan = Math.abs(bounds.getEast() - bounds.getWest());
@@ -74,27 +104,36 @@ export function useViewportTextureQuery(
         latSpan > MAP_MAX_LAT_SPAN || lngSpan > MAP_MAX_LNG_SPAN;
 
       const queryBounds = getBufferedBoundsBox(map);
+      const { filters: activeFilters, searchQuery: activeQuery } = queryRef.current;
       const textures: TextureFeature[] = [];
+      let unfilteredCount = 0;
+
       for (const feature of globalStoreRef.current.values()) {
         const [lng, lat] = feature.geometry.coordinates;
-        if (queryBounds && pointInBoundsBox(lng, lat, queryBounds)) {
-          textures.push(feature);
-        }
+        if (!queryBounds || !pointInBoundsBox(lng, lat, queryBounds)) continue;
+        unfilteredCount += 1;
+        if (!textureMatchesFilters(feature, activeFilters)) continue;
+        if (!textureMatchesSearchQuery(feature, activeQuery)) continue;
+        textures.push(feature);
       }
-      return { textures, viewportTooWide };
+
+      return { textures, viewportTooWide, unfilteredCount };
     };
 
     const applyVisible = (options?: { updating?: boolean }) => {
       if (!alive) return;
-      const { textures, viewportTooWide } = computeVisible();
-      setState((prev) => ({
+      const { textures, viewportTooWide, unfilteredCount } = computeVisible();
+      setState(() => ({
         textures,
         loading: false,
         updating: options?.updating ?? false,
         viewportTooWide,
         error: null,
+        unfilteredCount,
       }));
     };
+
+    recomputeRef.current = () => applyVisible();
 
     const mergeIntoStore = (incoming: TextureFeature[]) => {
       for (const feature of incoming) {
@@ -103,7 +142,7 @@ export function useViewportTextureQuery(
     };
 
     const fetchBounds = async (bounds: BoundsPayload, signal?: AbortSignal) => {
-      const res = await fetch(TEXTURES_API_PATH, {
+      const res = await fetch(ATLAS_TEXTURES_API_PATH, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bounds),
@@ -198,6 +237,7 @@ export function useViewportTextureQuery(
 
     return () => {
       alive = false;
+      recomputeRef.current = null;
       inFlightRef.current?.abort();
       map.off("moveend", triggerUpdate);
       map.off("zoomend", triggerUpdate);
@@ -206,6 +246,12 @@ export function useViewportTextureQuery(
       if (moveDebounceRef.current) clearTimeout(moveDebounceRef.current);
     };
   }, [mapReady, mapRef]);
+
+  // Re-filter the existing store when search or filters change — no refetch.
+  useEffect(() => {
+    queryRef.current = { filters, searchQuery };
+    recomputeRef.current?.();
+  }, [filters, searchQuery, mapReady]);
 
   useEffect(() => {
     if (!mapReady || !userLocation) return;

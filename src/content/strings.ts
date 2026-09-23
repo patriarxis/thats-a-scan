@@ -16,6 +16,8 @@ export const strings = {
   updatingArea: "Updating area...",
   locationOff: "Your location is off",
   openFilters: "Open filters",
+  clearFilters: "Clear all filters",
+  tags: "Tags",
   share: "Share",
   description: "Description",
   category: "Category",

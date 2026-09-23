@@ -7,8 +7,9 @@
   left: 0;
   z-index: $z-header;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: $spacing-md;
   width: 100%;
   padding: $spacing-lg;
 
@@ -19,6 +20,13 @@
   > * {
     pointer-events: auto;
   }
+}
+
+.leading {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+  min-width: 0;
 }
 
 .brandTag {

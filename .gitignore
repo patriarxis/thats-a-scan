@@ -37,6 +37,12 @@ yarn-error.log*
 # Payload local media uploads (when R2 is not configured)
 /media/
 
+# Generated dummy texture binaries — `npm run generate:dummy-assets` rebuilds
+# them from data/textures.geojson, which is the source of truth.
+/public/textures/**/*.png
+/public/textures/**/*.jpg
+/public/textures/**/*.pdf
+
 # IDE
 .vscode/
 .idea/
